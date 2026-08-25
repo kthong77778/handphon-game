@@ -34,6 +34,9 @@ var State = (function () {
       macroBlocks: 0,    // 매크로로 판정돼 막힌 횟수
       bestCombo: 0,      // 최고 콤보
 
+      tapSkin: 'auto',   // 조리 음식 스킨 id
+      crowdSkin: 'auto', // 손님 스킨 id
+
       dailyDate: '',     // 마지막 출석 보상 날짜 (YYYY-MM-DD)
       dailyStreak: 0,
       dailyClaims: 0,
@@ -76,6 +79,15 @@ var State = (function () {
     // 배율은 1 미만으로 내려가면 안 된다 (0이 저장돼 있으면 수익이 통째로 사라진다)
     if (!(s.goldMult >= 1)) s.goldMult = 1;
     if (!(s.goldTapMult >= 1)) s.goldTapMult = 1;
+
+    // 스킨은 실제로 있는 id 일 때만 받는다 (없는 걸 넣으면 화면이 비어버린다)
+    ['tapSkin', 'crowdSkin'].forEach(function (k) {
+      var list = k === 'tapSkin' ? Data.TAP_SKINS : Data.CROWD_SKINS;
+      var v = raw[k];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === v) { s[k] = v; return; }
+      }
+    });
 
     if (typeof raw.dailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dailyDate)) {
       s.dailyDate = raw.dailyDate;

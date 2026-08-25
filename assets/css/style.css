@@ -521,7 +521,7 @@ body{
 }
 
 /* 조리 중일 때 냄비에서 김이 오른다 */
-.tap-target{position:relative}
+.tap-target{position:relative;isolation:isolate}
 .steam{
   position:absolute;top:14px;left:50%;
   width:9px;height:9px;border-radius:50%;
@@ -548,4 +548,104 @@ body{
 @media (prefers-reduced-motion:reduce){
   .walker .body,.steam{animation:none}
   .street{opacity:.7}
+}
+
+/* ===== 조리 단계에 따라 화려해지는 테두리 ===== */
+.tap-target{--ring:var(--accent);--glow:rgba(139,92,246,.35)}
+.tap-target.tier-2{--ring:#60a5fa;--glow:rgba(96,165,250,.38)}
+.tap-target.tier-3{--ring:#2dd4bf;--glow:rgba(45,212,191,.40)}
+.tap-target.tier-4{--ring:#4ade80;--glow:rgba(74,222,128,.42)}
+.tap-target.tier-5{--ring:#fbbf24;--glow:rgba(251,191,36,.46)}
+.tap-target.tier-6{--ring:#fb923c;--glow:rgba(251,146,60,.50)}
+.tap-target.tier-7{--ring:#f472b6;--glow:rgba(244,114,182,.54)}
+.tap-target.tier-8{--ring:#ffd45e;--glow:rgba(255,212,94,.62)}
+
+.tap-target{
+  border-color:var(--ring);
+  box-shadow:0 0 30px var(--glow),inset 0 0 30px rgba(0,0,0,.4);
+}
+.tap-target.hit{box-shadow:0 0 48px var(--glow),inset 0 0 30px rgba(0,0,0,.4)}
+
+/* 마지막 단계는 테두리가 천천히 돈다.
+   가운데를 마스크로 뚫지 않으면 원 안쪽까지 덮어 음식이 뿌옇게 보인다. */
+.tap-target.tier-8::before{
+  content:'';position:absolute;inset:-8px;border-radius:50%;
+  background:conic-gradient(from 0deg,#ffd45e,#f472b6,#60a5fa,#4ade80,#ffd45e);
+  filter:blur(6px);opacity:.55;
+  pointer-events:none;
+  -webkit-mask:radial-gradient(circle,transparent 63%,#000 71%);
+  mask:radial-gradient(circle,transparent 63%,#000 71%);
+  animation:ringSpin 7s linear infinite;
+}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
+
+/* 단계가 오를 때 */
+.tap-emoji.levelup{animation:levelPop .7s cubic-bezier(.2,1.5,.4,1)}
+@keyframes levelPop{
+  0%{transform:scale(.3) rotate(-25deg)}
+  55%{transform:scale(1.35) rotate(9deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+.tap-label{font-weight:700;color:#c4b5fd}
+
+/* 등급이 높은 손님은 은은하게 빛난다 */
+.walker.vip .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 7px rgba(167,139,250,.75))}
+.walker.legend .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(255,204,68,.9))}
+
+/* ===== 스킨 고르기 ===== */
+.skin-card{gap:11px}
+.skin-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.skin-head b{font-size:14px}
+.skin-now{font-size:12px;color:var(--gold);font-weight:700}
+
+.skin-row{
+  display:flex;gap:8px;
+  overflow-x:auto;
+  padding-bottom:2px;
+  scrollbar-width:none;
+}
+.skin-row::-webkit-scrollbar{display:none}
+.skin{
+  /* 다섯 번째가 살짝 걸치게 해서, 옆으로 넘길 수 있다는 걸 보이게 한다 */
+  flex:0 0 auto;width:70px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:9px 4px;
+  background:var(--bg2);
+  border:1px solid var(--line);
+  border-radius:13px;
+  color:var(--dim);font-family:inherit;
+  cursor:pointer;
+  transition:border-color .12s,background .12s,color .12s,transform .06s;
+}
+.skin:active{transform:scale(.96)}
+.skin:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.skin .skin-ic{font-size:25px;line-height:1}
+.skin .skin-nm{font-size:10.5px;font-weight:700;text-align:center;line-height:1.25}
+.skin.on{
+  border-color:var(--gold);
+  background:linear-gradient(180deg,rgba(255,204,68,.16),var(--bg2));
+  color:var(--txt);
+}
+
+/* 단계표 */
+.ladder{
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+  padding-top:2px;
+}
+.rung{
+  font-size:17px;line-height:1;
+  opacity:.28;filter:grayscale(1);
+  transition:opacity .15s,filter .15s;
+}
+.rung.done{opacity:.62;filter:none}
+.rung.now{
+  opacity:1;filter:none;
+  transform:scale(1.28);
+  margin:0 3px;
+  text-shadow:0 0 10px rgba(255,204,68,.65);
+}
+.rung-note{
+  flex:1 0 100%;
+  font-size:11.5px;color:var(--dim);
+  padding-top:4px;
 }

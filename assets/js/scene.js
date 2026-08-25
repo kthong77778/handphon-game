@@ -5,11 +5,8 @@ var Scene = (function () {
   var MAX_WALKERS = 8;
   var REDUCED = false;   // prefers-reduced-motion 이면 움직임을 줄인다
 
-  // 상반신만 그려지는 이모지(🧑 등)는 머리만 떠다니는 것처럼 보인다.
-  // 전신으로 그려지는 것들만 골라 쓴다.
-  var CUSTOMERS = ['🚶', '🚶‍♀️', '🚶‍♂️', '🏃', '🏃‍♀️', '🏃‍♂️',
-                   '🧍', '🧍‍♀️', '🧍‍♂️', '💃', '🕺', '🚴', '🐕', '🐈'];
-  var FOODS = ['🍢', '🍜', '🥟', '🍤', '🍙', '🌭', '🥠', '🍡'];
+  // 어떤 손님이 오는지는 스킨과 초당 수익(등급)이 정한다 — Game.crowdTier()
+  // 튀는 음식도 지금 조리하는 메뉴의 스킨을 따라간다.
 
   var street = null;    // 손님들이 걸어다니는 층
   var pops = null;      // 조리할 때 음식이 튀는 층
@@ -58,7 +55,10 @@ var Scene = (function () {
     node.className = 'walker' + (boosted ? ' hurry' : '');
     var face = document.createElement('i');
     var body = document.createElement('span');
-    body.textContent = pick(CUSTOMERS);
+    var tier = Game.crowdTier();
+    body.textContent = pick(tier.cast);
+    if (tier.index >= 2) node.classList.add('vip');   // 등급이 오르면 은은하게 빛난다
+    if (tier.index >= 4) node.classList.add('legend');
     body.className = 'body';
     if (!rightward) face.className = 'flip';
     face.appendChild(body);
@@ -100,7 +100,7 @@ var Scene = (function () {
       glide(stopX, legA, function () {
         if (!node.parentNode) return;
         node.classList.add('waiting');
-        bubble(node, pick(FOODS));
+        bubble(node, orderIcon());
         walker.timer = setTimeout(function () {
           if (!node.parentNode) return;
           node.classList.remove('waiting');
@@ -110,6 +110,16 @@ var Scene = (function () {
     } else {
       glide(to, Math.abs(to - from) / speed, function () { removeWalker(walker); });
     }
+  }
+
+  /** 손님이 주문하는 메뉴 — 지금 스킨에서 파는 것 중 하나 */
+  function orderIcon() {
+    var t = Game.tapStep();
+    var steps = Game.tapSkin().steps;
+    // 지금 단계까지 나온 메뉴 중에서 (가장 최근 것이 자주 나오게)
+    var top = Math.min(steps.length - 1, t.index);
+    var i = Math.max(0, top - Math.floor(Math.random() * 3));
+    return steps[i].icon;
   }
 
   function bubble(node, food) {
@@ -126,7 +136,7 @@ var Scene = (function () {
     if (!pops || REDUCED) return;
     var d = document.createElement('div');
     d.className = 'pop';
-    d.textContent = pick(FOODS);
+    d.textContent = orderIcon();
     // 좌우로 흩어지게
     d.style.setProperty('--dx', Math.round(rnd(-70, 70)) + 'px');
     d.style.setProperty('--rot', Math.round(rnd(-200, 200)) + 'deg');

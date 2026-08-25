@@ -18,6 +18,9 @@ var UI = (function () {
      'buffBar', 'combo', 'comboX', 'comboN', 'comboFill',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
+     'tapEmoji', 'tapLabel',
+     'tapSkinRow', 'tapSkinNow', 'tapLadder',
+     'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
       el[id] = $(id);
     });
@@ -305,6 +308,9 @@ var UI = (function () {
       ['보유 금액', Fmt.won(s.money)],
       ['초당 수익', Fmt.won(Game.perSec())],
       ['탭 수익', Fmt.won(Game.tapValue())],
+      ['조리 메뉴', Game.tapStep().step.name +
+        ' (' + (Game.tapStep().index + 1) + '/' + Game.tapStep().total + '단계)'],
+      ['손님 등급', (Game.crowdTier().index + 1) + '/' + Game.crowdTier().total],
       ['전체 배율', Fmt.mult(Game.globalMult())],
       ['이번 회차 매출', Fmt.won(s.runEarned)],
       ['전체 누적 매출', Fmt.won(s.totalEarned)],
@@ -335,6 +341,8 @@ var UI = (function () {
     el.rate.textContent = '초당 ' + Fmt.rate(Game.perSec()) + ' 원';
     el.fameChip.textContent = '✨ 명성 ' + Fmt.num(s.fame);
     el.multChip.textContent = Fmt.mult(Game.globalMult());
+    updateTapLook();
+
     var rest = Game.macroRestLeft();
     el.tapTarget.classList.toggle('blocked', rest > 0);
     el.tapPower.textContent = rest > 0
@@ -372,6 +380,104 @@ var UI = (function () {
       return '<span class="buff"><span>' + b.icon + ' ' + b.label + '</span>' +
              '<span class="t">' + Math.ceil(b.left) + 's</span></span>';
     }).join('');
+  }
+
+  /* ---------- 조리 음식 모양 ---------- */
+
+  var lookSig = '';
+
+  function updateTapLook() {
+    var t = Game.tapStep();
+    var sig = Game.tapSkin().id + '#' + t.index;
+    if (sig === lookSig) return;
+
+    var levelUp = lookSig && lookSig.split('#')[0] === Game.tapSkin().id &&
+                  t.index > Number(lookSig.split('#')[1]);
+    lookSig = sig;
+
+    el.tapEmoji.textContent = t.step.icon;
+    el.tapLabel.textContent = t.step.name;
+    // 단계가 오를수록 테두리가 화려해진다
+    el.tapTarget.className = el.tapTarget.className
+      .replace(/\btier-\d+\b/g, '').trim() + ' tier-' + (t.index + 1);
+
+    if (levelUp) {
+      el.tapEmoji.classList.remove('levelup');
+      void el.tapEmoji.offsetWidth;          // 애니메이션 재시작
+      el.tapEmoji.classList.add('levelup');
+      toast('🎉 ' + t.step.name + ' 개시!');
+      buzz(24);
+    }
+  }
+
+  /* ---------- 스킨 고르기 ---------- */
+
+  var skinSig = '';
+
+  function skinRow(kind, list, rowEl, nowEl, ladderEl) {
+    var cur = kind === 'tap' ? Game.tapSkin() : Game.crowdSkin();
+
+    if (!rowEl.children.length) {
+      list.forEach(function (k) {
+        var b = document.createElement('button');
+        b.className = 'skin';
+        b.dataset.skin = k.id;
+        b.innerHTML = '<span class="skin-ic"></span><span class="skin-nm"></span>';
+        b.querySelector('.skin-ic').textContent = k.icon;
+        b.querySelector('.skin-nm').textContent = k.name;
+        b.addEventListener('click', function () {
+          if (Game.setSkin(kind, k.id)) {
+            lookSig = '';                 // 모양을 즉시 새로 그린다
+            skinSig = '';
+            if (kind === 'crowd') Scene.clear();
+            buzz(12);
+            toast(k.name + ' 적용!');
+            State.save();
+            refresh(true);
+          }
+        });
+        rowEl.appendChild(b);
+      });
+    }
+
+    Array.prototype.forEach.call(rowEl.children, function (b) {
+      b.classList.toggle('on', b.dataset.skin === cur.id);
+    });
+
+    nowEl.textContent = cur.name;
+
+    // 이 스킨의 단계표 — 지금 어디까지 왔는지 보여준다
+    if (kind === 'tap') {
+      var t = Game.tapStep();
+      ladderEl.innerHTML = cur.steps.map(function (st, i) {
+        var cls = i < t.index ? 'done' : (i === t.index ? 'now' : '');
+        return '<span class="rung ' + cls + '" title="' + st.name + '">' + st.icon + '</span>';
+      }).join('');
+      var nx = Game.nextTapStep();
+      ladderEl.innerHTML += '<span class="rung-note">' + (nx
+        ? '다음 · ' + nx.step.name + ' (탭 수익 ' + Fmt.won(nx.step.at) + ')'
+        : '마지막 단계입니다') + '</span>';
+    } else {
+      var ct = Game.crowdTier();
+      ladderEl.innerHTML = cur.tiers.map(function (tr, i) {
+        var cls = i < ct.index ? 'done' : (i === ct.index ? 'now' : '');
+        return '<span class="rung ' + cls + '">' + tr.cast[0] + '</span>';
+      }).join('');
+      var nxt = cur.tiers[ct.index + 1];
+      ladderEl.innerHTML += '<span class="rung-note">' + (nxt
+        ? '다음 등급 · 초당 ' + Fmt.won(nxt.at)
+        : '마지막 등급입니다') + '</span>';
+    }
+  }
+
+  function renderSkins() {
+    var s = State.get();
+    var sig = s.tapSkin + '/' + s.crowdSkin + '/' +
+              Game.tapStep().index + '/' + Game.crowdTier().index;
+    if (sig === skinSig) return;
+    skinSig = sig;
+    skinRow('tap', Data.TAP_SKINS, el.tapSkinRow, el.tapSkinNow, el.tapLadder);
+    skinRow('crowd', Data.CROWD_SKINS, el.crowdSkinRow, el.crowdSkinNow, el.crowdLadder);
   }
 
   /* ---------- 매크로 안내 ---------- */
@@ -544,7 +650,7 @@ var UI = (function () {
     else if (currentTab === 'upgrade') renderUpgrades();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') renderAchievements();
-    else if (currentTab === 'settings') renderStats();
+    else if (currentTab === 'settings') { renderStats(); renderSkins(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 
@@ -663,6 +769,6 @@ var UI = (function () {
     showDaily: showDaily,
     tickWorld: tickWorld,
     toast: toast,
-    invalidate: function () { sig = {}; buffSig = ''; }
+    invalidate: function () { sig = {}; buffSig = ''; lookSig = ''; skinSig = ''; }
   };
 })();

@@ -37,8 +37,8 @@
     <section class="tab-page" data-page="shop">
       <div class="tap-zone" id="tapZone">
         <div class="tap-target" id="tapTarget">
-          <div class="tap-emoji">🍢</div>
-          <div class="tap-label">터치해서 조리</div>
+          <div class="tap-emoji" id="tapEmoji">🍢</div>
+          <div class="tap-label" id="tapLabel">어묵 꼬치</div>
           <div class="tap-power" id="tapPower">+1 원</div>
         </div>
         <div class="combo" id="combo" hidden>
@@ -104,6 +104,27 @@
 
     <!-- 설정 탭 -->
     <section class="tab-page" data-page="settings" hidden>
+      <h2 class="section-title">스킨</h2>
+      <p class="hint">고른 스킨 안에서, 수익이 오를수록 모양이 올라갑니다.</p>
+
+      <div class="card skin-card">
+        <div class="skin-head">
+          <b>조리 음식</b>
+          <span class="skin-now" id="tapSkinNow"></span>
+        </div>
+        <div class="skin-row" id="tapSkinRow"></div>
+        <div class="ladder" id="tapLadder"></div>
+      </div>
+
+      <div class="card skin-card">
+        <div class="skin-head">
+          <b>가게 앞 손님</b>
+          <span class="skin-now" id="crowdSkinNow"></span>
+        </div>
+        <div class="skin-row" id="crowdSkinRow"></div>
+        <div class="ladder" id="crowdLadder"></div>
+      </div>
+
       <h2 class="section-title">통계</h2>
       <div class="card stats" id="statsBox"></div>
       <h2 class="section-title">설정</h2>
@@ -113,7 +134,7 @@
         <button class="btn" id="importBtn">세이브 불러오기</button>
         <button class="btn danger" id="resetBtn">데이터 전체 삭제</button>
       </div>
-      <p class="hint small center">v1.2.0 · 자동 저장 10초 간격</p>
+      <p class="hint small center">v1.3.0 · 자동 저장 10초 간격</p>
     </section>
 
   </main>

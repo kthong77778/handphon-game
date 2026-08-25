@@ -319,6 +319,69 @@ var Game = (function () {
     return { value: v, blocked: '' };
   }
 
+  /* ---------- 스킨 & 등급 ---------- */
+
+  var TAP_SKIN_BY_ID = {};
+  Data.TAP_SKINS.forEach(function (k) { TAP_SKIN_BY_ID[k.id] = k; });
+
+  var CROWD_SKIN_BY_ID = {};
+  Data.CROWD_SKINS.forEach(function (k) { CROWD_SKIN_BY_ID[k.id] = k; });
+
+  /** 버프·콤보를 뺀 순수 탭 수익. 등급이 버프 때문에 오르내리면 안 된다. */
+  function tapBaseValue() {
+    var c = calc();
+    return c.tapBase * c.stat + perSec(true) * c.tapPct;
+  }
+
+  function tapSkin() {
+    return TAP_SKIN_BY_ID[S().tapSkin] || Data.TAP_SKINS[0];
+  }
+
+  function crowdSkin() {
+    return CROWD_SKIN_BY_ID[S().crowdSkin] || Data.CROWD_SKINS[0];
+  }
+
+  /** 지금 조리하는 메뉴 (0부터 시작하는 단계 번호 포함) */
+  function tapStep() {
+    var steps = tapSkin().steps;
+    var v = tapBaseValue();
+    var i = 0;
+    for (var k = 0; k < steps.length; k++) {
+      if (v >= steps[k].at) i = k;
+    }
+    return { index: i, total: steps.length, step: steps[i] };
+  }
+
+  /** 다음 메뉴까지 얼마가 더 필요한가 (마지막 단계면 null) */
+  function nextTapStep() {
+    var t = tapStep();
+    var steps = tapSkin().steps;
+    if (t.index >= steps.length - 1) return null;
+    var nx = steps[t.index + 1];
+    return { step: nx, need: Math.max(0, nx.at - tapBaseValue()) };
+  }
+
+  /** 지금 거리에 나올 손님 후보들 */
+  function crowdTier() {
+    var tiers = crowdSkin().tiers;
+    var ps = perSec(true);
+    var i = 0;
+    for (var k = 0; k < tiers.length; k++) {
+      if (ps >= tiers[k].at) i = k;
+    }
+    return { index: i, total: tiers.length, cast: tiers[i].cast };
+  }
+
+  function setSkin(kind, id) {
+    var list = kind === 'tap' ? Data.TAP_SKINS : Data.CROWD_SKINS;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id !== id) continue;
+      S()[kind === 'tap' ? 'tapSkin' : 'crowdSkin'] = id;
+      return true;
+    }
+    return false;
+  }
+
   /* ---------- 해금 조건 ---------- */
   function genUnlocked(id) {
     var idx = Data.GENERATORS.findIndex(function (g) { return g.id === id; });
@@ -672,6 +735,13 @@ var Game = (function () {
     boostReady: boostReady,
     startBoost: startBoost,
     dailyReady: dailyReady,
+    tapBaseValue: tapBaseValue,
+    tapSkin: tapSkin,
+    crowdSkin: crowdSkin,
+    tapStep: tapStep,
+    nextTapStep: nextTapStep,
+    crowdTier: crowdTier,
+    setSkin: setSkin,
     claimDaily: claimDaily
   };
 })();
