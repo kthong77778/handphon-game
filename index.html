@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#141024">
+<meta name="description" content="분식집을 키우는 방치형 모바일 게임">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>분식집 키우기 - 방치형</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍢</text></svg>">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- 상단: 재화 표시 -->
+  <header id="hud">
+    <div class="hud-main">
+      <div class="money" id="money">0 원</div>
+      <div class="rate" id="rate">초당 0 원</div>
+    </div>
+    <div class="hud-sub">
+      <span class="chip" id="fameChip">✨ 명성 0</span>
+      <span class="chip" id="multChip">×1.00</span>
+    </div>
+  </header>
+
+  <!-- 본문 -->
+  <main id="view">
+
+    <!-- 가게 탭 -->
+    <section class="tab-page" data-page="shop">
+      <div class="tap-zone" id="tapZone">
+        <div class="tap-target" id="tapTarget">
+          <div class="tap-emoji">🍢</div>
+          <div class="tap-label">터치해서 조리</div>
+          <div class="tap-power" id="tapPower">+1 원</div>
+        </div>
+      </div>
+      <div class="section-head">
+        <h2 class="section-title">설비 &amp; 직원</h2>
+        <div class="buy-amt" id="buyAmt">
+          <button data-amt="1" class="active">×1</button>
+          <button data-amt="10">×10</button>
+          <button data-amt="max">최대</button>
+        </div>
+      </div>
+      <div class="list" id="genList"></div>
+    </section>
+
+    <!-- 업그레이드 탭 -->
+    <section class="tab-page" data-page="upgrade" hidden>
+      <h2 class="section-title">업그레이드</h2>
+      <p class="hint" id="upgradeHint"></p>
+      <div class="list" id="upgradeList"></div>
+    </section>
+
+    <!-- 환생 탭 -->
+    <section class="tab-page" data-page="prestige" hidden>
+      <h2 class="section-title">재개업 (환생)</h2>
+      <div class="card prestige-card">
+        <p class="hint">
+          가게를 정리하고 처음부터 다시 시작합니다.<br>
+          돈 · 설비 · 업그레이드는 모두 사라지지만,
+          <b>명성</b>은 영구히 남아 모든 수익을 늘려줍니다.
+        </p>
+        <div class="prestige-stat">
+          <div><span class="k">보유 명성</span><span class="v" id="pFameNow">0</span></div>
+          <div><span class="k">획득 예정</span><span class="v hl" id="pFameGain">0</span></div>
+          <div><span class="k">환생 후 배율</span><span class="v" id="pMultNext">×1.00</span></div>
+        </div>
+        <button class="btn big danger" id="prestigeBtn">재개업하기</button>
+        <p class="hint small" id="prestigeReq"></p>
+      </div>
+      <h2 class="section-title">명성 상점</h2>
+      <div class="list" id="fameShopList"></div>
+    </section>
+
+    <!-- 도전과제 탭 -->
+    <section class="tab-page" data-page="achv" hidden>
+      <h2 class="section-title">도전과제</h2>
+      <p class="hint">달성할 때마다 모든 수익이 <b>+1%</b> 영구 증가합니다.</p>
+      <div class="list" id="achvList"></div>
+    </section>
+
+    <!-- 설정 탭 -->
+    <section class="tab-page" data-page="settings" hidden>
+      <h2 class="section-title">통계</h2>
+      <div class="card stats" id="statsBox"></div>
+      <h2 class="section-title">설정</h2>
+      <div class="card">
+        <button class="btn" id="saveBtn">지금 저장</button>
+        <button class="btn" id="exportBtn">세이브 내보내기</button>
+        <button class="btn" id="importBtn">세이브 불러오기</button>
+        <button class="btn danger" id="resetBtn">데이터 전체 삭제</button>
+      </div>
+      <p class="hint small center">v1.0.0 · 자동 저장 10초 간격</p>
+    </section>
+
+  </main>
+
+  <!-- 하단 탭바 -->
+  <nav id="tabbar">
+    <button class="tab active" data-tab="shop"><span>🏪</span>가게</button>
+    <button class="tab" data-tab="upgrade"><span>⬆️</span>업그레이드<i class="dot" id="dotUpgrade" hidden></i></button>
+    <button class="tab" data-tab="prestige"><span>✨</span>환생<i class="dot" id="dotPrestige" hidden></i></button>
+    <button class="tab" data-tab="achv"><span>🏆</span>도전과제</button>
+    <button class="tab" data-tab="settings"><span>⚙️</span>설정</button>
+  </nav>
+
+</div>
+
+<!-- 오프라인 수익 모달 -->
+<div class="modal" id="offlineModal" hidden>
+  <div class="modal-box">
+    <div class="modal-emoji">😴</div>
+    <h3>다녀오셨어요!</h3>
+    <p id="offlineText"></p>
+    <button class="btn big" id="offlineOk">수령하기</button>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast" hidden></div>
+
+<script src="assets/js/format.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/state.js"></script>
+<script src="assets/js/game.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

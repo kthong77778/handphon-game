@@ -1,0 +1,444 @@
+/* 화면 그리기 / 입력 처리 */
+var UI = (function () {
+
+  var el = {};
+  var currentTab = 'shop';
+  var buyAmt = 1;          // 1 | 10 | 'max'
+  var sig = {};            // 목록 재생성 여부 판단용 서명
+  var toastTimer = null;
+
+  function $(id) { return document.getElementById(id); }
+
+  function cache() {
+    ['money', 'rate', 'fameChip', 'multChip', 'tapZone', 'tapTarget', 'tapPower',
+     'genList', 'upgradeList', 'upgradeHint', 'fameShopList', 'achvList', 'statsBox',
+     'pFameNow', 'pFameGain', 'pMultNext', 'prestigeBtn', 'prestigeReq',
+     'dotUpgrade', 'dotPrestige', 'buyAmt', 'toast',
+     'offlineModal', 'offlineText', 'offlineOk',
+     'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
+      el[id] = $(id);
+    });
+  }
+
+  /* ---------- 공통 위젯 ---------- */
+
+  function toast(msg) {
+    el.toast.textContent = msg;
+    el.toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.toast.hidden = true; }, 1800);
+  }
+
+  function floatText(x, y, text) {
+    var d = document.createElement('div');
+    d.className = 'float';
+    d.textContent = text;
+    d.style.left = x + 'px';
+    d.style.top = y + 'px';
+    el.tapZone.appendChild(d);
+    setTimeout(function () { d.remove(); }, 900);
+  }
+
+  function buzz(ms) {
+    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+  }
+
+  /* ---------- 아이템 행 만들기 ---------- */
+
+  function makeItem(iconText) {
+    var row = document.createElement('div');
+    row.className = 'item';
+    row.innerHTML =
+      '<div class="item-icon"></div>' +
+      '<div class="item-body">' +
+        '<div class="item-name"><span class="nm"></span><span class="item-lv" hidden></span></div>' +
+        '<div class="item-desc"></div>' +
+      '</div>' +
+      '<div class="item-cost"></div>';
+    row.querySelector('.item-icon').textContent = iconText;
+    return row;
+  }
+
+  function parts(row) {
+    return {
+      icon: row.querySelector('.item-icon'),
+      nm: row.querySelector('.nm'),
+      lv: row.querySelector('.item-lv'),
+      desc: row.querySelector('.item-desc'),
+      cost: row.querySelector('.item-cost')
+    };
+  }
+
+  /* ---------- 설비 목록 ---------- */
+
+  var genRows = {};
+
+  function buildGenList() {
+    el.genList.innerHTML = '';
+    genRows = {};
+    Data.GENERATORS.forEach(function (g) {
+      var row = makeItem(g.icon);
+      row.dataset.gen = g.id;
+      row.addEventListener('click', function () { onBuyGen(g.id); });
+      el.genList.appendChild(row);
+      genRows[g.id] = { row: row, p: parts(row) };
+    });
+  }
+
+  function visibleGenCount() {
+    var last = 0;
+    Data.GENERATORS.forEach(function (g, i) {
+      if (Game.genUnlocked(g.id)) last = i;
+    });
+    return Math.min(Data.GENERATORS.length, last + 2); // 다음 설비 1개까지 미리보기
+  }
+
+  function amountFor(id) {
+    if (buyAmt === 'max') return Math.max(1, Game.maxAffordable(id));
+    return buyAmt;
+  }
+
+  function updateGenList() {
+    var money = State.get().money;
+    var visible = visibleGenCount();
+
+    Data.GENERATORS.forEach(function (g, i) {
+      var r = genRows[g.id];
+      if (!r) return;
+      if (i >= visible) { r.row.hidden = true; return; }
+      r.row.hidden = false;
+
+      var count = Game.genCount(g.id);
+      var unlocked = Game.genUnlocked(g.id);
+      var amt = amountFor(g.id);
+      var cost = Game.genCost(g.id, amt);
+      var canBuy = unlocked && money >= cost;
+
+      r.p.nm.textContent = unlocked ? g.name : '???';
+      if (count > 0) {
+        r.p.lv.hidden = false;
+        r.p.lv.textContent = count + '개';
+      } else {
+        r.p.lv.hidden = true;
+      }
+
+      if (!unlocked) {
+        r.p.desc.textContent = '이전 설비를 1개 구매하면 열립니다';
+      } else if (count > 0) {
+        r.p.desc.textContent = '초당 ' + Fmt.rate(Game.genRate(g.id)) + '원 (전체의 ' + sharePct(g.id) + ')';
+      } else {
+        r.p.desc.textContent = g.desc;
+      }
+
+      r.p.cost.innerHTML = Fmt.num(cost) + '<small>' +
+        (buyAmt === 'max' ? (canBuy ? '×' + amt : '×1') : '×' + amt) + '</small>';
+      r.p.cost.className = 'item-cost ' + (canBuy ? 'ok' : 'no');
+      r.row.className = 'item' + (canBuy ? ' buyable' : '') + (unlocked ? '' : ' locked');
+    });
+  }
+
+  function sharePct(id) {
+    var total = Game.perSec();
+    if (total <= 0) return '0%';
+    return Math.round(Game.genRate(id) / total * 100) + '%';
+  }
+
+  function onBuyGen(id) {
+    if (!Game.genUnlocked(id)) { toast('아직 잠겨 있습니다'); return; }
+    var amt = amountFor(id);
+    if (buyAmt === 'max') {
+      amt = Game.maxAffordable(id);
+      if (amt < 1) { toast('돈이 부족합니다'); return; }
+    }
+    if (Game.buyGen(id, amt)) {
+      buzz(8);
+      refresh(true);
+    } else {
+      toast('돈이 부족합니다');
+    }
+  }
+
+  /* ---------- 업그레이드 목록 ---------- */
+
+  function renderUpgrades() {
+    var list = Game.availableUpgrades();
+    var newSig = list.map(function (u) { return u.id; }).join(',');
+
+    if (sig.up !== newSig) {
+      sig.up = newSig;
+      el.upgradeList.innerHTML = '';
+      list.forEach(function (u) {
+        var row = makeItem(u.icon);
+        row.dataset.up = u.id;
+        var p = parts(row);
+        p.nm.textContent = u.name;
+        p.desc.textContent = u.desc;
+        row.addEventListener('click', function () {
+          if (Game.buyUpgrade(u.id)) {
+            buzz(12);
+            toast(u.name + ' 구매!');
+            refresh(true);
+          } else {
+            toast('돈이 부족합니다');
+          }
+        });
+        el.upgradeList.appendChild(row);
+      });
+      el.upgradeHint.textContent = list.length
+        ? '한 번만 구매하면 영구적으로 적용됩니다. (환생 시 초기화)'
+        : '조리를 더 하거나 설비를 늘리면 새 업그레이드가 열립니다.';
+    }
+
+    var money = State.get().money;
+    Array.prototype.forEach.call(el.upgradeList.children, function (row) {
+      var u = Game.UP_BY_ID[row.dataset.up];
+      if (!u) return;
+      var ok = money >= u.cost;
+      var costEl = row.querySelector('.item-cost');
+      costEl.textContent = Fmt.num(u.cost);
+      costEl.className = 'item-cost ' + (ok ? 'ok' : 'no');
+      row.className = 'item' + (ok ? ' buyable' : '');
+    });
+  }
+
+  /* ---------- 명성 상점 ---------- */
+
+  function renderFameShop() {
+    var s = State.get();
+    var newSig = Data.FAME_SHOP.map(function (f) { return Game.fameLv(f.id); }).join(',');
+
+    if (sig.fame !== newSig) {
+      sig.fame = newSig;
+      el.fameShopList.innerHTML = '';
+      Data.FAME_SHOP.forEach(function (f) {
+        var row = makeItem(f.icon);
+        row.dataset.fame = f.id;
+        var p = parts(row);
+        var lv = Game.fameLv(f.id);
+        p.nm.textContent = f.name;
+        p.lv.hidden = false;
+        p.lv.textContent = 'Lv.' + lv + '/' + f.max;
+        p.desc.textContent = f.desc;
+        row.addEventListener('click', function () {
+          if (Game.fameLv(f.id) >= f.max) { toast('이미 최대 레벨입니다'); return; }
+          if (Game.buyFame(f.id)) {
+            buzz(12);
+            toast(f.name + ' 강화!');
+            refresh(true);
+          } else {
+            toast('명성이 부족합니다');
+          }
+        });
+        el.fameShopList.appendChild(row);
+      });
+    }
+
+    Array.prototype.forEach.call(el.fameShopList.children, function (row) {
+      var f = Game.FAME_BY_ID[row.dataset.fame];
+      if (!f) return;
+      var lv = Game.fameLv(f.id);
+      var maxed = lv >= f.max;
+      var cost = Game.fameCost(f.id, lv);
+      var ok = !maxed && s.fame >= cost;
+      var costEl = row.querySelector('.item-cost');
+      costEl.innerHTML = maxed ? 'MAX' : ('✨' + Fmt.num(cost));
+      costEl.className = 'item-cost ' + (maxed ? '' : (ok ? 'ok' : 'no'));
+      row.className = 'item' + (ok ? ' buyable' : '') + (maxed ? ' owned' : '');
+    });
+  }
+
+  /* ---------- 도전과제 ---------- */
+
+  function renderAchievements() {
+    var s = State.get();
+    var done = Object.keys(s.achievements).length;
+    if (sig.achv === done) return;
+    sig.achv = done;
+
+    el.achvList.innerHTML = '';
+    Data.ACHIEVEMENTS.forEach(function (a) {
+      var got = !!s.achievements[a.id];
+      var row = makeItem(got ? a.icon : '🔒');
+      var p = parts(row);
+      p.nm.textContent = a.name;
+      p.desc.textContent = a.desc;
+      p.cost.innerHTML = got ? '<span class="achv-check">✔</span>' : '<small>+1%</small>';
+      row.className = 'item ' + (got ? 'achv-done' : 'achv-locked');
+      el.achvList.appendChild(row);
+    });
+  }
+
+  /* ---------- 환생 화면 ---------- */
+
+  function renderPrestige() {
+    var s = State.get();
+    var gain = Game.fameGain();
+
+    el.pFameNow.textContent = Fmt.num(s.fame);
+    el.pFameGain.textContent = '+' + Fmt.num(gain);
+
+    var nextMult = (1 + 0.02 * (s.fame + gain)) *
+                   (1 + 0.01 * Game.achievementCount()) *
+                   Math.pow(1.5, Game.fameLv('f_mult'));
+    el.pMultNext.textContent = Fmt.mult(nextMult);
+
+    el.prestigeBtn.disabled = gain <= 0;
+    el.prestigeBtn.textContent = gain > 0 ? ('재개업하고 명성 ' + Fmt.num(gain) + ' 받기') : '아직 재개업할 수 없습니다';
+
+    if (gain <= 0) {
+      var need = Game.PRESTIGE_BASE - s.runEarned;
+      el.prestigeReq.textContent = '이번 회차에 ' + Fmt.won(Math.max(0, need)) + '을 더 벌면 재개업할 수 있습니다.';
+    } else {
+      el.prestigeReq.textContent = '다음 명성까지 ' +
+        Fmt.won(Math.max(0, Game.nextFameAt() - s.runEarned)) + ' 남음.';
+    }
+  }
+
+  /* ---------- 통계 ---------- */
+
+  function renderStats() {
+    var s = State.get();
+    var rows = [
+      ['보유 금액', Fmt.won(s.money)],
+      ['초당 수익', Fmt.won(Game.perSec())],
+      ['탭 수익', Fmt.won(Game.tapValue())],
+      ['전체 배율', Fmt.mult(Game.globalMult())],
+      ['이번 회차 매출', Fmt.won(s.runEarned)],
+      ['전체 누적 매출', Fmt.won(s.totalEarned)],
+      ['총 조리 횟수', Fmt.comma(s.taps) + '회'],
+      ['보유 명성', Fmt.num(s.fame)],
+      ['재개업 횟수', Fmt.comma(s.prestiges) + '회'],
+      ['도전과제', Game.achievementCount() + ' / ' + Data.ACHIEVEMENTS.length],
+      ['오프라인 인정 시간', Fmt.time(Game.offlineCapSeconds())],
+      ['오프라인 효율', Math.round(Game.offlineEfficiency() * 100) + '%'],
+      ['총 플레이 시간', Fmt.time(s.playTime)]
+    ];
+    el.statsBox.innerHTML = rows.map(function (r) {
+      return '<div class="stat-row"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>';
+    }).join('');
+  }
+
+  /* ---------- HUD ---------- */
+
+  function updateHud() {
+    var s = State.get();
+    el.money.textContent = Fmt.won(s.money);
+    el.rate.textContent = '초당 ' + Fmt.rate(Game.perSec()) + ' 원';
+    el.fameChip.textContent = '✨ 명성 ' + Fmt.num(s.fame);
+    el.multChip.textContent = Fmt.mult(Game.globalMult());
+    el.tapPower.textContent = '+' + Fmt.num(Game.tapValue()) + ' 원';
+
+    el.dotUpgrade.hidden = !Game.hasAffordableUpgrade();
+    el.dotPrestige.hidden = !(Game.fameGain() > 0 || Game.hasAffordableFame());
+  }
+
+  /* ---------- 탭 전환 ---------- */
+
+  function showTab(name) {
+    currentTab = name;
+    Array.prototype.forEach.call(document.querySelectorAll('.tab-page'), function (p) {
+      p.hidden = p.dataset.page !== name;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#tabbar .tab'), function (b) {
+      b.classList.toggle('active', b.dataset.tab === name);
+    });
+    $('view').scrollTop = 0;
+    refresh(true);
+  }
+
+  /* ---------- 전체 갱신 ---------- */
+
+  function refresh(force) {
+    updateHud();
+    if (currentTab === 'shop') updateGenList();
+    else if (currentTab === 'upgrade') renderUpgrades();
+    else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
+    else if (currentTab === 'achv') renderAchievements();
+    else if (currentTab === 'settings') renderStats();
+    if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
+  }
+
+  /* ---------- 오프라인 모달 ---------- */
+
+  function showOffline(reward, onOk) {
+    var lost = reward.seconds - reward.capped;
+    var txt = '자리를 비운 ' + Fmt.time(reward.seconds) + ' 동안<br>' +
+              '<b>' + Fmt.won(reward.gain) + '</b>을 벌었습니다.';
+    if (lost > 60) {
+      txt += '<br><span style="font-size:12px">(최대 ' + Fmt.time(reward.capped) +
+             '까지만 인정 — 명성 상점에서 늘릴 수 있어요)</span>';
+    }
+    el.offlineText.innerHTML = txt;
+    el.offlineModal.hidden = false;
+    el.offlineOk.onclick = function () {
+      el.offlineModal.hidden = true;
+      onOk();
+    };
+  }
+
+  /* ---------- 입력 바인딩 ---------- */
+
+  function bind(handlers) {
+    // 탭 클릭 (조리)
+    var press = function (ev) {
+      ev.preventDefault();
+      var gained = handlers.onTap();
+      el.tapTarget.classList.add('hit');
+      setTimeout(function () { el.tapTarget.classList.remove('hit'); }, 70);
+
+      var rect = el.tapZone.getBoundingClientRect();
+      var pt = (ev.changedTouches && ev.changedTouches[0]) || ev;
+      var x = (pt.clientX || rect.width / 2) - rect.left;
+      var y = (pt.clientY || rect.height / 2) - rect.top;
+      floatText(x, y, '+' + Fmt.num(gained));
+      buzz(6);
+      updateHud();
+    };
+    // pointerdown 하나로 터치/마우스를 모두 처리 (중복 입력 방지)
+    if (window.PointerEvent) {
+      el.tapTarget.addEventListener('pointerdown', press);
+    } else {
+      el.tapTarget.addEventListener('touchstart', press, { passive: false });
+      el.tapTarget.addEventListener('mousedown', press);
+    }
+
+    // 하단 탭
+    Array.prototype.forEach.call(document.querySelectorAll('#tabbar .tab'), function (b) {
+      b.addEventListener('click', function () { showTab(b.dataset.tab); });
+    });
+
+    // 구매 수량
+    Array.prototype.forEach.call(el.buyAmt.children, function (b) {
+      b.addEventListener('click', function () {
+        buyAmt = b.dataset.amt === 'max' ? 'max' : Number(b.dataset.amt);
+        Array.prototype.forEach.call(el.buyAmt.children, function (o) {
+          o.classList.toggle('active', o === b);
+        });
+        updateGenList();
+      });
+    });
+
+    el.prestigeBtn.addEventListener('click', handlers.onPrestige);
+    el.saveBtn.addEventListener('click', handlers.onSave);
+    el.exportBtn.addEventListener('click', handlers.onExport);
+    el.importBtn.addEventListener('click', handlers.onImport);
+    el.resetBtn.addEventListener('click', handlers.onReset);
+  }
+
+  function init(handlers) {
+    cache();
+    buildGenList();
+    bind(handlers);
+    showTab('shop');
+  }
+
+  return {
+    init: init,
+    refresh: refresh,
+    updateHud: updateHud,
+    showTab: showTab,
+    showOffline: showOffline,
+    toast: toast,
+    invalidate: function () { sig = {}; }
+  };
+})();
