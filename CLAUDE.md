@@ -22,7 +22,7 @@
 node tests/logic.js         # 게임 로직 133항목 (의존성 없음)
 node tests/macro-stress.js  # 매크로 오탐률 — 사람 오탐 0% 가 합격선
 node tests/progression.js   # 진행 속도 — 밸런스를 건드렸으면 반드시 확인
-node tests/browser.js       # 실제 브라우저 124항목 (npm i -D playwright 필요)
+node tests/browser.js       # 실제 브라우저 (npm i -D playwright 필요)
 node tests/browser.js 도둑   # 이름으로 스위트 하나만
 ```
 
@@ -59,7 +59,15 @@ node tests/browser.js 도둑   # 이름으로 스위트 하나만
    값을 걸러낸다. 필드를 추가하면 `numKeys` 에 넣고, 배열·문자열은 따로 검증한다.
    구버전 세이브로도 게임이 도는지 `tests/logic.js` 가 확인한다.
 
-8. **테스트에 개수를 하드코딩하지 말 것** — 명성상점·도전과제·스킨 개수는 `Data` 에서
+8. **`confirm` · `prompt` 를 쓰지 말 것** — 샌드박스 iframe(아티팩트 등)에서는 조용히
+   막힌다. 실제로 '데이터 전체 삭제' 가 눌러도 아무 일이 없었다. `UI.ask()` 와
+   `UI.textDialog()` 를 쓴다.
+
+9. **가게 탭은 스크롤되지 않는다** — 위(조리)와 아래(시트)로 나뉘어 있고, 목록은
+   `.sheet-body` 안에서만 스크롤된다. `#view` 에는 `locked` 클래스가 붙는다.
+   시트를 접을 때 `scrollTop` 을 되돌리지 않으면 스크롤 감지가 곧바로 다시 펼친다.
+
+10. **테스트에 개수를 하드코딩하지 말 것** — 명성상점·도전과제·스킨 개수는 `Data` 에서
    읽는다. 항목을 늘릴 때마다 테스트가 깨지면 안 된다.
 
 ## 눈으로 확인할 것

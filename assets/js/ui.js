@@ -21,6 +21,9 @@ var UI = (function () {
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'tapSkinRow', 'tapSkinNow', 'tapLadder',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
+     'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
+     'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
+     'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
       el[id] = $(id);
     });
@@ -828,7 +831,9 @@ var UI = (function () {
     Array.prototype.forEach.call(document.querySelectorAll('#tabbar .tab'), function (b) {
       b.classList.toggle('active', b.dataset.tab === name);
     });
-    $('view').scrollTop = 0;
+    var view = $('view');
+    view.scrollTop = 0;
+    view.classList.toggle('locked', name === 'shop');
     refresh(true);
   }
 
@@ -842,6 +847,128 @@ var UI = (function () {
     else if (currentTab === 'achv') { renderHallOfFame(); renderAchievements(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
+  }
+
+  /* ---------- 확인 · 텍스트 모달 ----------
+     샌드박스 iframe(아티팩트 등)에서는 confirm/prompt 가 조용히 막힌다.
+     실제로 '데이터 전체 삭제' 가 눌러도 아무 일이 없었다. 직접 만든 모달을 쓴다. */
+
+  /**
+   * @param {{emoji?:string, title:string, text:string, ok?:string, cancel?:string, danger?:boolean}} o
+   * @param {function} onYes 확인을 눌렀을 때
+   */
+  function ask(o, onYes) {
+    el.askEmoji.textContent = o.emoji || '❓';
+    el.askTitle.textContent = o.title;
+    el.askText.innerHTML = o.text;
+    el.askOk.textContent = o.ok || '확인';
+    el.askCancel.textContent = o.cancel || '취소';
+    el.askOk.className = 'btn big' + (o.danger ? ' danger' : '');
+    el.askModal.hidden = false;
+
+    function close() {
+      el.askModal.hidden = true;
+      el.askOk.onclick = el.askCancel.onclick = null;
+    }
+    el.askOk.onclick = function () { close(); onYes(); };
+    el.askCancel.onclick = close;
+  }
+
+  /**
+   * @param {{emoji?:string, title:string, desc?:string, value?:string,
+   *          readonly?:boolean, ok?:string, cancel?:string}} o
+   * @param {function(string)} [onOk] 값을 받아 처리 (읽기 전용이면 생략)
+   */
+  function textDialog(o, onOk) {
+    el.textEmoji.textContent = o.emoji || '💾';
+    el.textTitle.textContent = o.title;
+    el.textDesc.innerHTML = o.desc || '';
+    el.textDesc.hidden = !o.desc;
+    el.textInput.value = o.value || '';
+    el.textInput.readOnly = !!o.readonly;
+    el.textOk.textContent = o.ok || '확인';
+    el.textCancel.textContent = o.cancel || '닫기';
+    el.textOk.hidden = !onOk;
+    el.textModal.hidden = false;
+
+    function close() {
+      el.textModal.hidden = true;
+      el.textOk.onclick = el.textCancel.onclick = null;
+    }
+    el.textOk.onclick = function () {
+      var v = el.textInput.value;
+      close();
+      onOk(v);
+    };
+    el.textCancel.onclick = close;
+
+    if (o.readonly) {
+      // 바로 복사할 수 있게 전체 선택해 둔다
+      setTimeout(function () {
+        try { el.textInput.focus(); el.textInput.select(); } catch (e) {}
+      }, 60);
+    }
+  }
+
+  /* ---------- 가게 시트 (위: 조리 / 아래: 목록) ---------- */
+
+  function sheetUp() { return State.get().sheetUp > 0; }
+
+  function setSheet(up, save) {
+    var s = State.get();
+    // 접을 때 목록 스크롤을 되돌린다. 남겨두면 아래 스크롤 감지가 곧바로 다시 펼친다.
+    if (!up && el.sheetBody) el.sheetBody.scrollTop = 0;
+    s.sheetUp = up ? 1 : 0;
+    el.shopPage.classList.toggle('up', !!up);
+    el.sheetHandle.setAttribute('aria-expanded', up ? 'true' : 'false');
+    el.sheetHandle.setAttribute('aria-label', up ? '설비 목록 접기' : '설비 목록 펼치기');
+    el.sheetHint.textContent = up ? '아래로 밀어 접기' : '위로 밀어 더 보기';
+    if (save) State.save();
+  }
+
+  function bindSheet() {
+    var startY = 0, moved = 0, dragging = false;
+
+    function down(ev) {
+      dragging = true;
+      moved = 0;
+      startY = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+      if (el.sheetHandle.setPointerCapture && ev.pointerId !== undefined) {
+        try { el.sheetHandle.setPointerCapture(ev.pointerId); } catch (e) {}
+      }
+    }
+    function move(ev) {
+      if (!dragging) return;
+      var y = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+      moved = y - startY;
+    }
+    function up(ev) {
+      if (!dragging) return;
+      dragging = false;
+      ev.preventDefault();
+      // 살짝 눌렀으면 토글, 확실히 끌었으면 그 방향으로
+      if (moved < -28) setSheet(true, true);
+      else if (moved > 28) setSheet(false, true);
+      else setSheet(!sheetUp(), true);
+      buzz(6);
+    }
+
+    if (window.PointerEvent) {
+      el.sheetHandle.addEventListener('pointerdown', down);
+      el.sheetHandle.addEventListener('pointermove', move);
+      el.sheetHandle.addEventListener('pointerup', up);
+      el.sheetHandle.addEventListener('pointercancel', function () { dragging = false; });
+    } else {
+      el.sheetHandle.addEventListener('touchstart', down, { passive: true });
+      el.sheetHandle.addEventListener('touchmove', move, { passive: true });
+      el.sheetHandle.addEventListener('touchend', up);
+      el.sheetHandle.addEventListener('click', function () { setSheet(!sheetUp(), true); });
+    }
+
+    // 목록을 위로 스크롤해 올리려 하면 자연스럽게 시트가 열린다
+    el.sheetBody.addEventListener('scroll', function () {
+      if (!sheetUp() && el.sheetBody.scrollTop > 24) setSheet(true, true);
+    }, { passive: true });
   }
 
   /* ---------- 오프라인 모달 ---------- */
@@ -947,6 +1074,8 @@ var UI = (function () {
     Scene.init(el.street, el.pops);
     buildGenList();
     bind(handlers);
+    bindSheet();
+    setSheet(sheetUp(), false);
     armGolden();
     armThief();
     showTab('shop');
@@ -959,6 +1088,9 @@ var UI = (function () {
     showTab: showTab,
     showOffline: showOffline,
     showDaily: showDaily,
+    ask: ask,
+    textDialog: textDialog,
+    setSheet: setSheet,
     tickWorld: tickWorld,
     toast: toast,
     invalidate: function () { sig = {}; buffSig = ''; lookSig = ''; skinSig = ''; }

@@ -463,8 +463,11 @@ suite('명예의 전당', async ({ page, ctx, ok, errs }) => {
 
     console.log('\n[3] 실제 환생 후 기록이 남는가');
     await p.click('#tabbar .tab[data-tab="prestige"]'); await p.waitForTimeout(300);
-    p.on('dialog', d => d.accept());
-    await p.click('#prestigeBtn'); await p.waitForTimeout(600);
+    // 환생 확인은 네이티브 confirm 이 아니라 자체 모달이다
+    // (샌드박스 iframe 에서 confirm 이 막혀 '데이터 전체 삭제' 가 안 되던 것을 고치면서 바뀌었다)
+    await p.click('#prestigeBtn'); await p.waitForTimeout(250);
+    ok(!await p.isHidden('#askModal'), '재개업 확인 모달이 뜸');
+    await p.click('#askOk'); await p.waitForTimeout(600);
     await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
     ok(await p.locator('#runBoard .run-row:not(.run-head)').count() === 6, '회차가 하나 늘어남');
     ok(await p.evaluate(() => State.get().runTime) < 5, '회차 시간이 초기화됨');
@@ -676,6 +679,124 @@ suite('세이브', async ({ page, ctx, ok, errs }) => {
       return r === false;
     });
     ok(survives, '저장 실패해도 게임이 죽지 않음');
+});
+
+
+suite('시트 · 모달 · 데이터 삭제', async ({ page, ctx, ok, errs }) => {
+  const p = page;
+  const errors = errs;
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+    await p.evaluate(()=>{const s=State.get();s.money=1e12;Data.GENERATORS.forEach(g=>s.gens[g.id]=30);Game.invalidate();UI.invalidate();UI.refresh(true);});
+    await p.waitForTimeout(400);
+
+    console.log('[1] 화면 분리 & 스크롤바');
+    ok(await p.locator('#shopTop').isVisible(), '위 조리 구간 존재');
+    ok(await p.locator('#shopSheet').isVisible(), '아래 시트 존재');
+    const noPageScroll = await p.evaluate(()=>{
+      const v=document.getElementById('view');
+      return { locked: v.classList.contains('locked'), overflow: getComputedStyle(v).overflowY,
+               canScroll: v.scrollHeight > v.clientHeight + 2 };
+    });
+    ok(noPageScroll.locked && noPageScroll.overflow==='hidden', '가게 탭에서 본문 스크롤 잠김');
+    const bars = await p.evaluate(()=>{
+      const v=document.getElementById('view'), sb=document.getElementById('sheetBody');
+      return { viewBar: v.offsetWidth - v.clientWidth, sheetBar: sb.offsetWidth - sb.clientWidth };
+    });
+    ok(bars.viewBar===0 && bars.sheetBar===0, `스크롤 막대 없음 (본문 ${bars.viewBar}px, 시트 ${bars.sheetBar}px)`);
+    await p.screenshot({ path: path.join(D, 'sheet-down.png') });
+
+    console.log('\n[2] 시트를 올리면 목록이 더 보인다');
+    const before = await p.evaluate(()=>{
+      const items=[...document.querySelectorAll('#genList .item')].filter(e=>!e.hidden);
+      const sb=document.getElementById('sheetBody').getBoundingClientRect();
+      return { h: Math.round(sb.height),
+        visible: items.filter(e=>{const r=e.getBoundingClientRect();return r.top>=sb.top-1 && r.bottom<=sb.bottom+1}).length };
+    });
+    const hb = await p.locator('#sheetHandle').boundingBox();
+    await p.mouse.move(hb.x+hb.width/2, hb.y+hb.height/2);
+    await p.mouse.down(); await p.mouse.move(hb.x+hb.width/2, hb.y-90, {steps:8}); await p.mouse.up();
+    await p.waitForTimeout(500);
+    const after = await p.evaluate(()=>{
+      const items=[...document.querySelectorAll('#genList .item')].filter(e=>!e.hidden);
+      const sb=document.getElementById('sheetBody').getBoundingClientRect();
+      return { h: Math.round(sb.height), up: document.getElementById('shopPage').classList.contains('up'),
+        visible: items.filter(e=>{const r=e.getBoundingClientRect();return r.top>=sb.top-1 && r.bottom<=sb.bottom+1}).length };
+    });
+    ok(after.up, '위로 밀면 시트가 올라감');
+    ok(after.h > before.h, `시트가 커짐 ${before.h}px → ${after.h}px`);
+    ok(after.visible > before.visible, `보이는 항목 ${before.visible}개 → ${after.visible}개`);
+    ok(await p.locator('#tapTarget').isVisible(), '조리 버튼은 계속 보임(접힌 채)');
+    const tb = await p.locator('#tapTarget').boundingBox();
+    ok(tb.width < 120, `조리 버튼이 작아짐 ${Math.round(tb.width)}px`);
+    await p.screenshot({ path: path.join(D, 'sheet-up.png') });
+
+    console.log('\n[3] 접힌 상태에서도 조리가 된다');
+    const m0 = await p.evaluate(()=>State.get().taps);
+    await p.mouse.click(tb.x+tb.width/2, tb.y+tb.height/2);
+    await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>State.get().taps) === m0+1, '접힌 조리 버튼도 눌린다');
+
+    console.log('\n[4] 아래로 밀면 접힌다 / 상태가 남는다');
+    // 시트가 오르내리면 핸들 위치가 바뀐다. 그때마다 다시 잰다.
+    const grab = async () => await p.locator('#sheetHandle').boundingBox();
+    const drag = async (dy) => {
+      const h = await grab();
+      await p.mouse.move(h.x+h.width/2, h.y+h.height/2);
+      await p.mouse.down();
+      await p.mouse.move(h.x+h.width/2, h.y+h.height/2+dy, {steps:8});
+      await p.mouse.up();
+      await p.waitForTimeout(480);
+    };
+    const isUp = () => p.evaluate(()=>document.getElementById('shopPage').classList.contains('up'));
+
+    await drag(90);
+    ok(!await isUp(), '아래로 밀면 접힘');
+    await drag(-90);
+    ok(await isUp(), '다시 위로 밀면 펼쳐짐');
+    await drag(0);
+    ok(!await isUp(), '가볍게 누르면 토글(접힘)');
+    await drag(0);
+    ok(await isUp(), '한 번 더 누르면 토글(펼침)');
+    await p.evaluate(()=>State.save());
+    await p.reload(); await p.waitForTimeout(800);
+    ok(await p.evaluate(()=>document.getElementById('shopPage').classList.contains('up')), '새로고침해도 올린 상태 유지');
+
+    console.log('\n[5] 데이터 전체 삭제가 실제로 실행된다');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(300);
+    await p.evaluate(()=>{ State.get().money = 987654321; State.get().gens.g1 = 42; State.save(); });
+    await p.click('#resetBtn'); await p.waitForTimeout(250);
+    ok(!await p.isHidden('#askModal'), '첫 번째 확인 모달이 뜸');
+    ok((await p.textContent('#askTitle')).includes('삭제'), '문구: ' + await p.textContent('#askTitle'));
+    await p.screenshot({ path: path.join(D, 'ask-reset.png') });
+    await p.click('#askOk'); await p.waitForTimeout(250);
+    ok((await p.textContent('#askTitle')).includes('되돌릴 수 없'), '두 번째 확인이 뜸');
+    await p.click('#askOk'); await p.waitForTimeout(400);
+    const wiped = await p.evaluate(()=>({money:State.get().money, g1:State.get().gens.g1||0, saved:localStorage.getItem('bunsik_idle_save_v1')}));
+    ok(wiped.money===0 && wiped.g1===0, `실제로 삭제됨 (돈 ${wiped.money}, 알바생 ${wiped.g1})`);
+    ok(!wiped.saved, 'localStorage 에서도 지워짐');
+
+    console.log('\n[6] 취소하면 삭제되지 않는다');
+    await p.evaluate(()=>{ State.get().money=555; State.save(); });
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(200);
+    await p.click('#resetBtn'); await p.waitForTimeout(200);
+    await p.click('#askCancel'); await p.waitForTimeout(250);
+    ok(await p.isHidden('#askModal'), '취소하면 닫힘');
+    ok(await p.evaluate(()=>State.get().money) === 555, '데이터 그대로');
+
+    console.log('\n[7] 세이브 코드 내보내기 / 불러오기');
+    await p.click('#exportBtn'); await p.waitForTimeout(300);
+    ok(!await p.isHidden('#textModal'), '코드 모달이 뜸');
+    const code = await p.inputValue('#textInput');
+    ok(code.length > 50, `코드 ${code.length}자 표시`);
+    await p.screenshot({ path: path.join(D, 'text-export.png') });
+    await p.click('#textCancel'); await p.waitForTimeout(200);
+    await p.evaluate(()=>{ State.wipe(); Game.invalidate(); UI.invalidate(); UI.refresh(true); });
+    await p.click('#importBtn'); await p.waitForTimeout(250);
+    await p.fill('#textInput', code);
+    await p.click('#textOk'); await p.waitForTimeout(400);
+    ok(await p.evaluate(()=>State.get().money) === 555, '코드로 복원됨');
 });
 
 

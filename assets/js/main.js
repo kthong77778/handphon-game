@@ -41,16 +41,21 @@
     onPrestige: function () {
       var gain = Game.fameGain();
       if (gain <= 0) return;
-      var msg = '재개업하면 돈 · 설비 · 업그레이드가 모두 사라집니다.\n' +
-                '대신 명성 ' + Fmt.num(gain) + ' 을(를) 영구히 얻습니다.\n\n진행할까요?';
-      if (!confirm(msg)) return;
-      Game.doPrestige();
-      Scene.clear();
-      announceAchievements();
-      UI.invalidate();
-      State.save();
-      UI.showTab('shop');
-      UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
+      UI.ask({
+        emoji: '✨',
+        title: '재개업할까요?',
+        text: '돈 · 설비 · 업그레이드가 모두 사라집니다.<br>' +
+              '대신 <b>명성 ' + Fmt.num(gain) + '</b> 을(를) 영구히 얻습니다.',
+        ok: '재개업하기'
+      }, function () {
+        Game.doPrestige();
+        Scene.clear();
+        announceAchievements();
+        UI.invalidate();
+        State.save();
+        UI.showTab('shop');
+        UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
+      });
     },
 
     onSave: function () {
@@ -60,20 +65,34 @@
     onExport: function () {
       var txt = State.exportText();
       if (!txt) { UI.toast('내보내기에 실패했습니다'); return; }
+      // 클립보드는 권한이 없으면 조용히 실패하므로, 코드는 언제나 눈으로 볼 수 있게 띄운다
+      UI.textDialog({
+        emoji: '💾',
+        title: '세이브 코드',
+        desc: '이 코드를 복사해 두면 다른 기기에서 이어할 수 있습니다.',
+        value: txt,
+        readonly: true
+      });
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(function () {
           UI.toast('세이브 코드를 복사했습니다');
-        }, function () {
-          prompt('아래 코드를 복사해서 보관하세요', txt);
-        });
-      } else {
-        prompt('아래 코드를 복사해서 보관하세요', txt);
+        }, function () {});
       }
     },
 
     onImport: function () {
-      var txt = prompt('세이브 코드를 붙여넣으세요');
-      if (!txt) return;
+      UI.textDialog({
+        emoji: '📥',
+        title: '세이브 불러오기',
+        desc: '내보낸 코드를 붙여넣으세요. 지금 진행 상황은 덮어써집니다.',
+        ok: '불러오기'
+      }, function (txt) {
+        if (!txt || !txt.trim()) return;
+        handlers.applyImport(txt.trim());
+      });
+    },
+
+    applyImport: function (txt) {
       if (State.importText(txt)) {
         Game.invalidate();
         Game.resetCombo();
@@ -88,17 +107,33 @@
     },
 
     onReset: function () {
-      if (!confirm('정말 모든 데이터를 삭제할까요?\n명성과 도전과제까지 전부 사라집니다.')) return;
-      if (!confirm('되돌릴 수 없습니다. 정말 진행할까요?')) return;
-      State.wipe();
-      Game.invalidate();
-      Game.resetCombo();
-      Game.resetGuard();
-      Scene.clear();
-      UI.invalidate();
-      UI.refresh(true);
-      UI.showTab('shop');
-      UI.toast('데이터를 삭제했습니다');
+      UI.ask({
+        emoji: '🗑️',
+        title: '모든 데이터를 삭제할까요?',
+        text: '명성 · 도전과제 · 기록까지 <b>전부</b> 사라집니다.',
+        ok: '삭제하기',
+        danger: true
+      }, function () {
+        // 되돌릴 수 없는 일이라 한 번 더 묻는다
+        UI.ask({
+          emoji: '⚠️',
+          title: '되돌릴 수 없습니다',
+          text: '정말 진행할까요?',
+          ok: '네, 삭제합니다',
+          danger: true
+        }, function () {
+          State.wipe();
+          Game.invalidate();
+          Game.resetCombo();
+          Game.resetGuard();
+          Scene.clear();
+          UI.invalidate();
+          UI.setSheet(false, false);
+          UI.refresh(true);
+          UI.showTab('shop');
+          UI.toast('데이터를 삭제했습니다');
+        });
+      });
     }
   };
 

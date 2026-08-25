@@ -77,7 +77,13 @@ body{
   overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:14px 14px calc(18px + var(--tabbar-h) + var(--safe-b));
   overscroll-behavior:contain;
+  /* 스크롤 막대는 숨긴다 — 좁은 화면에서 내용 위에 겹쳐 보인다 */
+  scrollbar-width:none;
 }
+#view::-webkit-scrollbar{display:none}
+
+/* 가게 탭은 화면을 위(조리)와 아래(시트)로 나눠 쓰므로 본문이 스크롤되지 않는다 */
+#view.locked{overflow:hidden;padding-bottom:0}
 .section-title{
   font-size:13px;font-weight:700;color:var(--dim);
   letter-spacing:.5px;
@@ -820,3 +826,92 @@ body{
   margin:18px 4px 0;flex:0 0 auto;
 }
 .rank-note.hot{color:var(--gold)}
+
+/* ===== 가게 탭: 위(조리) / 아래(시트) 로 나눔 ===== */
+.tab-page.shop{
+  display:flex;flex-direction:column;
+  height:100%;
+  margin:-14px -14px 0;      /* #view 의 패딩을 상쇄해 화면을 꽉 쓴다 */
+  padding:14px 14px 0;
+  min-height:0;
+}
+/* [hidden] 이 이겨야 하므로 display 를 클래스에 넣은 만큼 주의 — 맨 위 규칙이 막아준다 */
+
+.shop-top{
+  flex:0 0 auto;
+  height:var(--top-h,292px);
+  overflow:hidden;
+  transition:height .3s cubic-bezier(.3,.8,.4,1);
+}
+@media (min-height:760px){ .shop-top{--top-h:322px} }
+
+/* 시트를 올리면 조리 구간이 접힌다 */
+.tab-page.shop.up .shop-top{--top-h:118px}
+.tab-page.shop.up .street{opacity:0;transition:opacity .18s}
+.tab-page.shop.up .tap-target{width:92px;height:92px;border-width:2px}
+.tab-page.shop.up .tap-emoji{font-size:34px}
+.tab-page.shop.up .tap-label{display:none}
+.tab-page.shop.up .tap-power{font-size:12px;margin-top:0}
+.tab-page.shop.up .combo{top:2px;width:66px}
+.tab-page.shop.up .combo-x{font-size:17px}
+.tap-target{transition:transform .06s ease,box-shadow .12s ease,width .3s cubic-bezier(.3,.8,.4,1),height .3s cubic-bezier(.3,.8,.4,1)}
+.tap-emoji{transition:font-size .3s cubic-bezier(.3,.8,.4,1)}
+
+/* ===== 시트 ===== */
+.sheet{
+  flex:1 1 auto;
+  display:flex;flex-direction:column;
+  min-height:0;
+  margin:0 -14px;
+  background:linear-gradient(180deg,var(--bg2),var(--bg) 22%);
+  border-top:1px solid var(--line);
+  border-radius:18px 18px 0 0;
+  box-shadow:0 -8px 24px rgba(0,0,0,.35);
+}
+.sheet-handle{
+  flex:0 0 auto;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  width:100%;padding:8px 14px 9px;
+  background:none;border:none;
+  color:var(--txt);font-family:inherit;
+  cursor:grab;
+  touch-action:none;               /* 끌어올릴 때 화면이 같이 움직이지 않게 */
+  -webkit-user-select:none;user-select:none;
+}
+.sheet-handle:active{cursor:grabbing}
+.sheet-handle:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:18px 18px 0 0}
+.sheet-handle .grip{
+  width:38px;height:4px;border-radius:999px;
+  background:rgba(255,255,255,.28);
+  transition:background .15s,width .2s;
+}
+.sheet-handle:active .grip{background:rgba(255,255,255,.5);width:48px}
+.sheet-title{font-size:13px;font-weight:700;letter-spacing:.3px}
+.sheet-hint{font-size:10.5px;color:var(--dim)}
+
+.sheet-body{
+  flex:1 1 auto;min-height:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:0 14px calc(14px + var(--tabbar-h) + var(--safe-b));
+  scrollbar-width:none;
+}
+.sheet-body::-webkit-scrollbar{display:none}
+.sheet-body > .section-head .section-title{margin-top:14px}
+
+/* ===== 세이브 코드 입력칸 ===== */
+.code-box{
+  width:100%;
+  background:var(--bg2);
+  border:1px solid var(--line);
+  border-radius:12px;
+  color:var(--txt);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:12px;line-height:1.5;
+  padding:10px 12px;
+  resize:none;
+  word-break:break-all;
+  -webkit-user-select:text;user-select:text;
+}
+.code-box:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.modal-box .btn + .btn{margin-top:-4px}
