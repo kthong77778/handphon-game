@@ -441,3 +441,111 @@ body{
   background:rgba(255,255,255,.16);
 }
 .streak-dots i.on{background:var(--gold);box-shadow:0 0 8px rgba(255,204,68,.6)}
+
+/* ===== 가게 앞 거리 (손님들이 오가는 곳) ===== */
+.street{
+  position:relative;height:66px;
+  margin:-4px -14px 10px;         /* 화면 끝까지, 가게와 이어지게 */
+  overflow:hidden;
+  /* 가운데에서 가게 불빛이 새어나오고, 아래쪽은 보도 */
+  background:
+    radial-gradient(120% 84% at 50% -14%,rgba(255,204,68,.16),transparent 62%),
+    linear-gradient(180deg,transparent 66%,rgba(58,49,99,.42) 66%,rgba(26,20,48,.92));
+  border-bottom:1px solid rgba(58,49,99,.55);
+}
+/* 보도블럭 결 */
+.street::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:22px;
+  background-image:repeating-linear-gradient(90deg,
+    rgba(255,255,255,.045) 0 1px,transparent 1px 34px);
+}
+/* 가게 앞 바닥에 떨어지는 조명 */
+.street::before{
+  content:'';position:absolute;left:50%;bottom:0;
+  width:200px;height:24px;transform:translateX(-50%);
+  background:radial-gradient(60% 100% at 50% 100%,rgba(255,204,68,.16),transparent 72%);
+}
+
+.walker{
+  position:absolute;left:0;bottom:20px;
+  will-change:transform;
+  line-height:1;
+  z-index:2;
+}
+.walker i{display:block;font-style:normal}
+.walker i.flip{transform:scaleX(-1)}
+.walker .body{
+  display:block;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));
+  animation:hop .42s ease-in-out infinite;
+}
+.walker.hurry .body{animation-duration:.26s}
+.walker.waiting .body{animation-play-state:paused}
+@keyframes hop{
+  0%,100%{transform:translateY(0) rotate(-3deg)}
+  50%{transform:translateY(-5px) rotate(3deg)}
+}
+
+/* 주문 말풍선 */
+.walker .bubble{
+  position:absolute;left:50%;bottom:100%;
+  transform:translateX(-50%);
+  margin-bottom:3px;
+  font-size:15px;text-decoration:none;
+  background:var(--card2);
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:1px 5px;
+  white-space:nowrap;
+  animation:bubbleIn .9s ease-out forwards;
+}
+@keyframes bubbleIn{
+  0%{opacity:0;transform:translateX(-50%) translateY(6px) scale(.7)}
+  18%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  78%{opacity:1}
+  100%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.95)}
+}
+
+/* ===== 조리하면 튀어나오는 음식 ===== */
+.pops{position:absolute;inset:0;pointer-events:none;z-index:4}
+.pop{
+  position:absolute;left:50%;top:48%;
+  font-size:24px;
+  animation:popOut .8s cubic-bezier(.2,.7,.4,1) forwards;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.55));
+}
+@keyframes popOut{
+  0%{opacity:0;transform:translate(-50%,0) scale(.4) rotate(0)}
+  15%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),-96px) scale(1.05) rotate(var(--rot))}
+}
+
+/* 조리 중일 때 냄비에서 김이 오른다 */
+.tap-target{position:relative}
+.steam{
+  position:absolute;top:14px;left:50%;
+  width:9px;height:9px;border-radius:50%;
+  background:rgba(255,255,255,.30);
+  filter:blur(3px);
+  pointer-events:none;
+  animation:steamUp 2.6s ease-out infinite;
+}
+.steam.s2{animation-delay:.85s;margin-left:-15px}
+.steam.s3{animation-delay:1.7s;margin-left:15px}
+@keyframes steamUp{
+  0%{opacity:0;transform:translate(-50%,10px) scale(.5)}
+  25%{opacity:.75}
+  100%{opacity:0;transform:translate(-50%,-42px) scale(2.1)}
+}
+
+/* 매크로로 막혔을 때 */
+.tap-target.blocked{
+  border-color:var(--bad);
+  box-shadow:0 0 34px rgba(248,113,113,.45),inset 0 0 30px rgba(0,0,0,.4);
+}
+.tap-target.blocked .tap-power{color:var(--bad)}
+
+@media (prefers-reduced-motion:reduce){
+  .walker .body,.steam{animation:none}
+  .street{opacity:.7}
+}

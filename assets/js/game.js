@@ -111,6 +111,7 @@ var Game = (function () {
       comboLeft = Math.max(0, comboLeft - dt);
       if (comboLeft === 0) combo = 0;
     }
+    if (restLeft > 0) restLeft = Math.max(0, restLeft - dt);
   }
 
   /* ---------- 콤보 (빠르게 연타하면 붙는 배율) ---------- */
@@ -192,6 +193,98 @@ var Game = (function () {
     return calc().base * (noBuff ? 1 : buffMult());
   }
 
+  /* ---------- 매크로(오토클릭) 방지 ---------- */
+  // 사람을 잘못 막는 쪽이 봇을 놓치는 쪽보다 훨씬 나쁘다.
+  // 그래서 서로 독립적인 신호가 "동시에" 맞을 때만 막고, 벌은 몇 초 쉬는 것으로 끝낸다.
+  //
+  //  1) isTrusted  — 스크립트가 만든 가짜 클릭. 여기서 대부분 걸러진다.
+  //  2) 초당 상한  — 하드웨어 오토클릭이라도 이득을 못 보게 한다.
+  //  3) 간격 + 좌표 — 간격이 기계처럼 고르고 '동시에' 좌표가 픽셀 단위로 붙박이일 때.
+  //     간격만 보면 리듬 타듯 치는 사람이 걸린다. 좌표만 보면 마우스를 안 움직이는
+  //     사람이 걸린다. 둘 다여야 봇이다.
+  var MACRO = {
+    maxPerSec: 14,     // 사람이 낼 수 있는 현실적인 연타 상한
+    sample: 32,        // 판단에 쓸 표본 수
+    maxCv: 0.09,       // 간격의 변동계수(표준편차/평균)가 이보다 작으면 기계적
+    maxSpread: 2,      // 탭 좌표가 이 픽셀 안에서만 움직이면 붙박이
+    rest: 5            // 걸렸을 때 조리가 멈추는 시간 (초)
+  };
+
+  var taps = [];       // 최근 탭 {t, x, y}
+  var restLeft = 0;
+
+  function meanOf(a) {
+    var m = 0;
+    for (var i = 0; i < a.length; i++) m += a[i];
+    return m / a.length;
+  }
+
+  function stdev(a, m) {
+    var v = 0;
+    for (var i = 0; i < a.length; i++) v += (a[i] - m) * (a[i] - m);
+    return Math.sqrt(v / a.length);
+  }
+
+  function spread(a) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] < lo) lo = a[i];
+      if (a[i] > hi) hi = a[i];
+    }
+    return hi - lo;
+  }
+
+  /** 표본이 기계처럼 보이는가 */
+  function looksAutomated() {
+    if (taps.length < MACRO.sample) return false;
+
+    var gaps = [], xs = [], ys = [], i;
+    for (i = 1; i < taps.length; i++) gaps.push(taps[i].t - taps[i - 1].t);
+    for (i = 0; i < taps.length; i++) { xs.push(taps[i].x); ys.push(taps[i].y); }
+
+    var m = meanOf(gaps);
+    if (m <= 0) return false;
+    if (stdev(gaps, m) / m >= MACRO.maxCv) return false;   // 간격이 사람만큼 흔들린다
+
+    // 좌표를 모르면(합성/키보드 등) 간격만으로는 단정하지 않는다
+    if (!isFinite(xs[0])) return false;
+    return spread(xs) <= MACRO.maxSpread && spread(ys) <= MACRO.maxSpread;
+  }
+
+  /**
+   * 이번 탭을 인정할지 판단한다.
+   * @returns {string} 빈 문자열이면 정상, 아니면 막은 이유
+   *   'auto'  스크립트가 만든 가짜 이벤트
+   *   'fast'  초당 상한 초과
+   *   'macro' 간격과 좌표가 둘 다 기계적
+   *   'rest'  macro 로 걸려서 쉬는 중
+   */
+  function judgeTap(trusted, t, x, y) {
+    if (trusted === false) return 'auto';
+    if (restLeft > 0) return 'rest';
+
+    taps.push({ t: t, x: x, y: y });
+    if (taps.length > MACRO.sample) taps.shift();
+
+    // 최근 1초 안에 몇 번이나 눌렸나
+    var n = 0;
+    for (var i = taps.length - 1; i >= 0 && t - taps[i].t < 1000; i--) n++;
+    if (n > MACRO.maxPerSec) return 'fast';
+
+    if (looksAutomated()) {
+      restLeft = MACRO.rest;
+      taps.length = 0;
+      S().macroBlocks++;
+      resetCombo();
+      return 'macro';
+    }
+    return '';
+  }
+
+  function macroRestLeft() { return restLeft; }
+
+  function resetGuard() { taps.length = 0; restLeft = 0; }
+
   /* ---------- 탭 ---------- */
   /** 한 번 탭할 때 버는 돈 (콤보 · 황금 손님 탭 버프 포함) */
   function tapValue() {
@@ -201,7 +294,21 @@ var Game = (function () {
     return (c.tapBase * tapM * c.stat * buffMult()) + (perSec() * c.tapPct);
   }
 
-  function tap() {
+  /**
+   * 조리 1회.
+   * @param {boolean} trusted 실제 사용자 입력이면 true (합성 이벤트는 false)
+   * @param {number} at 탭 시각(ms). 테스트에서 주입할 수 있게 열어둔다.
+   * @param {number} x 탭 좌표. 모르면 생략 — 그땐 좌표 신호를 쓰지 않는다.
+   * @param {number} y
+   * @returns {{value:number, blocked:string}}
+   */
+  function tap(trusted, at, x, y) {
+    var blocked = judgeTap(trusted !== false,
+                           at === undefined ? State.now() : at,
+                           x === undefined ? NaN : x,
+                           y === undefined ? NaN : y);
+    if (blocked) return { value: 0, blocked: blocked };
+
     pushCombo();
     var v = tapValue();
     var s = S();
@@ -209,7 +316,7 @@ var Game = (function () {
     s.runEarned += v;
     s.totalEarned += v;
     s.taps++;
-    return v;
+    return { value: v, blocked: '' };
   }
 
   /* ---------- 해금 조건 ---------- */
@@ -405,7 +512,8 @@ var Game = (function () {
    * 황금 손님을 잡았을 때의 처리.
    * @returns {{type:object, money:number, text:string}}
    */
-  function claimGolden(type) {
+  function claimGolden(type, trusted) {
+    if (trusted === false) return null;
     var s = S();
     s.goldens++;
     var money = 0;
@@ -547,6 +655,9 @@ var Game = (function () {
     hasAffordableFame: hasAffordableFame,
 
     invalidate: bump,
+    MACRO: MACRO,
+    macroRestLeft: macroRestLeft,
+    resetGuard: resetGuard,
     buffMult: buffMult,
     activeBuffs: activeBuffs,
     advanceTimers: advanceTimers,

@@ -16,7 +16,7 @@ var UI = (function () {
      'dotUpgrade', 'dotPrestige', 'buyAmt', 'toast',
      'offlineModal', 'offlineText', 'offlineOk',
      'buffBar', 'combo', 'comboX', 'comboN', 'comboFill',
-     'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer',
+     'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
       el[id] = $(id);
@@ -313,6 +313,7 @@ var UI = (function () {
       ['최고 콤보', Fmt.comma(s.bestCombo) + '콤보'],
       ['황금 손님', Fmt.comma(s.goldens) + '명'],
       ['손님 몰이 사용', Fmt.comma(s.boosts) + '회'],
+      ['자동 연타 차단', Fmt.comma(s.macroBlocks) + '회'],
       ['연속 출석', Fmt.comma(s.dailyStreak) + '일'],
       ['보유 명성', Fmt.num(s.fame)],
       ['재개업 횟수', Fmt.comma(s.prestiges) + '회'],
@@ -334,7 +335,11 @@ var UI = (function () {
     el.rate.textContent = '초당 ' + Fmt.rate(Game.perSec()) + ' 원';
     el.fameChip.textContent = '✨ 명성 ' + Fmt.num(s.fame);
     el.multChip.textContent = Fmt.mult(Game.globalMult());
-    el.tapPower.textContent = '+' + Fmt.num(Game.tapValue()) + ' 원';
+    var rest = Game.macroRestLeft();
+    el.tapTarget.classList.toggle('blocked', rest > 0);
+    el.tapPower.textContent = rest > 0
+      ? Math.ceil(rest) + '초 후 재개'
+      : '+' + Fmt.num(Game.tapValue()) + ' 원';
 
     el.dotUpgrade.hidden = !Game.hasAffordableUpgrade();
     el.dotPrestige.hidden = !(Game.fameGain() > 0 || Game.hasAffordableFame());
@@ -367,6 +372,20 @@ var UI = (function () {
       return '<span class="buff"><span>' + b.icon + ' ' + b.label + '</span>' +
              '<span class="t">' + Math.ceil(b.left) + 's</span></span>';
     }).join('');
+  }
+
+  /* ---------- 매크로 안내 ---------- */
+
+  var blockToastAt = 0;
+
+  function showBlocked(reason) {
+    if (reason === 'auto' || reason === 'fast') return;   // 조용히 무시
+    var now = Date.now();
+    if (now - blockToastAt < 2500) return;                // 토스트 도배 방지
+    blockToastAt = now;
+    toast(reason === 'macro'
+      ? '🤖 자동 연타가 감지돼 잠시 조리를 멈춥니다'
+      : '잠시 후 다시 조리할 수 있습니다');
   }
 
   /* ---------- 콤보 ---------- */
@@ -444,7 +463,8 @@ var UI = (function () {
       caught = true;
       var rect = node.getBoundingClientRect();
       var layerRect = layer.getBoundingClientRect();
-      var res = Game.claimGolden(type);
+      var res = Game.claimGolden(type, ev.isTrusted !== false);
+      if (!res) { caught = false; return; }
       goldenMsg(rect.left - layerRect.left + size / 2, rect.top - layerRect.top, res.text);
       despawnGolden(true);
       buzz(20);
@@ -471,6 +491,7 @@ var UI = (function () {
 
   /** 매 프레임 호출 — 황금 손님 등장/퇴장을 관리한다 */
   function tickWorld(dt) {
+    Scene.tick(dt);
     if (goldNode) {
       goldLife -= dt;
       if (goldLife <= 0) { despawnGolden(false); armGolden(); }
@@ -551,15 +572,22 @@ var UI = (function () {
     // 탭 클릭 (조리)
     var press = function (ev) {
       ev.preventDefault();
-      var gained = handlers.onTap();
-      el.tapTarget.classList.add('hit');
-      setTimeout(function () { el.tapTarget.classList.remove('hit'); }, 70);
 
       var rect = el.tapZone.getBoundingClientRect();
       var pt = (ev.changedTouches && ev.changedTouches[0]) || ev;
       var x = (pt.clientX || rect.width / 2) - rect.left;
       var y = (pt.clientY || rect.height / 2) - rect.top;
-      floatText(x, y, '+' + Fmt.num(gained));
+
+      // isTrusted 가 false 면 스크립트가 만들어낸 가짜 입력이다.
+      // 좌표도 함께 넘겨야 매크로 판정이 간격만 보고 사람을 막지 않는다.
+      var res = handlers.onTap(ev.isTrusted !== false, x, y);
+      if (res.blocked) { showBlocked(res.blocked); return; }
+
+      el.tapTarget.classList.add('hit');
+      setTimeout(function () { el.tapTarget.classList.remove('hit'); }, 70);
+
+      floatText(x, y, '+' + Fmt.num(res.value));
+      Scene.popFood();
       buzz(6);
       updateHud();
     };
@@ -607,8 +635,19 @@ var UI = (function () {
     el.resetBtn.addEventListener('click', handlers.onReset);
   }
 
+  /** 조리 중일 땐 냄비에서 김이 오르게 */
+  function buildSteam() {
+    ['', 's2', 's3'].forEach(function (c) {
+      var d = document.createElement('div');
+      d.className = 'steam ' + c;
+      el.tapTarget.appendChild(d);
+    });
+  }
+
   function init(handlers) {
     cache();
+    buildSteam();
+    Scene.init(el.street, el.pops);
     buildGenList();
     bind(handlers);
     armGolden();

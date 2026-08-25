@@ -20,10 +20,10 @@
 
   /* ---------- 핸들러 ---------- */
   var handlers = {
-    onTap: function () {
-      var v = Game.tap();
-      announceAchievements();
-      return v;
+    onTap: function (trusted, x, y) {
+      var res = Game.tap(trusted, undefined, x, y);
+      if (!res.blocked) announceAchievements();
+      return res;
     },
 
     onGolden: function (res) {
@@ -39,6 +39,7 @@
                 '대신 명성 ' + Fmt.num(gain) + ' 을(를) 영구히 얻습니다.\n\n진행할까요?';
       if (!confirm(msg)) return;
       Game.doPrestige();
+      Scene.clear();
       announceAchievements();
       UI.invalidate();
       State.save();
@@ -70,6 +71,8 @@
       if (State.importText(txt)) {
         Game.invalidate();
         Game.resetCombo();
+        Game.resetGuard();
+        Scene.clear();
         UI.invalidate();
         UI.refresh(true);
         UI.toast('불러왔습니다');
@@ -84,6 +87,8 @@
       State.wipe();
       Game.invalidate();
       Game.resetCombo();
+      Game.resetGuard();
+      Scene.clear();
       UI.invalidate();
       UI.refresh(true);
       UI.showTab('shop');

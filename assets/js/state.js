@@ -31,6 +31,7 @@ var State = (function () {
       goldTapLeft: 0,    // 황금 손님 탭 버프 남은 시간
       goldTapMult: 1,
       goldens: 0,        // 황금 손님 잡은 횟수
+      macroBlocks: 0,    // 매크로로 판정돼 막힌 횟수
       bestCombo: 0,      // 최고 콤보
 
       dailyDate: '',     // 마지막 출석 보상 날짜 (YYYY-MM-DD)
@@ -50,7 +51,7 @@ var State = (function () {
     var numKeys = ['money', 'runEarned', 'totalEarned', 'taps', 'fame',
                    'prestiges', 'playTime', 'offlineClaims', 'startedAt', 'lastSeen',
                    'boostLeft', 'boostCd', 'boosts', 'goldLeft', 'goldMult',
-                   'goldTapLeft', 'goldTapMult', 'goldens', 'bestCombo',
+                   'goldTapLeft', 'goldTapMult', 'goldens', 'macroBlocks', 'bestCombo',
                    'dailyStreak', 'dailyClaims'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
