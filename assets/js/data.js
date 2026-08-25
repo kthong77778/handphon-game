@@ -127,8 +127,58 @@ var Data = (function () {
       id: 'f_cheap', icon: '🏷️', name: '단체 구매 계약',
       desc: '모든 설비 가격 -3%',
       baseCost: 5, costGrow: 2.6, max: 10
+    },
+    {
+      id: 'f_gold', icon: '🌟', name: '황금 손님 단골화',
+      desc: '황금 손님이 8% 더 자주 옵니다',
+      baseCost: 3, costGrow: 2.0, max: 12
+    },
+    {
+      id: 'f_boost', icon: '📣', name: '확성기',
+      desc: '손님 몰이 쿨다운 -8%',
+      baseCost: 4, costGrow: 2.1, max: 10
     }
   ];
+
+  /* ---------- 황금 손님 ---------- */
+  // 일정 시간마다 화면을 가로질러 지나간다. 잡으면 셋 중 하나.
+  var GOLDEN = {
+    minGap: 55,        // 등장 간격 (초) 최소
+    maxGap: 130,       // 등장 간격 (초) 최대
+    life: 9,           // 화면에 머무는 시간 (초)
+    gapPerLv: 0.92,    // 명성상점 f_gold 1레벨당 간격 배율
+    types: [
+      {
+        id: 'cash', icon: '💰', name: '현금 다발', weight: 5,
+        desc: '초당 수익 4분치를 즉시 획득'
+      },
+      {
+        id: 'rush', icon: '⚡', name: '손님 폭주', weight: 3,
+        desc: '30초 동안 모든 수익 ×7', mult: 7, dur: 30
+      },
+      {
+        id: 'hand', icon: '👐', name: '신들린 손', weight: 2,
+        desc: '30초 동안 탭 수익 ×25', mult: 25, dur: 30
+      }
+    ]
+  };
+
+  /* ---------- 손님 몰이 (부스트 버튼) ---------- */
+  var BOOST = {
+    mult: 3,           // 배율
+    dur: 60,           // 지속 시간 (초)
+    cd: 900,           // 쿨다운 (초) — 명성상점 f_boost 로 줄어든다
+    cdPerLv: 0.92
+  };
+
+  /* ---------- 일일 출석 보상 ---------- */
+  // 하루 한 번, 초당 수익 기준으로 지급. 연속 출석하면 늘어난다 (최대 7일치).
+  var DAILY = {
+    baseSeconds: 1800,     // 1일차: 초당 수익 30분치
+    perStreak: 1800,       // 연속 1일마다 +30분치
+    maxStreak: 7,
+    minMoney: 500          // 초반(수익 0)에도 최소한 이만큼은 준다
+  };
 
   /* ---------- 도전과제 ---------- */
   // 하나 달성할 때마다 전체 수익 +1%
@@ -154,7 +204,12 @@ var Data = (function () {
     { id: 'ac17', icon: '🌀', name: '윤회의 사장',    desc: '환생 5회',                       check: function (s) { return s.prestiges >= 5; } },
     { id: 'ac18', icon: '🔮', name: '분식의 화신',    desc: '명성 100 보유',                  check: function (s) { return s.fame >= 100; } },
     { id: 'ac19', icon: '😴', name: '방치의 미학',    desc: '오프라인 수익 1회 수령',         check: function (s) { return s.offlineClaims >= 1; } },
-    { id: 'ac20', icon: '⏳', name: '하루 영업',      desc: '총 플레이 시간 24시간',          check: function (s) { return s.playTime >= 86400; } }
+    { id: 'ac20', icon: '⏳', name: '하루 영업',      desc: '총 플레이 시간 24시간',          check: function (s) { return s.playTime >= 86400; } },
+    { id: 'ac21', icon: '🌟', name: '황금 손님',      desc: '황금 손님 1명 잡기',             check: function (s) { return s.goldens >= 1; } },
+    { id: 'ac22', icon: '💫', name: '황금 인맥',      desc: '황금 손님 50명 잡기',            check: function (s) { return s.goldens >= 50; } },
+    { id: 'ac23', icon: '🎯', name: '연속 조리',      desc: '콤보 50 달성',                   check: function (s) { return s.bestCombo >= 50; } },
+    { id: 'ac24', icon: '📣', name: '호객의 달인',    desc: '손님 몰이 10회 사용',            check: function (s) { return s.boosts >= 10; } },
+    { id: 'ac25', icon: '📅', name: '개근 사장',      desc: '7일 연속 출석',                  check: function (s) { return s.dailyStreak >= 7; } }
   ];
 
   return {
@@ -162,6 +217,9 @@ var Data = (function () {
     GENERATORS: GENERATORS,
     UPGRADES: UPGRADES,
     FAME_SHOP: FAME_SHOP,
-    ACHIEVEMENTS: ACHIEVEMENTS
+    ACHIEVEMENTS: ACHIEVEMENTS,
+    GOLDEN: GOLDEN,
+    BOOST: BOOST,
+    DAILY: DAILY
   };
 })();

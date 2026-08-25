@@ -24,31 +24,124 @@ var Game = (function () {
   }
 
   /* ---------- 배율 ---------- */
+  // 배율 계산은 업그레이드 65종을 매번 훑어야 해서, 값이 바뀔 때만 다시 계산한다.
+  // 세이브를 건드리는 곳은 반드시 bump() 를 불러 캐시를 무효화할 것.
+  var cacheVer = 0;
+  var cache = { ver: -1 };
+
+  function bump() { cacheVer++; }
+
+  function calc() {
+    if (cache.ver === cacheVer) return cache;
+    var s = S();
+
+    // 버프를 뺀, 모든 수익에 곱해지는 고정 배율
+    var stat = 1;
+    stat *= 1 + 0.02 * s.fame;                    // 명성 1당 +2%
+    stat *= 1 + 0.01 * achievementCount();        // 도전과제 1개당 +1%
+    stat *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
+
+    var genM = {};
+    Data.GENERATORS.forEach(function (g) { genM[g.id] = 1; });
+
+    var tapBase = 1;
+    var tapPct = 0;
+
+    Data.UPGRADES.forEach(function (u) {
+      if (!s.upgrades[u.id]) return;
+      if (u.kind === 'all') stat *= u.value;
+      else if (u.kind === 'gen') { if (genM[u.target]) genM[u.target] *= u.value; }
+      else if (u.kind === 'tap') tapBase *= u.value;
+      else if (u.kind === 'tapPct') tapPct += u.value;
+    });
+    tapBase *= Math.pow(3, fameLv('f_tap'));
+
+    // 버프를 뺀 초당 수익
+    var base = 0;
+    Data.GENERATORS.forEach(function (g) {
+      base += g.rate * (s.gens[g.id] || 0) * genM[g.id];
+    });
+    base *= stat;
+
+    cache.ver = cacheVer;
+    cache.stat = stat;
+    cache.genM = genM;
+    cache.tapBase = tapBase;
+    cache.tapPct = tapPct;
+    cache.base = base;
+    return cache;
+  }
+
   function achievementCount() {
     return Object.keys(S().achievements).length;
   }
 
-  /** 모든 수익에 곱해지는 전역 배율 */
-  function globalMult() {
+  /* ---------- 버프 (황금 손님 / 손님 몰이) ---------- */
+
+  /** 수익에 곱해지는 일시적 배율 */
+  function buffMult() {
     var s = S();
     var m = 1;
-    m *= 1 + 0.02 * s.fame;                    // 명성 1당 +2%
-    m *= 1 + 0.01 * achievementCount();        // 도전과제 1개당 +1%
-    m *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'all' && s.upgrades[u.id]) m *= u.value;
-    });
+    if (s.goldLeft > 0) m *= s.goldMult;
+    if (s.boostLeft > 0) m *= Data.BOOST.mult;
     return m;
+  }
+
+  /** 지금 켜져 있는 버프 목록 (HUD 표시용) */
+  function activeBuffs() {
+    var s = S();
+    var out = [];
+    if (s.boostLeft > 0) out.push({ icon: '📣', label: '×' + Data.BOOST.mult, left: s.boostLeft });
+    if (s.goldLeft > 0) out.push({ icon: '⚡', label: '×' + Fmt.num(s.goldMult), left: s.goldLeft });
+    if (s.goldTapLeft > 0) out.push({ icon: '👐', label: '탭 ×' + Fmt.num(s.goldTapMult), left: s.goldTapLeft });
+    return out;
+  }
+
+  /** 자리를 비운 동안에도 버프와 쿨다운은 흘러간다 (돈은 offlineReward 가 따로 계산) */
+  function advanceTimers(sec) { tickBuffs(sec); }
+
+  /** 남은 시간을 dt 만큼 흘려보낸다 */
+  function tickBuffs(dt) {
+    var s = S();
+    if (s.boostLeft > 0) s.boostLeft = Math.max(0, s.boostLeft - dt);
+    if (s.boostCd > 0) s.boostCd = Math.max(0, s.boostCd - dt);
+    if (s.goldLeft > 0) s.goldLeft = Math.max(0, s.goldLeft - dt);
+    if (s.goldTapLeft > 0) s.goldTapLeft = Math.max(0, s.goldTapLeft - dt);
+    if (comboLeft > 0) {
+      comboLeft = Math.max(0, comboLeft - dt);
+      if (comboLeft === 0) combo = 0;
+    }
+  }
+
+  /* ---------- 콤보 (빠르게 연타하면 붙는 배율) ---------- */
+  var COMBO_WINDOW = 1.2;   // 이 시간 안에 다시 탭해야 콤보 유지 (초)
+  var COMBO_MAX = 50;       // 여기까지만 오른다
+  var COMBO_STEP = 0.04;    // 콤보 1당 +4%
+
+  var combo = 0;
+  var comboLeft = 0;
+
+  function comboCount() { return combo; }
+  function comboRatio() { return COMBO_WINDOW > 0 ? comboLeft / COMBO_WINDOW : 0; }
+  function comboMult() { return 1 + Math.min(combo, COMBO_MAX) * COMBO_STEP; }
+
+  function pushCombo() {
+    combo = Math.min(combo + 1, COMBO_MAX);
+    comboLeft = COMBO_WINDOW;
+    var s = S();
+    if (combo > s.bestCombo) s.bestCombo = combo;
+  }
+
+  function resetCombo() { combo = 0; comboLeft = 0; }
+
+  /** 모든 수익에 곱해지는 최종 배율 (버프 포함) */
+  function globalMult() {
+    return calc().stat * buffMult();
   }
 
   /** 특정 설비에만 붙는 배율 */
   function genMult(id) {
-    var s = S();
-    var m = 1;
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'gen' && u.target === id && s.upgrades[u.id]) m *= u.value;
-    });
-    return m;
+    return calc().genM[id] || 1;
   }
 
   /* ---------- 설비 ---------- */
@@ -87,37 +180,29 @@ var Game = (function () {
     return Math.max(0, Math.min(n, 1000));
   }
 
-  /** 설비 1종의 초당 수익 */
-  function genRate(id) {
+  /** 설비 1종의 초당 수익 (noBuff 면 일시 버프를 뺀 값) */
+  function genRate(id, noBuff) {
+    var c = calc();
     var g = GEN_BY_ID[id];
-    return g.rate * genCount(id) * genMult(id) * globalMult();
+    return g.rate * genCount(id) * (c.genM[id] || 1) * c.stat * (noBuff ? 1 : buffMult());
   }
 
-  /** 전체 초당 수익 */
-  function perSec() {
-    var total = 0;
-    Data.GENERATORS.forEach(function (g) { total += genRate(g.id); });
-    return total;
+  /** 전체 초당 수익 (noBuff 면 일시 버프를 뺀 값) */
+  function perSec(noBuff) {
+    return calc().base * (noBuff ? 1 : buffMult());
   }
 
   /* ---------- 탭 ---------- */
+  /** 한 번 탭할 때 버는 돈 (콤보 · 황금 손님 탭 버프 포함) */
   function tapValue() {
     var s = S();
-    var base = 1;
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'tap' && s.upgrades[u.id]) base *= u.value;
-    });
-    base *= Math.pow(3, fameLv('f_tap'));
-
-    var pct = 0;
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'tapPct' && s.upgrades[u.id]) pct += u.value;
-    });
-
-    return base * globalMult() + perSec() * pct;
+    var c = calc();
+    var tapM = (s.goldTapLeft > 0 ? s.goldTapMult : 1) * comboMult();
+    return (c.tapBase * tapM * c.stat * buffMult()) + (perSec() * c.tapPct);
   }
 
   function tap() {
+    pushCombo();
     var v = tapValue();
     var s = S();
     s.money += v;
@@ -163,6 +248,7 @@ var Game = (function () {
     if (s.money < cost || amount <= 0) return false;
     s.money -= cost;
     s.gens[id] = genCount(id) + amount;
+    bump();
     return true;
   }
 
@@ -173,6 +259,7 @@ var Game = (function () {
     if (s.money < u.cost) return false;
     s.money -= u.cost;
     s.upgrades[id] = true;
+    bump();
     return true;
   }
 
@@ -185,6 +272,7 @@ var Game = (function () {
     if (s.fame < cost) return false;
     s.fame -= cost;
     s.fameLv[id] = lv + 1;
+    bump();
     return true;
   }
 
@@ -224,6 +312,13 @@ var Game = (function () {
     // 일반 업그레이드만 초기화 (명성상점/도전과제는 영구)
     s.upgrades = {};
 
+    // 회차가 끝나면 일시 버프도 함께 정리
+    s.goldLeft = 0;
+    s.goldTapLeft = 0;
+    s.boostLeft = 0;
+    resetCombo();
+
+    bump();
     return gain;
   }
 
@@ -242,7 +337,8 @@ var Game = (function () {
    */
   function offlineReward(elapsedSec) {
     var capped = Math.min(elapsedSec, offlineCapSeconds());
-    var gain = perSec() * capped * offlineEfficiency();
+    // 자리를 비운 동안에는 일시 버프가 흐르지 않으므로 버프를 뺀 수익으로 계산한다
+    var gain = perSec(true) * capped * offlineEfficiency();
     return { seconds: elapsedSec, capped: capped, gain: gain };
   }
 
@@ -257,6 +353,7 @@ var Game = (function () {
   /* ---------- 진행 ---------- */
   function tick(dt) {
     var s = S();
+    tickBuffs(dt);
     var gain = perSec() * dt;
     s.money += gain;
     s.runEarned += gain;
@@ -278,7 +375,126 @@ var Game = (function () {
         unlocked.push(a);
       }
     });
+    if (unlocked.length) bump();   // 도전과제 개수가 전체 배율에 들어간다
     return unlocked;
+  }
+
+  /* ---------- 황금 손님 ---------- */
+
+  /** 다음 황금 손님이 올 때까지의 대기 시간 (초) */
+  function nextGoldenGap() {
+    var g = Data.GOLDEN;
+    var scale = Math.pow(g.gapPerLv, fameLv('f_gold'));
+    return (g.minGap + Math.random() * (g.maxGap - g.minGap)) * scale;
+  }
+
+  /** 등장할 황금 손님 종류를 가중치로 하나 뽑는다 */
+  function rollGolden() {
+    var types = Data.GOLDEN.types;
+    var total = 0;
+    types.forEach(function (t) { total += t.weight; });
+    var r = Math.random() * total;
+    for (var i = 0; i < types.length; i++) {
+      r -= types[i].weight;
+      if (r <= 0) return types[i];
+    }
+    return types[0];
+  }
+
+  /**
+   * 황금 손님을 잡았을 때의 처리.
+   * @returns {{type:object, money:number, text:string}}
+   */
+  function claimGolden(type) {
+    var s = S();
+    s.goldens++;
+    var money = 0;
+    var text;
+
+    if (type.id === 'cash') {
+      // 초반에 초당 수익이 0이어도 허탕이 되지 않도록 탭 수익으로 바닥을 깐다
+      money = Math.max(perSec(true) * 240, tapValue() * 25, 100);
+      s.money += money;
+      s.runEarned += money;
+      s.totalEarned += money;
+      text = '💰 ' + Fmt.won(money) + ' 획득!';
+    } else if (type.id === 'rush') {
+      // 이미 걸려 있으면 더 센 쪽을 남기고 시간을 새로 채운다
+      s.goldMult = Math.max(s.goldLeft > 0 ? s.goldMult : 1, type.mult);
+      s.goldLeft = Math.max(s.goldLeft, type.dur);
+      text = '⚡ ' + type.dur + '초 동안 수익 ×' + type.mult + '!';
+    } else {
+      s.goldTapMult = Math.max(s.goldTapLeft > 0 ? s.goldTapMult : 1, type.mult);
+      s.goldTapLeft = Math.max(s.goldTapLeft, type.dur);
+      text = '👐 ' + type.dur + '초 동안 탭 수익 ×' + type.mult + '!';
+    }
+
+    return { type: type, money: money, text: text };
+  }
+
+  /* ---------- 손님 몰이 (부스트 버튼) ---------- */
+
+  function boostCooldown() {
+    return Data.BOOST.cd * Math.pow(Data.BOOST.cdPerLv, fameLv('f_boost'));
+  }
+
+  function boostReady() {
+    var s = S();
+    return s.boostCd <= 0 && s.boostLeft <= 0;
+  }
+
+  function startBoost() {
+    var s = S();
+    if (!boostReady()) return false;
+    s.boostLeft = Data.BOOST.dur;
+    s.boostCd = boostCooldown() + Data.BOOST.dur;   // 효과가 끝난 뒤부터 쿨다운이 도는 셈
+    s.boosts++;
+    return true;
+  }
+
+  /* ---------- 일일 출석 보상 ---------- */
+
+  /** 로컬 기준 오늘 날짜 (YYYY-MM-DD) */
+  function today() {
+    var d = new Date();
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function shiftDay(dateStr, days) {
+    var p = String(dateStr).split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    d.setDate(d.getDate() + days);
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function dailyReady() { return S().dailyDate !== today(); }
+
+  /**
+   * 출석 보상 지급. 하루 한 번만 받을 수 있다.
+   * @returns {{streak:number, gain:number}|null}
+   */
+  function claimDaily() {
+    var s = S();
+    var t = today();
+    if (s.dailyDate === t) return null;
+
+    // 어제 받았으면 연속, 아니면 처음부터
+    s.dailyStreak = (s.dailyDate && shiftDay(s.dailyDate, 1) === t) ? s.dailyStreak + 1 : 1;
+    s.dailyDate = t;
+    s.dailyClaims++;
+
+    var d = Data.DAILY;
+    var days = Math.min(s.dailyStreak, d.maxStreak);
+    var seconds = d.baseSeconds + d.perStreak * (days - 1);
+    var gain = Math.max(perSec(true) * seconds, d.minMoney);
+
+    s.money += gain;
+    s.runEarned += gain;
+    s.totalEarned += gain;
+
+    return { streak: s.dailyStreak, days: days, seconds: seconds, gain: gain };
   }
 
   /** 뱃지(빨간 점)용: 지금 살 수 있는 게 있나 */
@@ -328,6 +544,23 @@ var Game = (function () {
     tick: tick,
     checkAchievements: checkAchievements,
     hasAffordableUpgrade: hasAffordableUpgrade,
-    hasAffordableFame: hasAffordableFame
+    hasAffordableFame: hasAffordableFame,
+
+    invalidate: bump,
+    buffMult: buffMult,
+    activeBuffs: activeBuffs,
+    advanceTimers: advanceTimers,
+    comboCount: comboCount,
+    comboRatio: comboRatio,
+    comboMult: comboMult,
+    resetCombo: resetCombo,
+    nextGoldenGap: nextGoldenGap,
+    rollGolden: rollGolden,
+    claimGolden: claimGolden,
+    boostCooldown: boostCooldown,
+    boostReady: boostReady,
+    startBoost: startBoost,
+    dailyReady: dailyReady,
+    claimDaily: claimDaily
   };
 })();

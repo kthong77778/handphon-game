@@ -15,6 +15,9 @@ var UI = (function () {
      'pFameNow', 'pFameGain', 'pMultNext', 'prestigeBtn', 'prestigeReq',
      'dotUpgrade', 'dotPrestige', 'buyAmt', 'toast',
      'offlineModal', 'offlineText', 'offlineOk',
+     'buffBar', 'combo', 'comboX', 'comboN', 'comboFill',
+     'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer',
+     'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
       el[id] = $(id);
     });
@@ -306,6 +309,11 @@ var UI = (function () {
       ['이번 회차 매출', Fmt.won(s.runEarned)],
       ['전체 누적 매출', Fmt.won(s.totalEarned)],
       ['총 조리 횟수', Fmt.comma(s.taps) + '회'],
+      ['현재 버프 배율', Fmt.mult(Game.buffMult())],
+      ['최고 콤보', Fmt.comma(s.bestCombo) + '콤보'],
+      ['황금 손님', Fmt.comma(s.goldens) + '명'],
+      ['손님 몰이 사용', Fmt.comma(s.boosts) + '회'],
+      ['연속 출석', Fmt.comma(s.dailyStreak) + '일'],
       ['보유 명성', Fmt.num(s.fame)],
       ['재개업 횟수', Fmt.comma(s.prestiges) + '회'],
       ['도전과제', Game.achievementCount() + ' / ' + Data.ACHIEVEMENTS.length],
@@ -330,6 +338,167 @@ var UI = (function () {
 
     el.dotUpgrade.hidden = !Game.hasAffordableUpgrade();
     el.dotPrestige.hidden = !(Game.fameGain() > 0 || Game.hasAffordableFame());
+
+    updateBuffBar();
+    updateCombo();
+    updateBoostBtn();
+  }
+
+  /* ---------- 버프 표시줄 ---------- */
+
+  var buffSig = '';
+
+  function updateBuffBar() {
+    var list = Game.activeBuffs();
+    if (!list.length) {
+      el.buffBar.hidden = true;
+      buffSig = '';
+      return;
+    }
+    el.buffBar.hidden = false;
+    // 남은 초가 바뀔 때만 다시 그린다 (100ms 마다 innerHTML 을 갈아끼우지 않도록)
+    var newSig = list.map(function (b) {
+      return b.icon + b.label + Math.ceil(b.left);
+    }).join('|');
+    if (newSig === buffSig) return;
+    buffSig = newSig;
+
+    el.buffBar.innerHTML = list.map(function (b) {
+      return '<span class="buff"><span>' + b.icon + ' ' + b.label + '</span>' +
+             '<span class="t">' + Math.ceil(b.left) + 's</span></span>';
+    }).join('');
+  }
+
+  /* ---------- 콤보 ---------- */
+
+  function updateCombo() {
+    var n = Game.comboCount();
+    if (n <= 1) { el.combo.hidden = true; return; }
+    el.combo.hidden = false;
+    el.comboX.textContent = '×' + Game.comboMult().toFixed(1);
+    el.comboN.textContent = 'COMBO ' + n;
+    el.comboFill.style.transform = 'scaleX(' + Game.comboRatio().toFixed(3) + ')';
+    el.combo.classList.toggle('hot', n >= 30);
+  }
+
+  /* ---------- 손님 몰이 버튼 ---------- */
+
+  function updateBoostBtn() {
+    var s = State.get();
+    var b = el.boostBtn;
+    if (s.boostLeft > 0) {
+      b.className = 'boost-btn active';
+      el.boostTitle.textContent = '손님 폭주 중!';
+      el.boostSub.textContent = '모든 수익 ×' + Data.BOOST.mult + ' · ' + Fmt.time(s.boostLeft) + ' 남음';
+    } else if (s.boostCd > 0) {
+      b.className = 'boost-btn cooling';
+      el.boostTitle.textContent = '손님 몰이';
+      el.boostSub.textContent = '준비까지 ' + Fmt.time(s.boostCd);
+    } else {
+      b.className = 'boost-btn';
+      el.boostTitle.textContent = '손님 몰이';
+      el.boostSub.textContent = Data.BOOST.dur + '초 동안 모든 수익 ×' + Data.BOOST.mult;
+    }
+  }
+
+  /* ---------- 황금 손님 ---------- */
+
+  var goldTimer = 0;      // 다음 등장까지 남은 시간
+  var goldNode = null;    // 지금 떠 있는 손님
+  var goldLife = 0;       // 그 손님이 사라지기까지 남은 시간
+  var onGolden = null;    // 잡았을 때 부를 콜백 (main.js 가 넣어준다)
+
+  function armGolden() { goldTimer = Game.nextGoldenGap(); }
+
+  function despawnGolden(popped) {
+    if (!goldNode) return;
+    var n = goldNode;
+    goldNode = null;
+    if (popped) {
+      n.classList.add('pop');
+      setTimeout(function () { n.remove(); }, 320);
+    } else {
+      n.remove();
+    }
+  }
+
+  function spawnGolden() {
+    despawnGolden(false);
+    var type = Game.rollGolden();
+    var layer = el.goldenLayer;
+    var w = layer.clientWidth || 360;
+    var h = layer.clientHeight || 640;
+    var size = 64;
+
+    var node = document.createElement('div');
+    node.className = 'golden';
+    node.textContent = type.icon;
+    // 상단 HUD 와 하단 탭바를 피해서 배치
+    node.style.left = Math.round(12 + Math.random() * Math.max(1, w - size - 24)) + 'px';
+    node.style.top = Math.round(h * 0.22 + Math.random() * Math.max(1, h * 0.45)) + 'px';
+
+    var caught = false;
+    node.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      if (caught) return;
+      caught = true;
+      var rect = node.getBoundingClientRect();
+      var layerRect = layer.getBoundingClientRect();
+      var res = Game.claimGolden(type);
+      goldenMsg(rect.left - layerRect.left + size / 2, rect.top - layerRect.top, res.text);
+      despawnGolden(true);
+      buzz(20);
+      armGolden();
+      if (onGolden) onGolden(res);
+    });
+
+    layer.appendChild(node);
+    goldNode = node;
+    goldLife = Data.GOLDEN.life;
+    toast('🌟 황금 손님이 왔어요!');
+    buzz(14);
+  }
+
+  function goldenMsg(x, y, text) {
+    var d = document.createElement('div');
+    d.className = 'golden-msg';
+    d.textContent = text;
+    d.style.left = x + 'px';
+    d.style.top = y + 'px';
+    el.goldenLayer.appendChild(d);
+    setTimeout(function () { d.remove(); }, 1350);
+  }
+
+  /** 매 프레임 호출 — 황금 손님 등장/퇴장을 관리한다 */
+  function tickWorld(dt) {
+    if (goldNode) {
+      goldLife -= dt;
+      if (goldLife <= 0) { despawnGolden(false); armGolden(); }
+      return;
+    }
+    goldTimer -= dt;
+    if (goldTimer <= 0) spawnGolden();
+  }
+
+  /* ---------- 출석 보상 모달 ---------- */
+
+  function showDaily(res, onOk) {
+    var d = Data.DAILY;
+    el.dailyText.innerHTML =
+      '<b>' + res.streak + '일째</b> 출석했습니다.<br>' +
+      '초당 수익 ' + Fmt.time(res.seconds) + '치 — <b>' + Fmt.won(res.gain) + '</b>';
+
+    var dots = '';
+    for (var i = 1; i <= d.maxStreak; i++) {
+      dots += '<i class="' + (i <= res.days ? 'on' : '') + '"></i>';
+    }
+    el.streakDots.innerHTML = dots;
+
+    el.dailyModal.hidden = false;
+    el.dailyOk.onclick = function () {
+      el.dailyModal.hidden = true;
+      if (onOk) onOk();
+    };
   }
 
   /* ---------- 탭 전환 ---------- */
@@ -418,6 +587,19 @@ var UI = (function () {
       });
     });
 
+    el.boostBtn.addEventListener('click', function () {
+      var st = State.get();
+      if (st.boostLeft > 0) { toast('이미 손님이 몰려 있습니다'); return; }
+      if (st.boostCd > 0) { toast('준비까지 ' + Fmt.time(st.boostCd) + ' 남았습니다'); return; }
+      if (Game.startBoost()) {
+        buzz(20);
+        toast('📣 ' + Data.BOOST.dur + '초 동안 수익 ×' + Data.BOOST.mult + '!');
+        refresh(true);
+      }
+    });
+
+    onGolden = handlers.onGolden;
+
     el.prestigeBtn.addEventListener('click', handlers.onPrestige);
     el.saveBtn.addEventListener('click', handlers.onSave);
     el.exportBtn.addEventListener('click', handlers.onExport);
@@ -429,6 +611,7 @@ var UI = (function () {
     cache();
     buildGenList();
     bind(handlers);
+    armGolden();
     showTab('shop');
   }
 
@@ -438,7 +621,9 @@ var UI = (function () {
     updateHud: updateHud,
     showTab: showTab,
     showOffline: showOffline,
+    showDaily: showDaily,
+    tickWorld: tickWorld,
     toast: toast,
-    invalidate: function () { sig = {}; }
+    invalidate: function () { sig = {}; buffSig = ''; }
   };
 })();

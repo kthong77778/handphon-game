@@ -26,6 +26,12 @@
       return v;
     },
 
+    onGolden: function (res) {
+      announceAchievements();
+      UI.refresh(true);
+      State.save();
+    },
+
     onPrestige: function () {
       var gain = Game.fameGain();
       if (gain <= 0) return;
@@ -62,6 +68,8 @@
       var txt = prompt('세이브 코드를 붙여넣으세요');
       if (!txt) return;
       if (State.importText(txt)) {
+        Game.invalidate();
+        Game.resetCombo();
         UI.invalidate();
         UI.refresh(true);
         UI.toast('불러왔습니다');
@@ -74,6 +82,8 @@
       if (!confirm('정말 모든 데이터를 삭제할까요?\n명성과 도전과제까지 전부 사라집니다.')) return;
       if (!confirm('되돌릴 수 없습니다. 정말 진행할까요?')) return;
       State.wipe();
+      Game.invalidate();
+      Game.resetCombo();
       UI.invalidate();
       UI.refresh(true);
       UI.showTab('shop');
@@ -89,6 +99,7 @@
 
     if (dt > 0) {
       Game.tick(dt);
+      UI.tickWorld(dt);
       uiAcc += dt * 1000;
       saveAcc += dt * 1000;
     }
@@ -108,32 +119,57 @@
   }
 
   /* ---------- 오프라인 정산 ---------- */
-  function settleOffline() {
+  // 오프라인 모달과 출석 모달이 동시에 뜨면 겹치므로 순서대로 이어서 띄운다.
+  function settleOffline(next) {
+    function done() { if (next) next(); }
+
     var s = State.get();
     var elapsed = (State.now() - s.lastSeen) / 1000;
-    if (elapsed <= 1) return;
+    if (elapsed <= 1) { done(); return; }
 
     // 잠깐(1분 미만) 자리를 비운 정도는 모달 없이 100% 지급
     if (elapsed < 60) {
       Game.tick(elapsed);
+      done();
       return;
     }
 
     var reward = Game.offlineReward(elapsed);
-    if (reward.gain <= 0) return;
+    // 버프 지속시간과 손님 몰이 쿨다운도 자리를 비운 만큼 흘려보낸다
+    Game.advanceTimers(elapsed);
+
+    if (reward.gain <= 0) { done(); return; }
     UI.showOffline(reward, function () {
       Game.claimOffline(reward.gain);
+      announceAchievements();
+      State.save();
+      UI.refresh(true);
+      done();
+    });
+  }
+
+  /* ---------- 일일 출석 보상 ---------- */
+  function settleDaily() {
+    if (!Game.dailyReady()) return;
+    var res = Game.claimDaily();
+    if (!res) return;
+    UI.showDaily(res, function () {
       announceAchievements();
       State.save();
       UI.refresh(true);
     });
   }
 
+  function settleReturn() {
+    settleOffline(settleDaily);
+  }
+
   /* ---------- 시작 ---------- */
   function boot() {
     State.load();
+    Game.invalidate();
     UI.init(handlers);
-    settleOffline();
+    settleReturn();
     UI.refresh(true);
     requestAnimationFrame(loop);
 
@@ -143,7 +179,8 @@
         State.save();
       } else {
         lastFrame = 0;   // 복귀 시 dt 폭주 방지
-        settleOffline();
+        Game.resetCombo();
+        settleReturn();
       }
     });
     window.addEventListener('pagehide', function () { State.save(); });

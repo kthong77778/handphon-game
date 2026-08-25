@@ -2,7 +2,7 @@
 var State = (function () {
 
   var KEY = 'bunsik_idle_save_v1';
-  var VERSION = 1;
+  var VERSION = 2;
 
   function now() { return Date.now(); }
 
@@ -21,6 +21,22 @@ var State = (function () {
       prestiges: 0,
       playTime: 0,       // 초
       offlineClaims: 0,
+
+      // 버프 (남은 시간은 초, 온라인일 때만 줄어든다)
+      boostLeft: 0,      // 손님 몰이 남은 시간
+      boostCd: 0,        // 손님 몰이 쿨다운 남은 시간
+      boosts: 0,         // 손님 몰이 사용 횟수
+      goldLeft: 0,       // 황금 손님 수익 버프 남은 시간
+      goldMult: 1,       // 그 버프의 배율
+      goldTapLeft: 0,    // 황금 손님 탭 버프 남은 시간
+      goldTapMult: 1,
+      goldens: 0,        // 황금 손님 잡은 횟수
+      bestCombo: 0,      // 최고 콤보
+
+      dailyDate: '',     // 마지막 출석 보상 날짜 (YYYY-MM-DD)
+      dailyStreak: 0,
+      dailyClaims: 0,
+
       startedAt: now(),
       lastSeen: now()
     };
@@ -32,7 +48,10 @@ var State = (function () {
     if (!raw || typeof raw !== 'object') return s;
 
     var numKeys = ['money', 'runEarned', 'totalEarned', 'taps', 'fame',
-                   'prestiges', 'playTime', 'offlineClaims', 'startedAt', 'lastSeen'];
+                   'prestiges', 'playTime', 'offlineClaims', 'startedAt', 'lastSeen',
+                   'boostLeft', 'boostCd', 'boosts', 'goldLeft', 'goldMult',
+                   'goldTapLeft', 'goldTapMult', 'goldens', 'bestCombo',
+                   'dailyStreak', 'dailyClaims'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
       if (isFinite(v) && v >= 0) s[k] = v;
@@ -52,6 +71,14 @@ var State = (function () {
         });
       }
     });
+
+    // 배율은 1 미만으로 내려가면 안 된다 (0이 저장돼 있으면 수익이 통째로 사라진다)
+    if (!(s.goldMult >= 1)) s.goldMult = 1;
+    if (!(s.goldTapMult >= 1)) s.goldTapMult = 1;
+
+    if (typeof raw.dailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dailyDate)) {
+      s.dailyDate = raw.dailyDate;
+    }
 
     if (!s.startedAt) s.startedAt = now();
     if (!s.lastSeen) s.lastSeen = now();

@@ -19,6 +19,12 @@
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
+/* hidden 속성이 항상 이기도록.
+   .modal / .item / .buff-bar 처럼 display 를 지정한 규칙은 작성자 스타일이라
+   브라우저 기본값인 [hidden]{display:none} 을 덮어써 버린다.
+   그대로 두면 닫은 모달이 화면을 계속 가로막는다. */
+[hidden]{display:none !important}
+
 html,body{
   margin:0;padding:0;height:100%;
   overflow:hidden;
@@ -312,3 +318,126 @@ body{
 
 /* 명성 상점 레벨 표시 */
 .fame-lv{font-size:11px;color:var(--dim);font-weight:700}
+
+/* ===== 버프 표시줄 (HUD) ===== */
+.buff-bar{
+  display:flex;gap:6px;justify-content:center;flex-wrap:wrap;
+  margin-top:7px;
+}
+.buff{
+  display:flex;align-items:center;gap:5px;
+  font-size:11.5px;font-weight:800;
+  padding:3px 9px;border-radius:999px;
+  background:rgba(255,204,68,.15);
+  border:1px solid rgba(255,204,68,.5);
+  color:var(--gold);
+  font-variant-numeric:tabular-nums;
+  animation:buffIn .2s ease-out;
+}
+.buff .t{
+  color:#fff3cc;opacity:.8;font-weight:700;
+  padding-left:5px;border-left:1px solid rgba(255,204,68,.35);
+}
+@keyframes buffIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* ===== 콤보 ===== */
+.combo{
+  position:absolute;right:6px;top:10px;
+  width:78px;text-align:center;
+  animation:buffIn .15s ease-out;
+}
+.combo-x{
+  font-size:22px;font-weight:900;color:var(--accent2);
+  text-shadow:0 0 12px rgba(236,72,153,.6);
+  font-variant-numeric:tabular-nums;
+  line-height:1.1;
+}
+.combo-n{font-size:10px;font-weight:800;color:var(--dim);letter-spacing:.6px}
+.combo-bar{
+  margin-top:4px;height:4px;border-radius:999px;
+  background:rgba(255,255,255,.12);overflow:hidden;
+}
+.combo-bar i{
+  display:block;height:100%;width:100%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transform-origin:left center;
+}
+.combo.hot .combo-x{color:var(--gold);text-shadow:0 0 16px rgba(255,204,68,.7)}
+
+/* ===== 손님 몰이 버튼 ===== */
+.boost-btn{
+  display:flex;align-items:center;gap:11px;width:100%;
+  margin-bottom:4px;
+  padding:11px 13px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(236,72,153,.22),var(--card) 65%);
+  border:1px solid rgba(236,72,153,.5);
+  color:var(--txt);font-family:inherit;text-align:left;
+  cursor:pointer;
+  transition:transform .06s,filter .12s,opacity .12s;
+}
+.boost-btn:active{transform:scale(.985)}
+.boost-btn.cooling{
+  background:var(--card);border-color:var(--line);
+  opacity:.55;
+}
+.boost-btn.active{
+  border-color:var(--gold);
+  background:linear-gradient(90deg,rgba(255,204,68,.25),var(--card) 65%);
+  animation:boostPulse 1.1s ease-in-out infinite;
+}
+@keyframes boostPulse{
+  0%,100%{box-shadow:0 0 0 rgba(255,204,68,0)}
+  50%{box-shadow:0 0 18px rgba(255,204,68,.35)}
+}
+.boost-ic{
+  flex:0 0 40px;width:40px;height:40px;border-radius:11px;
+  background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;font-size:21px;
+}
+.boost-txt{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
+.boost-txt b{font-size:14px;font-weight:800}
+.boost-txt small{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* ===== 황금 손님 ===== */
+#goldenLayer{
+  position:fixed;inset:0;z-index:50;
+  pointer-events:none;
+  max-width:520px;margin:0 auto;
+  overflow:hidden;
+}
+.golden{
+  position:absolute;
+  width:64px;height:64px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:33px;
+  background:radial-gradient(circle at 35% 30%,#fff0bf,#f0a92c 72%);
+  border:2px solid #fff3cc;
+  box-shadow:0 0 26px rgba(255,204,68,.75);
+  pointer-events:auto;cursor:pointer;
+  animation:goldenSpin 2.4s ease-in-out infinite;
+}
+.golden:active{transform:scale(.9)}
+.golden.pop{animation:goldenPop .3s ease-out forwards;pointer-events:none}
+@keyframes goldenSpin{
+  0%,100%{transform:rotate(-7deg) scale(1)}
+  50%{transform:rotate(7deg) scale(1.07)}
+}
+@keyframes goldenPop{
+  to{opacity:0;transform:scale(2.1)}
+}
+.golden-msg{
+  position:absolute;left:50%;transform:translateX(-50%);
+  white-space:nowrap;
+  font-size:15px;font-weight:900;color:var(--gold);
+  text-shadow:0 2px 8px rgba(0,0,0,.85);
+  animation:floatUp 1.3s ease-out forwards;
+  pointer-events:none;
+}
+
+/* ===== 출석 보상 ===== */
+.streak-dots{display:flex;gap:6px;justify-content:center}
+.streak-dots i{
+  width:9px;height:9px;border-radius:50%;
+  background:rgba(255,255,255,.16);
+}
+.streak-dots i.on{background:var(--gold);box-shadow:0 0 8px rgba(255,204,68,.6)}
