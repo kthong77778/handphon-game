@@ -608,6 +608,63 @@ var Game = (function () {
     return { type: type, money: money, text: text };
   }
 
+  /* ---------- 도둑 & 경찰 ---------- */
+
+  function nextThiefGap() {
+    var t = Data.THIEF;
+    return t.minGap + Math.random() * (t.maxGap - t.minGap);
+  }
+
+  /** 도둑이 노리는 금액. 설비·업그레이드는 절대 건드리지 않는다. */
+  function thiefTarget() {
+    var t = Data.THIEF;
+    var s = S();
+    return Math.min(s.money * t.stealPct, perSec(true) * t.stealCapSec);
+  }
+
+  /** 지금 도둑을 내보낼 만한가 (훔칠 게 없으면 안 나온다) */
+  function thiefWorthwhile() {
+    return thiefTarget() >= Data.THIEF.minSteal;
+  }
+
+  /** 경찰이 자동으로 잡아줄 확률 */
+  function policeChance() {
+    var t = Data.THIEF;
+    return Math.min(0.9, t.policeBase + t.policePerLv * fameLv('f_police'));
+  }
+
+  /**
+   * 도둑을 직접 잡았다.
+   * @returns {{bonus:number, saved:number}|null} 가짜 이벤트면 null
+   */
+  function catchThief(amount, trusted) {
+    if (trusted === false) return null;
+    var s = S();
+    var bonus = amount * Data.THIEF.catchBonus;
+    s.money += bonus;
+    s.runEarned += bonus;
+    s.totalEarned += bonus;
+    s.thievesCaught++;
+    return { bonus: bonus, saved: amount };
+  }
+
+  /** 경찰이 잡아줬다 — 피해는 없지만 보너스도 없다 */
+  function policeCaught(amount) {
+    S().thiefSaves++;
+    return { saved: amount };
+  }
+
+  /** 놓쳤다 — 이때 비로소 돈이 빠진다 */
+  function thiefEscaped(amount) {
+    var s = S();
+    // 계산한 뒤 돈이 줄었을 수도 있으니 다시 한 번 막는다
+    var lost = Math.max(0, Math.min(amount, s.money));
+    s.money -= lost;
+    s.stolen += lost;
+    s.thefts++;
+    return { lost: lost };
+  }
+
   /* ---------- 손님 몰이 (부스트 버튼) ---------- */
 
   function boostCooldown() {
@@ -736,6 +793,13 @@ var Game = (function () {
     nextGoldenGap: nextGoldenGap,
     rollGolden: rollGolden,
     claimGolden: claimGolden,
+    nextThiefGap: nextThiefGap,
+    thiefTarget: thiefTarget,
+    thiefWorthwhile: thiefWorthwhile,
+    policeChance: policeChance,
+    catchThief: catchThief,
+    policeCaught: policeCaught,
+    thiefEscaped: thiefEscaped,
     boostCooldown: boostCooldown,
     boostReady: boostReady,
     startBoost: startBoost,

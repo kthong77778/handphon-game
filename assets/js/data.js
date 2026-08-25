@@ -137,6 +137,11 @@ var Data = (function () {
       id: 'f_boost', icon: '📣', name: '확성기',
       desc: '손님 몰이 쿨다운 -8%',
       baseCost: 4, costGrow: 2.1, max: 10
+    },
+    {
+      id: 'f_police', icon: '🚓', name: '야간 순찰',
+      desc: '경찰이 도둑을 잡아줄 확률 +7%p',
+      baseCost: 3, costGrow: 1.9, max: 10
     }
   ];
 
@@ -163,6 +168,24 @@ var Data = (function () {
     ]
   };
 
+  /* ---------- 도둑 & 경찰 ---------- */
+  // 가끔 도둑이 금고를 노리고 화면을 가로지른다.
+  // 탭해서 직접 잡으면 피해가 없고 보너스까지, 경찰이 잡으면 피해만 없다.
+  // 놓치면 그때 돈이 빠진다 — 설비와 업그레이드는 건드리지 않는다.
+  var THIEF = {
+    minGap: 200,          // 등장 간격 (초) 최소
+    maxGap: 460,          // 등장 간격 (초) 최대
+    life: 7.5,            // 화면을 가로지르는 시간 (초). 이 안에 탭해야 한다
+    stealPct: 0.08,       // 보유 금액의 이만큼을 노린다
+    stealCapSec: 180,     // 다만 초당 수익 3분치를 넘지 않는다
+    minSteal: 100,        // 훔칠 게 이보다 적으면 아예 나타나지 않는다
+    catchBonus: 0.5,      // 직접 잡으면 노렸던 금액의 이만큼을 보너스로
+    policeBase: 0.15,     // 경찰이 자동으로 잡을 기본 확률
+    policePerLv: 0.07,    // 명성상점 f_police 1레벨당 +7%p
+    policeStart: 0.22,    // 도둑이 이만큼 지났을 때 경찰이 출발
+    policeCatchAt: 0.72   // 이 지점에서 따라잡는다
+  };
+
   /* ---------- 손님 몰이 (부스트 버튼) ---------- */
   var BOOST = {
     mult: 3,           // 배율
@@ -181,6 +204,97 @@ var Data = (function () {
   };
 
 
+
+  /* ---------- 주먹밥 캐릭터 (인라인 SVG) ----------
+     이모지에는 얼굴 달린 주먹밥이 없어서 직접 그린다.
+     단계가 오를수록 재료가 얹히고 표정이 살아난다. */
+
+  function onigiri(o) {
+    var body = o.body || '#fdfdfb';
+    var eyes = o.eyes || 'dot';
+    var parts = [];
+
+    // 밥 몸통 (모서리 둥근 삼각형)
+    parts.push('<path d="M50 11c6 0 10 4 12 8l26 55c4 8 0 16-8 16H20c-8 0-12-8-8-16l26-55c2-4 6-8 12-8z" ' +
+               'fill="' + body + '" stroke="rgba(0,0,0,.16)" stroke-width="2"/>');
+
+    // 위에 얹는 재료
+    if (o.top) parts.push(o.top);
+
+    // 김 띠
+    parts.push('<path d="M28 62h44c3 0 5 2 5 5v13c0 3-2 5-5 5H28c-3 0-5-2-5-5V67c0-3 2-5 5-5z" fill="#2f3540"/>');
+
+    // 볼터치
+    if (o.blush) {
+      parts.push('<ellipse cx="30" cy="53" rx="7" ry="4.5" fill="#ffa8b6" opacity=".75"/>');
+      parts.push('<ellipse cx="70" cy="53" rx="7" ry="4.5" fill="#ffa8b6" opacity=".75"/>');
+    }
+
+    // 눈
+    if (eyes === 'happy') {
+      parts.push('<path d="M34 48c3-4 8-4 11 0M55 48c3-4 8-4 11 0" stroke="#2f3540" stroke-width="3.4" ' +
+                 'fill="none" stroke-linecap="round"/>');
+    } else if (eyes === 'shades') {
+      parts.push('<path d="M31 43h38v4c0 5.5-4.5 9-10 9s-9-3.5-9.5-8c-.5 4.5-4 8-9.5 8s-10-3.5-10-9z" ' +
+                 'fill="#2f3540"/><path d="M34 46h9M57 46h9" stroke="rgba(255,255,255,.35)" ' +
+                 'stroke-width="2" stroke-linecap="round"/>');
+    } else if (eyes === 'star') {
+      parts.push('<path d="M39 41l3 6 6 1-4.5 4.5 1 6-5.5-3-5.5 3 1-6L30 48l6-1z" fill="#2f3540"/>');
+      parts.push('<path d="M64 41l3 6 6 1-4.5 4.5 1 6-5.5-3-5.5 3 1-6L58 48l6-1z" fill="#2f3540"/>');
+    } else {
+      parts.push('<ellipse cx="39" cy="48" rx="4" ry="5" fill="#2f3540"/>');
+      parts.push('<ellipse cx="61" cy="48" rx="4" ry="5" fill="#2f3540"/>');
+    }
+
+    // 입
+    parts.push(o.mouth ||
+      '<path d="M44 56c2 2.5 10 2.5 12 0" stroke="#2f3540" stroke-width="3" fill="none" stroke-linecap="round"/>');
+
+    // 머리 위 장식
+    if (o.hat) parts.push(o.hat);
+
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+           parts.join('') + '</svg>';
+  }
+
+  var CROWN = '<path d="M36 16l5 7 9-11 9 11 5-7 2 12H34z" fill="#ffcc44" stroke="#c99a17" stroke-width="1.5"/>';
+  var SPARK = '<path d="M84 20l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#ffe07a"/>' +
+              '<path d="M16 26l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z" fill="#ffe07a"/>';
+
+  var ONIGIRI = [
+    // 1 주먹밥
+    onigiri({}),
+    // 2 구운 주먹밥 — 살짝 노릇하게
+    onigiri({ body: '#f7e7c3', eyes: 'happy',
+      top: '<path d="M38 30c6 3 18 3 24 0" stroke="#d9a441" stroke-width="3.5" fill="none" stroke-linecap="round"/>' }),
+    // 3 곱빼기 — 참깨를 뿌렸다
+    onigiri({ eyes: 'happy', blush: true,
+      top: '<g fill="#6b5b3e"><circle cx="42" cy="32" r="2"/><circle cx="55" cy="28" r="2"/>' +
+           '<circle cx="60" cy="36" r="2"/><circle cx="47" cy="39" r="2"/></g>' }),
+    // 4 야채 주먹밥 — 초록 야채
+    onigiri({ body: '#eef7e4', eyes: 'happy', blush: true,
+      top: '<g fill="#66bb52"><ellipse cx="44" cy="33" rx="7" ry="4" transform="rotate(-18 44 33)"/>' +
+           '<ellipse cx="58" cy="31" rx="7" ry="4" transform="rotate(14 58 31)"/></g>' +
+           '<circle cx="51" cy="38" r="3.5" fill="#ff7a5c"/>' }),
+    // 5 카레 주먹밥
+    onigiri({ body: '#ffe9b0', eyes: 'shades',
+      top: '<path d="M34 29c7-7 25-7 32 0-5 5-27 5-32 0z" fill="#d98a22"/>' }),
+    // 6 초밥 — 연어 한 점
+    onigiri({ eyes: 'happy', blush: true,
+      top: '<path d="M31 33c8-9 30-9 38 0-8 7-30 7-38 0z" fill="#ff8f66"/>' +
+           '<path d="M34 32c8-6 24-6 32 0" stroke="#fff0e6" stroke-width="2.6" fill="none"/>' }),
+    // 7 도시락 — 반찬을 이고 있다
+    onigiri({ body: '#fffdf6', eyes: 'star', blush: true,
+      top: '<g><rect x="30" y="24" width="40" height="12" rx="3" fill="#8b5cf6"/>' +
+           '<circle cx="39" cy="30" r="3.4" fill="#ffcc44"/><circle cx="50" cy="30" r="3.4" fill="#4ade80"/>' +
+           '<circle cx="61" cy="30" r="3.4" fill="#ff7a5c"/></g>' }),
+    // 8 황금 주먹밥
+    onigiri({ body: '#ffd75e', eyes: 'star', blush: true,
+      top: '<path d="M34 33c8-7 24-7 32 0-8 5-24 5-32 0z" fill="#fff3c4"/>',
+      hat: CROWN + SPARK,
+      mouth: '<path d="M42 55c3 5 13 5 16 0" stroke="#2f3540" stroke-width="3" fill="none" stroke-linecap="round"/>' })
+  ];
+
   /* ---------- 조리 음식 스킨 ---------- */
   // 탭 수익이 오르면 steps 를 따라 메뉴가 올라간다.
   // at 은 "이 수익부터 이 메뉴" 라는 뜻 (버프·콤보를 뺀 순수 탭 수익 기준).
@@ -188,9 +302,10 @@ var Data = (function () {
   // 7·8단계는 환생 이후의 목표가 된다. 환생하면 탭 수익과 함께 단계도 내려간다.
   var TAP_STEP_AT = [0, 8, 100, 800, 6e3, 5e4, 1e6, 5e7];
 
-  function ladder(list) {
+  // svgs 를 주면 큰 화면과 단계표에서는 그림을, 말풍선처럼 작은 곳에서는 이모지를 쓴다
+  function ladder(list, svgs) {
     return list.map(function (x, i) {
-      return { at: TAP_STEP_AT[i], icon: x[0], name: x[1] };
+      return { at: TAP_STEP_AT[i], icon: x[0], name: x[1], svg: svgs ? svgs[i] : null };
     });
   }
 
@@ -212,12 +327,12 @@ var Data = (function () {
       ])
     },
     {
-      id: 'jumeok', icon: '🍙', name: '주먹밥 부락',
-      desc: '한 손에 쏙 들어오는 밥',
+      id: 'jumeok', icon: '🍙', svg: ONIGIRI[3], name: '주먹밥 부락',
+      desc: '얼굴 달린 주먹밥 친구들',
       steps: ladder([
-        ['🍙', '주먹밥'], ['🍘', '구운 주먹밥'], ['🍚', '곱빼기 밥'], ['🥗', '야채 주먹밥'],
-        ['🍛', '카레 주먹밥'], ['🍣', '초밥'], ['🍱', '도시락'], ['🍲', '솥밥 한상']
-      ])
+        ['🍙', '주먹밥'], ['🍘', '구운 주먹밥'], ['🍚', '깨 주먹밥'], ['🥗', '야채 주먹밥'],
+        ['🍛', '카레 주먹밥'], ['🍣', '연어 주먹밥'], ['🍱', '도시락 주먹밥'], ['🏆', '황금 주먹밥']
+      ], ONIGIRI)
     },
     {
       id: 'tteok', icon: '🍡', name: '떡·디저트',
@@ -329,7 +444,10 @@ var Data = (function () {
     { id: 'ac22', icon: '💫', name: '황금 인맥',      desc: '황금 손님 50명 잡기',            check: function (s) { return s.goldens >= 50; } },
     { id: 'ac23', icon: '🎯', name: '연속 조리',      desc: '콤보 50 달성',                   check: function (s) { return s.bestCombo >= 50; } },
     { id: 'ac24', icon: '📣', name: '호객의 달인',    desc: '손님 몰이 10회 사용',            check: function (s) { return s.boosts >= 10; } },
-    { id: 'ac25', icon: '📅', name: '개근 사장',      desc: '7일 연속 출석',                  check: function (s) { return s.dailyStreak >= 7; } }
+    { id: 'ac25', icon: '📅', name: '개근 사장',      desc: '7일 연속 출석',                  check: function (s) { return s.dailyStreak >= 7; } },
+    { id: 'ac26', icon: '🚨', name: '현행범 체포',    desc: '도둑 1명 직접 잡기',             check: function (s) { return s.thievesCaught >= 1; } },
+    { id: 'ac27', icon: '🥋', name: '분식집 자경단',  desc: '도둑 25명 직접 잡기',            check: function (s) { return s.thievesCaught >= 25; } },
+    { id: 'ac28', icon: '🚓', name: '든든한 순찰',    desc: '경찰이 도둑을 10번 잡아줌',      check: function (s) { return s.thiefSaves >= 10; } }
   ];
 
   return {
@@ -342,6 +460,7 @@ var Data = (function () {
     CROWD_SKINS: CROWD_SKINS,
     HEADWEAR: HEADWEAR,
     GOLDEN: GOLDEN,
+    THIEF: THIEF,
     BOOST: BOOST,
     DAILY: DAILY
   };

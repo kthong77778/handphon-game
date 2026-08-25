@@ -32,6 +32,10 @@ var State = (function () {
       goldTapMult: 1,
       goldens: 0,        // 황금 손님 잡은 횟수
       macroBlocks: 0,    // 매크로로 판정돼 막힌 횟수
+      thievesCaught: 0,  // 직접 잡은 도둑
+      thiefSaves: 0,     // 경찰이 잡아준 횟수
+      thefts: 0,         // 놓친 횟수
+      stolen: 0,         // 도둑맞은 총액
       bestCombo: 0,      // 최고 콤보
 
       tapSkin: 'auto',   // 조리 음식 스킨 id
@@ -55,6 +59,7 @@ var State = (function () {
                    'prestiges', 'playTime', 'offlineClaims', 'startedAt', 'lastSeen',
                    'boostLeft', 'boostCd', 'boosts', 'goldLeft', 'goldMult',
                    'goldTapLeft', 'goldTapMult', 'goldens', 'macroBlocks', 'bestCombo',
+                   'thievesCaught', 'thiefSaves', 'thefts', 'stolen',
                    'dailyStreak', 'dailyClaims'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);

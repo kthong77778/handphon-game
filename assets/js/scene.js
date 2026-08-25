@@ -92,11 +92,12 @@ var Scene = (function () {
     var stopX = rightward ? rnd(w * 0.3, w * 0.55) : rnd(w * 0.45, w * 0.7);
 
     function glide(x, seconds, done) {
+      // 시작 위치를 브라우저가 확정하도록 강제로 레이아웃을 읽는다.
+      // 이 줄이 없으면 시작·도착 transform 이 같은 프레임에 합쳐져
+      // 손님이 출발 지점에 붙박여 있게 된다.
+      node.getBoundingClientRect();
       node.style.transition = 'transform ' + seconds.toFixed(2) + 's linear';
-      // 브라우저가 시작 위치를 인식하도록 한 프레임 미룬다
-      requestAnimationFrame(function () {
-        node.style.transform = 'translateX(' + x + 'px)';
-      });
+      node.style.transform = 'translateX(' + x + 'px)';
       walker.timer = setTimeout(done, seconds * 1000 + 60);
     }
 

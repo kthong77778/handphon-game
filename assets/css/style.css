@@ -709,3 +709,67 @@ body{
   font-size:.5em;text-decoration:none;
 }
 .rung-note b{color:var(--gold)}
+
+/* ===== 도둑 & 경찰 ===== */
+.thief,.police{
+  position:absolute;left:0;
+  font-size:40px;line-height:1;
+  will-change:transform;
+  pointer-events:none;
+}
+.thief{
+  pointer-events:auto;cursor:pointer;
+  z-index:2;
+}
+.thief i,.police i{display:block;font-style:normal}
+.thief i.flip,.police i.flip{transform:scaleX(-1)}
+.thief .body{
+  display:block;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.65)) drop-shadow(0 0 10px rgba(248,113,113,.7));
+  animation:hop .22s ease-in-out infinite;   /* 허둥지둥 뛴다 */
+}
+.thief:active .body{transform:scale(.88)}
+
+/* 도둑이 들고 튀는 돈가방 */
+.thief .bag{
+  position:absolute;right:-.16em;bottom:.02em;
+  font-size:.5em;font-weight:400;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));
+  animation:bagShake .22s ease-in-out infinite;
+}
+@keyframes bagShake{
+  0%,100%{transform:translateY(0) rotate(-10deg)}
+  50%{transform:translateY(-3px) rotate(10deg)}
+}
+
+/* 잡히는 순간 */
+.thief.nabbed{pointer-events:none}
+.thief.nabbed .body{animation:nabbed .55s ease-out forwards}
+.thief.nabbed .bag{animation:none;opacity:0;transition:opacity .2s}
+@keyframes nabbed{
+  0%{transform:scale(1) rotate(0)}
+  35%{transform:scale(1.25) rotate(-14deg)}
+  100%{transform:scale(.5) rotate(22deg);opacity:0}
+}
+
+/* 경찰차 경광등 */
+.police .body{
+  display:block;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));
+  animation:siren .32s steps(1) infinite;
+}
+@keyframes siren{
+  0%{filter:drop-shadow(0 3px 6px rgba(0,0,0,.6)) drop-shadow(0 0 13px rgba(96,165,250,.95))}
+  50%{filter:drop-shadow(0 3px 6px rgba(0,0,0,.6)) drop-shadow(0 0 13px rgba(248,113,113,.95))}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .thief .body,.thief .bag,.police .body{animation:none}
+}
+
+/* ===== 그림으로 그린 음식(주먹밥 캐릭터 등) ===== */
+.tap-emoji svg,.skin-ic svg,.rung svg{
+  display:block;width:1em;height:1em;
+}
+.tap-emoji svg{filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+.rung svg{width:1.05em;height:1.05em}

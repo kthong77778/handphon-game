@@ -320,6 +320,9 @@ var UI = (function () {
       ['황금 손님', Fmt.comma(s.goldens) + '명'],
       ['손님 몰이 사용', Fmt.comma(s.boosts) + '회'],
       ['자동 연타 차단', Fmt.comma(s.macroBlocks) + '회'],
+      ['직접 잡은 도둑', Fmt.comma(s.thievesCaught) + '명'],
+      ['경찰이 잡아준 도둑', Fmt.comma(s.thiefSaves) + '명'],
+      ['도둑맞은 금액', Fmt.won(s.stolen) + ' (' + Fmt.comma(s.thefts) + '회)'],
       ['연속 출석', Fmt.comma(s.dailyStreak) + '일'],
       ['보유 명성', Fmt.num(s.fame)],
       ['재개업 횟수', Fmt.comma(s.prestiges) + '회'],
@@ -395,7 +398,8 @@ var UI = (function () {
                   t.index > Number(lookSig.split('#')[1]);
     lookSig = sig;
 
-    el.tapEmoji.textContent = t.step.icon;
+    if (t.step.svg) el.tapEmoji.innerHTML = t.step.svg;
+    else el.tapEmoji.textContent = t.step.icon;
     el.tapLabel.textContent = t.step.name;
     // 단계가 오를수록 테두리가 화려해진다
     el.tapTarget.className = el.tapTarget.className
@@ -423,7 +427,8 @@ var UI = (function () {
         b.className = 'skin';
         b.dataset.skin = k.id;
         b.innerHTML = '<span class="skin-ic"></span><span class="skin-nm"></span>';
-        b.querySelector('.skin-ic').textContent = k.icon;
+        var ic = b.querySelector('.skin-ic');
+        if (k.svg) ic.innerHTML = k.svg; else ic.textContent = k.icon;
         b.querySelector('.skin-nm').textContent = k.name;
         b.addEventListener('click', function () {
           if (Game.setSkin(kind, k.id)) {
@@ -451,7 +456,8 @@ var UI = (function () {
       var t = Game.tapStep();
       ladderEl.innerHTML = cur.steps.map(function (st, i) {
         var cls = i < t.index ? 'done' : (i === t.index ? 'now' : '');
-        return '<span class="rung ' + cls + '" title="' + st.name + '">' + st.icon + '</span>';
+        return '<span class="rung ' + cls + '" title="' + st.name + '">' +
+               (st.svg || st.icon) + '</span>';
       }).join('');
       var nx = Game.nextTapStep();
       ladderEl.innerHTML += '<span class="rung-note">' + (nx
@@ -596,16 +602,157 @@ var UI = (function () {
     setTimeout(function () { d.remove(); }, 1350);
   }
 
-  /** 매 프레임 호출 — 황금 손님 등장/퇴장을 관리한다 */
+  /* ---------- 도둑 & 경찰 ---------- */
+
+  var thiefTimer = 0;
+  var thiefBusy = false;    // 도둑이 화면에 있는 동안엔 겹쳐 내보내지 않는다
+  var onThief = null;
+
+  function armThief() { thiefTimer = Game.nextThiefGap(); }
+
+  function runner(cls, icon, y) {
+    var node = document.createElement('div');
+    node.className = cls;
+    var face = document.createElement('i');
+    var body = document.createElement('span');
+    body.className = 'body';
+    body.textContent = icon;
+    face.appendChild(body);
+    node.appendChild(face);
+    node.style.top = Math.round(y) + 'px';
+    return node;
+  }
+
+  function glideTo(node, x, seconds) {
+    // 시작 위치를 브라우저가 확정하도록 강제로 레이아웃을 읽는다.
+    // 이 줄이 없으면 시작·도착 transform 이 같은 프레임에 합쳐져
+    // 트랜지션이 아예 시작되지 않는다 (프레임 타이밍에 따라 되다 말다 한다).
+    node.getBoundingClientRect();
+    node.style.transition = 'transform ' + seconds.toFixed(2) + 's linear';
+    node.style.transform = 'translateX(' + x + 'px)';
+  }
+
+  function spawnThief() {
+    if (thiefBusy || !Game.thiefWorthwhile()) return;
+    thiefBusy = true;
+
+    var T = Data.THIEF;
+    var layer = el.goldenLayer;
+    var w = layer.clientWidth || 360;
+    var h = layer.clientHeight || 640;
+    var y = h * 0.3 + Math.random() * h * 0.32;
+
+    var amount = Game.thiefTarget();
+    // 도둑 아이콘 폭이 50px 남짓이라, 딱 가려질 만큼만 밖에서 출발시킨다.
+    // 여유를 크게 잡으면 화면에 보이지도 않는 동안 제한 시간이 흘러간다.
+    var EDGE = 56;
+    var rightward = Math.random() < 0.5;
+    var from = rightward ? -EDGE : w + EDGE;
+    var to = rightward ? w + EDGE : -EDGE;
+    var caughtByPolice = Math.random() < Game.policeChance();
+
+    var thief = runner('thief', '🦹', y);
+    if (!rightward) thief.querySelector('i').className = 'flip';
+    var bag = document.createElement('b');
+    bag.className = 'bag';
+    // 황금 손님의 '현금 다발' 💰 과 헷갈리지 않게 다른 아이콘을 쓴다
+    bag.textContent = '💸';
+    thief.appendChild(bag);
+    thief.style.transform = 'translateX(' + from + 'px)';
+    layer.appendChild(thief);
+
+    var police = runner('police', '🚓', y + 6);
+    if (!rightward) police.querySelector('i').className = 'flip';
+    police.style.transform = 'translateX(' + from + 'px)';
+
+    var timers = [];
+    var settled = false;
+
+    function cleanup() {
+      timers.forEach(clearTimeout);
+      timers.length = 0;
+      [thief, police].forEach(function (n) { if (n.parentNode) n.remove(); });
+      thiefBusy = false;
+      armThief();
+    }
+
+    function finish(kind, res) {
+      if (settled) return;
+      settled = true;
+      thief.style.pointerEvents = 'none';
+      if (onThief) onThief(kind, res);
+      timers.push(setTimeout(cleanup, kind === 'escaped' ? 200 : 900));
+    }
+
+    // 탭해서 직접 잡기
+    thief.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      if (settled) return;
+      var res = Game.catchThief(amount, ev.isTrusted !== false);
+      if (!res) return;                       // 가짜 클릭은 무시
+      thief.classList.add('nabbed');
+      var r = thief.getBoundingClientRect(), lr = layer.getBoundingClientRect();
+      goldenMsg(r.left - lr.left + 26, r.top - lr.top, '🚨 +' + Fmt.won(res.bonus));
+      buzz(28);
+      finish('caught', res);
+    });
+
+    toast('🚨 도둑이다! 탭해서 잡으세요');
+    buzz([14, 60, 14]);
+    glideTo(thief, to, T.life);
+
+    // 경찰 출동
+    timers.push(setTimeout(function () {
+      if (settled) return;
+      layer.appendChild(police);
+      var remain = T.life * (1 - T.policeStart);
+      // 잡을 거면 도둑보다 빨리 달려가 따라붙는다
+      glideTo(police, caughtByPolice ? from + (to - from) * T.policeCatchAt : to,
+              caughtByPolice ? T.life * (T.policeCatchAt - T.policeStart) : remain);
+    }, T.life * T.policeStart * 1000));
+
+    if (caughtByPolice) {
+      timers.push(setTimeout(function () {
+        if (settled) return;
+        thief.style.transition = 'none';
+        thief.classList.add('nabbed');
+        var res = Game.policeCaught(amount);
+        var r = thief.getBoundingClientRect(), lr = layer.getBoundingClientRect();
+        goldenMsg(r.left - lr.left + 26, r.top - lr.top, '🚓 검거!');
+        toast('🚓 경찰이 도둑을 잡았습니다');
+        finish('police', res);
+      }, T.life * T.policeCatchAt * 1000));
+    }
+
+    // 놓침
+    timers.push(setTimeout(function () {
+      if (settled) return;
+      var res = Game.thiefEscaped(amount);
+      toast('💸 도둑에게 ' + Fmt.won(res.lost) + '을 털렸습니다');
+      buzz(40);
+      finish('escaped', res);
+    }, T.life * 1000 + 60));
+  }
+
+  /** 매 프레임 호출 — 황금 손님과 도둑의 등장/퇴장을 관리한다 */
   function tickWorld(dt) {
     Scene.tick(dt);
+
+    // 도둑과 황금 손님은 같은 층을 쓰므로 겹쳐 내보내지 않는다.
+    // 둘 다 탭해야 하는 것이라 겹치면 무엇을 눌러야 할지 알 수 없다.
+    thiefTimer -= dt;
+    if (thiefTimer <= 0 && !goldNode) {
+      if (Game.thiefWorthwhile()) spawnThief();
+      else armThief();          // 훔칠 게 없으면 다음 기회에
+    }
+
     if (goldNode) {
       goldLife -= dt;
       if (goldLife <= 0) { despawnGolden(false); armGolden(); }
       return;
     }
     goldTimer -= dt;
-    if (goldTimer <= 0) spawnGolden();
+    if (goldTimer <= 0 && !thiefBusy) spawnGolden();
   }
 
   /* ---------- 출석 보상 모달 ---------- */
@@ -734,6 +881,7 @@ var UI = (function () {
     });
 
     onGolden = handlers.onGolden;
+    onThief = handlers.onThief;
 
     el.prestigeBtn.addEventListener('click', handlers.onPrestige);
     el.saveBtn.addEventListener('click', handlers.onSave);
@@ -758,6 +906,7 @@ var UI = (function () {
     buildGenList();
     bind(handlers);
     armGolden();
+    armThief();
     showTab('shop');
   }
 

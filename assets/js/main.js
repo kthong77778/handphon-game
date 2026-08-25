@@ -32,6 +32,12 @@
       State.save();
     },
 
+    onThief: function (kind, res) {
+      announceAchievements();
+      UI.refresh(true);
+      State.save();
+    },
+
     onPrestige: function () {
       var gain = Game.fameGain();
       if (gain <= 0) return;
