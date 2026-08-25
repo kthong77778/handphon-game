@@ -2,7 +2,8 @@
 var State = (function () {
 
   var KEY = 'bunsik_idle_save_v1';
-  var VERSION = 2;
+  var VERSION = 3;
+  var MAX_RUNS = 50;      // 회차 기록은 이만큼만 들고 있는다
 
   function now() { return Date.now(); }
 
@@ -41,6 +42,15 @@ var State = (function () {
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
 
+      // 명예의 전당 — 환생해도 남는 개인 기록
+      runTime: 0,        // 이번 회차 경과 시간 (초)
+      bestRunEarned: 0,  // 한 회차 최고 매출
+      bestPerSec: 0,     // 최고 순간 초당 수익
+      bestTap: 0,        // 한 번에 가장 많이 번 탭
+      bestFameGain: 0,   // 한 번에 얻은 최고 명성
+      fastestPrestige: 0,// 최단 환생 소요 시간 (초, 0이면 기록 없음)
+      runs: [],          // 역대 회차 기록 (최근 50개)
+
       dailyDate: '',     // 마지막 출석 보상 날짜 (YYYY-MM-DD)
       dailyStreak: 0,
       dailyClaims: 0,
@@ -60,6 +70,8 @@ var State = (function () {
                    'boostLeft', 'boostCd', 'boosts', 'goldLeft', 'goldMult',
                    'goldTapLeft', 'goldTapMult', 'goldens', 'macroBlocks', 'bestCombo',
                    'thievesCaught', 'thiefSaves', 'thefts', 'stolen',
+                   'runTime', 'bestRunEarned', 'bestPerSec', 'bestTap',
+                   'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
@@ -84,6 +96,22 @@ var State = (function () {
     // 배율은 1 미만으로 내려가면 안 된다 (0이 저장돼 있으면 수익이 통째로 사라진다)
     if (!(s.goldMult >= 1)) s.goldMult = 1;
     if (!(s.goldTapMult >= 1)) s.goldTapMult = 1;
+
+    // 회차 기록 — 숫자만 추리고 개수를 제한한다 (깨진 값이 순위표를 망치지 않게)
+    if (Array.isArray(raw.runs)) {
+      s.runs = raw.runs.filter(function (r) {
+        return r && typeof r === 'object';
+      }).map(function (r) {
+        return {
+          n: Math.max(0, Math.floor(Number(r.n)) || 0),
+          earned: Math.max(0, Number(r.earned) || 0),
+          fame: Math.max(0, Math.floor(Number(r.fame)) || 0),
+          seconds: Math.max(0, Number(r.seconds) || 0)
+        };
+      }).filter(function (r) {
+        return isFinite(r.earned) && isFinite(r.seconds);
+      }).slice(-MAX_RUNS);
+    }
 
     // 스킨은 실제로 있는 id 일 때만 받는다 (없는 걸 넣으면 화면이 비어버린다)
     ['tapSkin', 'crowdSkin'].forEach(function (k) {
@@ -161,6 +189,7 @@ var State = (function () {
     load: load,
     save: save,
     wipe: wipe,
+    MAX_RUNS: MAX_RUNS,
     exportText: exportText,
     importText: importText,
     now: now

@@ -316,6 +316,7 @@ var Game = (function () {
     s.runEarned += v;
     s.totalEarned += v;
     s.taps++;
+    if (v > s.bestTap) s.bestTap = v;
     return { value: v, blocked: '' };
   }
 
@@ -479,8 +480,20 @@ var Game = (function () {
     if (gain <= 0) return 0;
     var s = S();
 
+    // 명예의 전당에 이번 회차를 남긴다
+    s.runs.push({
+      n: s.prestiges + 1,
+      earned: s.runEarned,
+      fame: gain,
+      seconds: s.runTime
+    });
+    if (s.runs.length > State.MAX_RUNS) s.runs = s.runs.slice(-State.MAX_RUNS);
+    if (gain > s.bestFameGain) s.bestFameGain = gain;
+    if (!s.fastestPrestige || s.runTime < s.fastestPrestige) s.fastestPrestige = s.runTime;
+
     s.fame += gain;
     s.prestiges++;
+    s.runTime = 0;
     s.money = startMoney();
     s.runEarned = 0;
     s.gens = {};
@@ -495,6 +508,44 @@ var Game = (function () {
 
     bump();
     return gain;
+  }
+
+  /* ---------- 명예의 전당 ---------- */
+
+  /** 역대 회차를 명성 순으로. 동점이면 빨리 끝낸 회차가 위로. */
+  function topRuns(limit) {
+    return S().runs.slice().sort(function (a, b) {
+      if (b.fame !== a.fame) return b.fame - a.fame;
+      return a.seconds - b.seconds;
+    }).slice(0, limit || 10);
+  }
+
+  /** 지금 환생하면 역대 몇 위가 되는가 (1부터, 순위 밖이면 0) */
+  function projectedRank() {
+    var gain = fameGain();
+    if (gain <= 0) return 0;
+    var s = S();
+    var better = 0;
+    for (var i = 0; i < s.runs.length; i++) {
+      var r = s.runs[i];
+      if (r.fame > gain || (r.fame === gain && r.seconds < s.runTime)) better++;
+    }
+    return better + 1;
+  }
+
+  /** 개인 최고 기록 모음 */
+  function records() {
+    var s = S();
+    return [
+      { icon: '💰', name: '한 회차 최고 매출', value: Fmt.won(s.bestRunEarned) },
+      { icon: '📈', name: '최고 순간 초당 수익', value: Fmt.won(s.bestPerSec) },
+      { icon: '👊', name: '한 번에 가장 많이 번 탭', value: Fmt.won(s.bestTap) },
+      { icon: '✨', name: '한 번에 얻은 최고 명성', value: Fmt.num(s.bestFameGain) },
+      { icon: '⚡', name: '최단 환생 시간', value: s.fastestPrestige ? Fmt.time(s.fastestPrestige) : '—' },
+      { icon: '🔥', name: '최고 콤보', value: Fmt.comma(s.bestCombo) + '콤보' },
+      { icon: '🌟', name: '잡은 황금 손님', value: Fmt.comma(s.goldens) + '명' },
+      { icon: '🚨', name: '직접 잡은 도둑', value: Fmt.comma(s.thievesCaught) + '명' }
+    ];
   }
 
   /* ---------- 오프라인 ---------- */
@@ -529,11 +580,17 @@ var Game = (function () {
   function tick(dt) {
     var s = S();
     tickBuffs(dt);
-    var gain = perSec() * dt;
+    var rate = perSec();
+    var gain = rate * dt;
     s.money += gain;
     s.runEarned += gain;
     s.totalEarned += gain;
     s.playTime += dt;
+    s.runTime += dt;
+
+    // 명예의 전당 기록 갱신
+    if (rate > s.bestPerSec) s.bestPerSec = rate;
+    if (s.runEarned > s.bestRunEarned) s.bestRunEarned = s.runEarned;
     return gain;
   }
 
@@ -770,6 +827,9 @@ var Game = (function () {
     startMoney: startMoney,
     doPrestige: doPrestige,
     PRESTIGE_BASE: PRESTIGE_BASE,
+    topRuns: topRuns,
+    projectedRank: projectedRank,
+    records: records,
     offlineCapSeconds: offlineCapSeconds,
     offlineEfficiency: offlineEfficiency,
     offlineReward: offlineReward,

@@ -18,7 +18,7 @@ var UI = (function () {
      'buffBar', 'combo', 'comboX', 'comboN', 'comboFill',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
-     'tapEmoji', 'tapLabel',
+     'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'tapSkinRow', 'tapSkinNow', 'tapLadder',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
@@ -251,6 +251,48 @@ var UI = (function () {
       costEl.className = 'item-cost ' + (maxed ? '' : (ok ? 'ok' : 'no'));
       row.className = 'item' + (ok ? ' buyable' : '') + (maxed ? ' owned' : '');
     });
+  }
+
+  /* ---------- 명예의 전당 ---------- */
+
+  function renderHallOfFame() {
+    var s = State.get();
+
+    el.recordBox.innerHTML = Game.records().map(function (r) {
+      return '<div class="rec"><span class="rec-ic">' + r.icon + '</span>' +
+             '<span class="rec-nm">' + r.name + '</span>' +
+             '<span class="rec-v">' + r.value + '</span></div>';
+    }).join('');
+
+    var runs = Game.topRuns(10);
+    if (!runs.length) {
+      el.runBoard.innerHTML =
+        '<p class="hint small center" style="margin:6px 0">아직 재개업한 적이 없습니다.<br>' +
+        '첫 재개업을 마치면 이곳에 회차 기록이 쌓입니다.</p>';
+    } else {
+      el.runBoard.innerHTML =
+        '<div class="run-row run-head"><span>순위</span><span>회차</span>' +
+        '<span>매출</span><span>명성</span><span>소요</span></div>' +
+        runs.map(function (r, i) {
+          var medal = ['🥇', '🥈', '🥉'][i] || (i + 1);
+          return '<div class="run-row' + (i < 3 ? ' top' : '') + '">' +
+                 '<span class="run-rank">' + medal + '</span>' +
+                 '<span>' + r.n + '회</span>' +
+                 '<span>' + Fmt.won(r.earned) + '</span>' +
+                 '<span class="run-fame">✨' + Fmt.num(r.fame) + '</span>' +
+                 '<span>' + Fmt.time(r.seconds) + '</span></div>';
+        }).join('');
+    }
+
+    // 지금 환생하면 몇 위인가 — 환생을 미룰지 말지 판단하게 해준다
+    var rank = Game.projectedRank();
+    if (rank > 0) {
+      el.rankNote.textContent = '지금 재개업하면 ' + rank + '위';
+      el.rankNote.className = 'rank-note' + (rank <= 3 ? ' hot' : '');
+    } else {
+      el.rankNote.textContent = '';
+      el.rankNote.className = 'rank-note';
+    }
   }
 
   /* ---------- 도전과제 ---------- */
@@ -797,7 +839,7 @@ var UI = (function () {
     if (currentTab === 'shop') updateGenList();
     else if (currentTab === 'upgrade') renderUpgrades();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
-    else if (currentTab === 'achv') renderAchievements();
+    else if (currentTab === 'achv') { renderHallOfFame(); renderAchievements(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }

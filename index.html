@@ -95,8 +95,17 @@
       <div class="list" id="fameShopList"></div>
     </section>
 
-    <!-- 도전과제 탭 -->
+    <!-- 기록 탭 -->
     <section class="tab-page" data-page="achv" hidden>
+      <h2 class="section-title">🏅 명예의 전당</h2>
+      <div class="card records" id="recordBox"></div>
+
+      <div class="section-head">
+        <h2 class="section-title">역대 회차</h2>
+        <span class="rank-note" id="rankNote"></span>
+      </div>
+      <div class="card runs" id="runBoard"></div>
+
       <h2 class="section-title">도전과제</h2>
       <p class="hint">달성할 때마다 모든 수익이 <b>+1%</b> 영구 증가합니다.</p>
       <div class="list" id="achvList"></div>
@@ -134,7 +143,7 @@
         <button class="btn" id="importBtn">세이브 불러오기</button>
         <button class="btn danger" id="resetBtn">데이터 전체 삭제</button>
       </div>
-      <p class="hint small center">v1.4.0 · 자동 저장 10초 간격</p>
+      <p class="hint small center">v1.5.0 · 자동 저장 10초 간격</p>
     </section>
 
   </main>
@@ -144,7 +153,7 @@
     <button class="tab active" data-tab="shop"><span>🏪</span>가게</button>
     <button class="tab" data-tab="upgrade"><span>⬆️</span>업그레이드<i class="dot" id="dotUpgrade" hidden></i></button>
     <button class="tab" data-tab="prestige"><span>✨</span>환생<i class="dot" id="dotPrestige" hidden></i></button>
-    <button class="tab" data-tab="achv"><span>🏆</span>도전과제</button>
+    <button class="tab" data-tab="achv"><span>🏆</span>기록</button>
     <button class="tab" data-tab="settings"><span>⚙️</span>설정</button>
   </nav>
 
