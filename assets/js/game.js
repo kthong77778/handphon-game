@@ -12,6 +12,23 @@ var Game = (function () {
 
   function S() { return State.get(); }
 
+  // 자바스크립트 수는 1e308 을 넘으면 Infinity 가 되고, 그 뒤 Infinity - Infinity 는
+  // NaN 이라 세이브가 통째로 망가진다. 더하기 전에 천장을 씌운다.
+  var CAP = Number.MAX_VALUE;
+  function cap(v) { return v > CAP ? CAP : (v >= 0 ? v : 0); }
+
+  /** 번 돈을 안전하게 더한다 */
+  function earn(s, amount) {
+    if (!isFinite(amount) || amount <= 0) {
+      if (amount === Infinity) amount = CAP;
+      else return 0;
+    }
+    s.money = cap(s.money + amount);
+    s.runEarned = cap(s.runEarned + amount);
+    s.totalEarned = cap(s.totalEarned + amount);
+    return amount;
+  }
+
   /* ---------- 명성 상점 레벨 ---------- */
   function fameLv(id) { return S().fameLv[id] || 0; }
 
@@ -40,6 +57,7 @@ var Game = (function () {
     stat *= 1 + 0.02 * s.fame;                    // 명성 1당 +2%
     stat *= 1 + 0.01 * achievementCount();        // 도전과제 1개당 +1%
     stat *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
+    stat *= Math.pow(3, fameLv('f_legend'));      // 명성상점: 분식 왕조 (후반 소비처)
 
     var genM = {};
     Data.GENERATORS.forEach(function (g) { genM[g.id] = 1; });
@@ -312,9 +330,7 @@ var Game = (function () {
     pushCombo();
     var v = tapValue();
     var s = S();
-    s.money += v;
-    s.runEarned += v;
-    s.totalEarned += v;
+    earn(s, v);
     s.taps++;
     if (v > s.bestTap) s.bestTap = v;
     return { value: v, blocked: '' };
@@ -510,6 +526,48 @@ var Game = (function () {
     return gain;
   }
 
+  /* ---------- 점장 (오프라인 자동 구매) ---------- */
+
+  function managerBuys() {
+    return Data.MANAGER.buysPerLv * fameLv('f_manager');
+  }
+
+  /**
+   * 자리를 비운 동안 점장이 설비를 대신 산다.
+   * 보유 금액의 일부는 남겨둔다 — 돌아와서 쓸 돈이 하나도 없으면 그것도 답답하다.
+   * @returns {{count:number, spent:number, items:Object}}
+   */
+  function runManager(elapsedSec) {
+    var s = S();
+    var budgetLeft = managerBuys();
+    var result = { count: 0, spent: 0, items: {} };
+    if (budgetLeft <= 0 || elapsedSec < Data.MANAGER.minOfflineSec) return result;
+
+    var floor = s.money * Data.MANAGER.keepRatio;
+
+    for (var i = 0; i < budgetLeft; i++) {
+      // 살 수 있는 것 중 초당 수익이 가장 많이 오르는 것 하나.
+      // 가성비(가격÷수익)로 고르면 언제나 제일 싼 알바생만 사서, 큰돈을 쥐고
+      // 돌아왔는데도 수익이 그대로다.
+      var best = null, bestGain = 0;
+      for (var k = 0; k < Data.GENERATORS.length; k++) {
+        var g = Data.GENERATORS[k];
+        if (!genUnlocked(g.id)) continue;
+        if (genCost(g.id, 1) > s.money - floor) continue;
+        var gain = g.rate * (calc().genM[g.id] || 1);
+        if (gain > bestGain) { bestGain = gain; best = g; }
+      }
+      if (!best) break;
+      var paid = genCost(best.id, 1);
+      if (!buyGen(best.id, 1)) break;
+      result.count++;
+      result.spent += paid;
+      result.items[best.id] = (result.items[best.id] || 0) + 1;
+    }
+    s.autoBought += result.count;
+    return result;
+  }
+
   /* ---------- 명예의 전당 ---------- */
 
   /** 역대 회차를 명성 순으로. 동점이면 빨리 끝낸 회차가 위로. */
@@ -570,9 +628,7 @@ var Game = (function () {
 
   function claimOffline(gain) {
     var s = S();
-    s.money += gain;
-    s.runEarned += gain;
-    s.totalEarned += gain;
+    earn(s, gain);
     s.offlineClaims++;
   }
 
@@ -581,10 +637,7 @@ var Game = (function () {
     var s = S();
     tickBuffs(dt);
     var rate = perSec();
-    var gain = rate * dt;
-    s.money += gain;
-    s.runEarned += gain;
-    s.totalEarned += gain;
+    var gain = earn(s, rate * dt);
     s.playTime += dt;
     s.runTime += dt;
 
@@ -647,9 +700,7 @@ var Game = (function () {
     if (type.id === 'cash') {
       // 초반에 초당 수익이 0이어도 허탕이 되지 않도록 탭 수익으로 바닥을 깐다
       money = Math.max(perSec(true) * 240, tapValue() * 25, 100);
-      s.money += money;
-      s.runEarned += money;
-      s.totalEarned += money;
+      earn(s, money);
       text = '💰 ' + Fmt.won(money) + ' 획득!';
     } else if (type.id === 'rush') {
       // 이미 걸려 있으면 더 센 쪽을 남기고 시간을 새로 채운다
@@ -698,9 +749,7 @@ var Game = (function () {
     if (trusted === false) return null;
     var s = S();
     var bonus = amount * Data.THIEF.catchBonus;
-    s.money += bonus;
-    s.runEarned += bonus;
-    s.totalEarned += bonus;
+    earn(s, bonus);
     s.thievesCaught++;
     return { bonus: bonus, saved: amount };
   }
@@ -779,10 +828,7 @@ var Game = (function () {
     var days = Math.min(s.dailyStreak, d.maxStreak);
     var seconds = d.baseSeconds + d.perStreak * (days - 1);
     var gain = Math.max(perSec(true) * seconds, d.minMoney);
-
-    s.money += gain;
-    s.runEarned += gain;
-    s.totalEarned += gain;
+    earn(s, gain);
 
     return { streak: s.dailyStreak, days: days, seconds: seconds, gain: gain };
   }
@@ -827,6 +873,8 @@ var Game = (function () {
     startMoney: startMoney,
     doPrestige: doPrestige,
     PRESTIGE_BASE: PRESTIGE_BASE,
+    managerBuys: managerBuys,
+    runManager: runManager,
     topRuns: topRuns,
     projectedRank: projectedRank,
     records: records,

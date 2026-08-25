@@ -39,6 +39,9 @@ var State = (function () {
       stolen: 0,         // 도둑맞은 총액
       bestCombo: 0,      // 최고 콤보
 
+      mute: 0,           // 소리 끄기 (0/1)
+      sawTour: 0,        // 첫 실행 안내를 봤는가 (0/1)
+      autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
@@ -73,7 +76,7 @@ var State = (function () {
                    'thievesCaught', 'thiefSaves', 'thefts', 'stolen',
                    'runTime', 'bestRunEarned', 'bestPerSec', 'bestTap',
                    'bestFameGain', 'fastestPrestige',
-                   'dailyStreak', 'dailyClaims', 'sheetUp'];
+                   'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
       if (isFinite(v) && v >= 0) s[k] = v;

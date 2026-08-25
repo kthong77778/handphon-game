@@ -142,6 +142,16 @@ var Data = (function () {
       id: 'f_police', icon: '🚓', name: '야간 순찰',
       desc: '경찰이 도둑을 잡아줄 확률 +7%p',
       baseCost: 3, costGrow: 1.9, max: 10
+    },
+    {
+      id: 'f_manager', icon: '🧑‍💼', name: '점장 고용',
+      desc: '자리를 비운 동안 설비를 대신 사둡니다 (레벨당 +2회)',
+      baseCost: 8, costGrow: 2.3, max: 10
+    },
+    {
+      id: 'f_legend', icon: '👑', name: '분식 왕조',
+      desc: '모든 수익 ×3 (중첩) — 후반 명성 소비처',
+      baseCost: 5000, costGrow: 3.2, max: 25
     }
   ];
 
@@ -192,6 +202,15 @@ var Data = (function () {
     dur: 60,           // 지속 시간 (초)
     cd: 900,           // 쿨다운 (초) — 명성상점 f_boost 로 줄어든다
     cdPerLv: 0.92
+  };
+
+  /* ---------- 점장 (오프라인 자동 구매) ---------- */
+  // 돌아왔을 때 돈만 쌓여 있고 직접 다 사야 하는 게 방치형에서 가장 지치는 부분이다.
+  // 점장은 자리를 비운 동안 가성비가 좋은 설비를 대신 사둔다.
+  var MANAGER = {
+    buysPerLv: 2,        // 명성상점 레벨당 살 수 있는 횟수
+    minOfflineSec: 300,  // 5분은 넘게 비워야 일한다
+    keepRatio: 0.25      // 보유 금액의 이만큼은 남겨둔다 (돌아와서 쓸 돈)
   };
 
   /* ---------- 일일 출석 보상 ---------- */
@@ -608,7 +627,12 @@ var Data = (function () {
     { id: 'ac25', icon: '📅', name: '개근 사장',      desc: '7일 연속 출석',                  check: function (s) { return s.dailyStreak >= 7; } },
     { id: 'ac26', icon: '🚨', name: '현행범 체포',    desc: '도둑 1명 직접 잡기',             check: function (s) { return s.thievesCaught >= 1; } },
     { id: 'ac27', icon: '🥋', name: '분식집 자경단',  desc: '도둑 25명 직접 잡기',            check: function (s) { return s.thievesCaught >= 25; } },
-    { id: 'ac28', icon: '🚓', name: '든든한 순찰',    desc: '경찰이 도둑을 10번 잡아줌',      check: function (s) { return s.thiefSaves >= 10; } }
+    { id: 'ac28', icon: '🚓', name: '든든한 순찰',    desc: '경찰이 도둑을 10번 잡아줌',      check: function (s) { return s.thiefSaves >= 10; } },
+    { id: 'ac29', icon: '🧑‍💼', name: '믿음직한 점장',  desc: '점장이 대신 산 설비 100개',      check: function (s) { return s.autoBought >= 100; } },
+    { id: 'ac30', icon: '🌀', name: '백 번의 재개업',  desc: '환생 100회',                     check: function (s) { return s.prestiges >= 100; } },
+    { id: 'ac31', icon: '💠', name: '명성 100만',      desc: '명성 100만 보유',                check: function (s) { return s.fame >= 1e6; } },
+    { id: 'ac32', icon: '👑', name: '분식 왕조',       desc: '분식 왕조 10레벨',               check: function (s) { return (s.fameLv.f_legend || 0) >= 10; } },
+    { id: 'ac33', icon: '♾️', name: '천문학적',        desc: '누적 1극원 벌기',                check: function (s) { return s.totalEarned >= 1e48; } }
   ];
 
   return {
@@ -622,6 +646,7 @@ var Data = (function () {
     HEADWEAR: HEADWEAR,
     GOLDEN: GOLDEN,
     THIEF: THIEF,
+    MANAGER: MANAGER,
     BOOST: BOOST,
     DAILY: DAILY
   };

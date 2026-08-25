@@ -22,6 +22,8 @@ var UI = (function () {
      'tapSkinRow', 'tapSkinNow', 'tapLadder',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
+     'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
+     'muteBtn', 'helpBtn',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
@@ -54,8 +56,11 @@ var UI = (function () {
 
   /* ---------- 아이템 행 만들기 ---------- */
 
-  function makeItem(iconText) {
-    var row = document.createElement('div');
+  function makeItem(iconText, opts) {
+    // div + click 이면 키보드로 살 수 없고 스크린리더가 버튼으로 읽지 않는다.
+    // 누를 수 있는 행은 button, 보여주기만 하는 행(도전과제)은 div 로 만든다.
+    var row = document.createElement(opts && opts.static ? 'div' : 'button');
+    if (row.tagName === 'BUTTON') row.type = 'button';
     row.className = 'item';
     row.innerHTML =
       '<div class="item-icon"></div>' +
@@ -160,6 +165,7 @@ var UI = (function () {
       if (amt < 1) { toast('돈이 부족합니다'); return; }
     }
     if (Game.buyGen(id, amt)) {
+      Sound.play('buy');
       buzz(8);
       refresh(true);
     } else {
@@ -184,6 +190,7 @@ var UI = (function () {
         p.desc.textContent = u.desc;
         row.addEventListener('click', function () {
           if (Game.buyUpgrade(u.id)) {
+            Sound.play('upgrade');
             buzz(12);
             toast(u.name + ' 구매!');
             refresh(true);
@@ -231,6 +238,7 @@ var UI = (function () {
         row.addEventListener('click', function () {
           if (Game.fameLv(f.id) >= f.max) { toast('이미 최대 레벨입니다'); return; }
           if (Game.buyFame(f.id)) {
+            Sound.play('upgrade');
             buzz(12);
             toast(f.name + ' 강화!');
             refresh(true);
@@ -309,7 +317,7 @@ var UI = (function () {
     el.achvList.innerHTML = '';
     Data.ACHIEVEMENTS.forEach(function (a) {
       var got = !!s.achievements[a.id];
-      var row = makeItem(got ? a.icon : '🔒');
+      var row = makeItem(got ? a.icon : '🔒', { static: true });
       var p = parts(row);
       p.nm.textContent = a.name;
       p.desc.textContent = a.desc;
@@ -345,6 +353,10 @@ var UI = (function () {
     }
   }
 
+  function updateMuteBtn() {
+    el.muteBtn.textContent = Sound.muted() ? '🔇 소리 꺼짐' : '🔊 소리 켜짐';
+  }
+
   /* ---------- 통계 ---------- */
 
   function renderStats() {
@@ -365,6 +377,7 @@ var UI = (function () {
       ['황금 손님', Fmt.comma(s.goldens) + '명'],
       ['손님 몰이 사용', Fmt.comma(s.boosts) + '회'],
       ['자동 연타 차단', Fmt.comma(s.macroBlocks) + '회'],
+      ['점장이 산 설비', Fmt.comma(s.autoBought) + '개'],
       ['직접 잡은 도둑', Fmt.comma(s.thievesCaught) + '명'],
       ['경찰이 잡아준 도둑', Fmt.comma(s.thiefSaves) + '명'],
       ['도둑맞은 금액', Fmt.won(s.stolen) + ' (' + Fmt.comma(s.thefts) + '회)'],
@@ -455,6 +468,7 @@ var UI = (function () {
       void el.tapEmoji.offsetWidth;          // 애니메이션 재시작
       el.tapEmoji.classList.add('levelup');
       toast('🎉 ' + t.step.name + ' 개시!');
+      Sound.play('levelup');
       buzz(24);
     }
   }
@@ -541,6 +555,7 @@ var UI = (function () {
     var now = Date.now();
     if (now - blockToastAt < 2500) return;                // 토스트 도배 방지
     blockToastAt = now;
+    Sound.play('blocked');
     toast(reason === 'macro'
       ? '🤖 자동 연타가 감지돼 잠시 조리를 멈춥니다'
       : '잠시 후 다시 조리할 수 있습니다');
@@ -634,6 +649,7 @@ var UI = (function () {
     goldNode = node;
     goldLife = Data.GOLDEN.life;
     toast('🌟 황금 손님이 왔어요!');
+    Sound.play('golden');
     buzz(14);
   }
 
@@ -738,11 +754,13 @@ var UI = (function () {
       thief.classList.add('nabbed');
       var r = thief.getBoundingClientRect(), lr = layer.getBoundingClientRect();
       goldenMsg(r.left - lr.left + 26, r.top - lr.top, '🚨 +' + Fmt.won(res.bonus));
+      Sound.play('caught');
       buzz(28);
       finish('caught', res);
     });
 
     toast('🚨 도둑이다! 탭해서 잡으세요');
+    Sound.play('thief');
     buzz([14, 60, 14]);
     glideTo(thief, to, T.life);
 
@@ -765,6 +783,7 @@ var UI = (function () {
         var r = thief.getBoundingClientRect(), lr = layer.getBoundingClientRect();
         goldenMsg(r.left - lr.left + 26, r.top - lr.top, '🚓 검거!');
         toast('🚓 경찰이 도둑을 잡았습니다');
+        Sound.play('caught');
         finish('police', res);
       }, T.life * T.policeCatchAt * 1000));
     }
@@ -774,6 +793,7 @@ var UI = (function () {
       if (settled) return;
       var res = Game.thiefEscaped(amount);
       toast('💸 도둑에게 ' + Fmt.won(res.lost) + '을 털렸습니다');
+      Sound.play('lost');
       buzz(40);
       finish('escaped', res);
     }, T.life * 1000 + 60));
@@ -845,7 +865,7 @@ var UI = (function () {
     else if (currentTab === 'upgrade') renderUpgrades();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderHallOfFame(); renderAchievements(); }
-    else if (currentTab === 'settings') { renderStats(); renderSkins(); }
+    else if (currentTab === 'settings') { renderStats(); renderSkins(); updateMuteBtn(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 
@@ -908,6 +928,70 @@ var UI = (function () {
         try { el.textInput.focus(); el.textInput.select(); } catch (e) {}
       }, 60);
     }
+  }
+
+  /* ---------- 첫 실행 안내 ----------
+     콤보·황금 손님·도둑·시트는 알려주지 않으면 스스로 발견해야 한다. */
+
+  var TOUR = [
+    { emoji: '🍢', title: '분식집을 물려받았습니다',
+      text: '가운데를 <b>탭</b>하면 조리해서 돈을 법니다.<br>' +
+            '빠르게 연타하면 <b>콤보</b>가 붙어 수익이 최대 3배까지 오릅니다.' },
+    { emoji: '🧑‍🍳', title: '설비를 사면 알아서 법니다',
+      text: '아래 시트의 손잡이를 <b>위로 밀면</b> 설비를 한 번에 더 볼 수 있습니다.<br>' +
+            '설비는 자리를 비운 동안에도 돈을 벌어둡니다.' },
+    { emoji: '🌟', title: '황금 손님을 놓치지 마세요',
+      text: '가끔 화면을 가로지릅니다. <b>탭해서 잡으면</b> 큰 보상이나<br>' +
+            '한동안 수익이 몇 배로 뛰는 버프를 받습니다.' },
+    { emoji: '🦹', title: '도둑도 옵니다',
+      text: '💸 을 들고 도망칩니다. <b>7초 안에 탭하면</b> 피해 없이 보너스까지,<br>' +
+            '놓치면 그때 돈이 빠집니다. 경찰이 잡아줄 때도 있습니다.' },
+    { emoji: '✨', title: '재개업으로 더 멀리',
+      text: '가게를 정리하면 <b>명성</b>이 남아 모든 수익을 영구히 올립니다.<br>' +
+            '반복할수록 같은 자리까지 훨씬 빨리 돌아옵니다.' }
+  ];
+
+  var tourAt = 0;
+  var tourDone = null;
+
+  /**
+   * @param {number} [from] 시작 장
+   * @param {function} [onDone] 끝났을 때 (첫 실행이면 여기서 출석·오프라인 정산을 잇는다)
+   */
+  function showTour(from, onDone) {
+    tourAt = from || 0;
+    tourDone = onDone || null;
+    drawTour();
+    el.tourModal.hidden = false;
+  }
+
+  function drawTour() {
+    var t = TOUR[tourAt];
+    el.tourEmoji.textContent = t.emoji;
+    el.tourTitle.textContent = t.title;
+    el.tourText.innerHTML = t.text;
+    el.tourNext.textContent = (tourAt === TOUR.length - 1) ? '시작하기' : '다음';
+    el.tourSkip.hidden = (tourAt === TOUR.length - 1);
+    el.tourDots.innerHTML = TOUR.map(function (_, i) {
+      return '<i class="' + (i === tourAt ? 'on' : '') + '"></i>';
+    }).join('');
+  }
+
+  function endTour() {
+    el.tourModal.hidden = true;
+    State.get().sawTour = 1;
+    State.save();
+    var f = tourDone; tourDone = null;
+    if (f) f();
+  }
+
+  function bindTour() {
+    el.tourNext.addEventListener('click', function () {
+      Sound.play('buy');
+      if (tourAt < TOUR.length - 1) { tourAt++; drawTour(); }
+      else endTour();
+    });
+    el.tourSkip.addEventListener('click', endTour);
   }
 
   /* ---------- 가게 시트 (위: 조리 / 아래: 목록) ---------- */
@@ -981,6 +1065,10 @@ var UI = (function () {
       txt += '<br><span style="font-size:12px">(최대 ' + Fmt.time(reward.capped) +
              '까지만 인정 — 명성 상점에서 늘릴 수 있어요)</span>';
     }
+    if (Game.managerBuys() > 0) {
+      txt += '<br><span style="font-size:12px">🧑‍💼 점장이 이 돈으로 설비를 최대 ' +
+             Game.managerBuys() + '개까지 사둡니다</span>';
+    }
     el.offlineText.innerHTML = txt;
     el.offlineModal.hidden = false;
     el.offlineOk.onclick = function () {
@@ -998,12 +1086,15 @@ var UI = (function () {
 
       var rect = el.tapZone.getBoundingClientRect();
       var pt = (ev.changedTouches && ev.changedTouches[0]) || ev;
-      var x = (pt.clientX || rect.width / 2) - rect.left;
-      var y = (pt.clientY || rect.height / 2) - rect.top;
+      var hasPos = typeof pt.clientX === 'number';
+      var x = (hasPos ? pt.clientX : rect.left + rect.width / 2) - rect.left;
+      var y = (hasPos ? pt.clientY : rect.top + rect.height / 2) - rect.top;
 
       // isTrusted 가 false 면 스크립트가 만들어낸 가짜 입력이다.
       // 좌표도 함께 넘겨야 매크로 판정이 간격만 보고 사람을 막지 않는다.
-      var res = handlers.onTap(ev.isTrusted !== false, x, y);
+      // 키보드 입력은 좌표가 없다 — 좌표 신호 없이 간격만으로는 매크로로 몰지 않는다
+      var res = handlers.onTap(ev.isTrusted !== false,
+                               hasPos ? x : undefined, hasPos ? y : undefined);
       if (res.blocked) { showBlocked(res.blocked); return; }
 
       el.tapTarget.classList.add('hit');
@@ -1011,10 +1102,19 @@ var UI = (function () {
 
       floatText(x, y, '+' + Fmt.num(res.value));
       Scene.popFood();
+      Sound.play('tap', Game.comboCount());
       buzz(6);
       updateHud();
     };
     // pointerdown 하나로 터치/마우스를 모두 처리 (중복 입력 방지)
+    // 스페이스·엔터로도 조리할 수 있게 (키보드 사용자와 스크린리더)
+    el.tapTarget.addEventListener('keydown', function (ev) {
+      if (ev.key !== ' ' && ev.key !== 'Enter') return;
+      if (ev.repeat) return;              // 누르고 있으면 연타로 세지 않는다
+      ev.preventDefault();
+      press(ev);
+    });
+
     if (window.PointerEvent) {
       el.tapTarget.addEventListener('pointerdown', press);
     } else {
@@ -1043,6 +1143,7 @@ var UI = (function () {
       if (st.boostLeft > 0) { toast('이미 손님이 몰려 있습니다'); return; }
       if (st.boostCd > 0) { toast('준비까지 ' + Fmt.time(st.boostCd) + ' 남았습니다'); return; }
       if (Game.startBoost()) {
+        Sound.play('boost');
         buzz(20);
         toast('📣 ' + Data.BOOST.dur + '초 동안 수익 ×' + Data.BOOST.mult + '!');
         refresh(true);
@@ -1051,6 +1152,14 @@ var UI = (function () {
 
     onGolden = handlers.onGolden;
     onThief = handlers.onThief;
+
+    el.muteBtn.addEventListener('click', function () {
+      Sound.setMuted(!Sound.muted());
+      updateMuteBtn();
+      State.save();
+      if (!Sound.muted()) Sound.play('buy');
+    });
+    el.helpBtn.addEventListener('click', function () { showTour(0); });
 
     el.prestigeBtn.addEventListener('click', handlers.onPrestige);
     el.saveBtn.addEventListener('click', handlers.onSave);
@@ -1075,7 +1184,9 @@ var UI = (function () {
     buildGenList();
     bind(handlers);
     bindSheet();
+    bindTour();
     setSheet(sheetUp(), false);
+    Sound.arm();
     armGolden();
     armThief();
     showTab('shop');
@@ -1090,6 +1201,7 @@ var UI = (function () {
     showDaily: showDaily,
     ask: ask,
     textDialog: textDialog,
+    showTour: showTour,
     setSheet: setSheet,
     tickWorld: tickWorld,
     toast: toast,

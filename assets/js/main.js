@@ -13,6 +13,7 @@
   function announceAchievements() {
     var got = Game.checkAchievements();
     if (got.length) {
+      Sound.play('achv');
       UI.invalidate();
       UI.toast('🏆 ' + got[0].name + ' 달성!' + (got.length > 1 ? ' 외 ' + (got.length - 1) + '개' : ''));
     }
@@ -54,6 +55,7 @@
         UI.invalidate();
         State.save();
         UI.showTab('shop');
+        Sound.play('prestige');
         UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
       });
     },
@@ -186,10 +188,18 @@
 
     if (reward.gain <= 0) { done(); return; }
     UI.showOffline(reward, function () {
+      Sound.play('reward');
       Game.claimOffline(reward.gain);
+      // 보상을 받은 뒤에 점장이 그 돈으로 설비를 산다 (받기 전엔 살 돈이 없다)
+      var hired = Game.runManager(elapsed);
+      Game.invalidate();
       announceAchievements();
       State.save();
       UI.refresh(true);
+      if (hired.count > 0) {
+        UI.toast('🧑‍💼 점장이 설비 ' + hired.count + '개를 사뒀습니다');
+        Sound.play('buy');
+      }
       done();
     });
   }
@@ -200,6 +210,7 @@
     var res = Game.claimDaily();
     if (!res) return;
     UI.showDaily(res, function () {
+      Sound.play('reward');
       announceAchievements();
       State.save();
       UI.refresh(true);
@@ -210,12 +221,21 @@
     settleOffline(settleDaily);
   }
 
+  /* ---------- 첫 실행 안내 ---------- */
+  function maybeTour() {
+    if (State.get().sawTour) return;
+    // 안내가 끝난 뒤에 정산한다. 먼저 띄우면 모달이 겹치고,
+    // 아예 건너뛰면 첫날 출석 보상을 그날 못 받는다.
+    UI.showTour(0, settleReturn);
+  }
+
   /* ---------- 시작 ---------- */
   function boot() {
     State.load();
     Game.invalidate();
     UI.init(handlers);
-    settleReturn();
+    if (State.get().sawTour) settleReturn();
+    else maybeTour();          // 처음이면 정산 모달과 겹치지 않게 안내부터
     UI.refresh(true);
     requestAnimationFrame(loop);
 

@@ -18,6 +18,7 @@ var Fmt = (function () {
   ];
 
   function comma(n) {
+    if (!isFinite(n)) return isNaN(n) ? '0' : INF;
     return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
@@ -29,9 +30,15 @@ var Fmt = (function () {
     return s;
   }
 
+  var INF = '∞';
+
   /** 큰 수를 한국식 단위로 (예: 1.23억) */
   function num(n) {
-    if (n === null || n === undefined || !isFinite(n)) return '0';
+    // isFinite 하나로 묶으면 Infinity 까지 '0' 이 된다.
+    // 방치형은 몇 주면 1e308 을 넘길 수 있고, 그때 최고 부자가 빈털터리로 보인다.
+    if (n === null || n === undefined || (typeof n === 'number' && isNaN(n))) return '0';
+    if (n === Infinity) return INF;
+    if (n === -Infinity) return '-' + INF;
     if (n < 0) return '-' + num(-n);
     if (n < 1e4) return comma(n);
     if (n >= 1e52) return n.toExponential(2).replace('e+', 'e');
@@ -44,6 +51,7 @@ var Fmt = (function () {
 
   /** 초당 수치처럼 작은 값도 보여줘야 하는 경우 */
   function rate(n) {
+    if (n === Infinity) return INF;
     if (!isFinite(n) || n <= 0) return '0';
     if (n < 1) return n.toFixed(2);
     if (n < 100) return n.toFixed(1);
@@ -57,11 +65,13 @@ var Fmt = (function () {
 
   /** 초 -> "1시간 23분" */
   function time(sec) {
+    if (!isFinite(sec)) return isNaN(sec) ? '0초' : INF;
     sec = Math.max(0, Math.floor(sec));
     var d = Math.floor(sec / 86400);
     var h = Math.floor((sec % 86400) / 3600);
     var m = Math.floor((sec % 3600) / 60);
     var s = sec % 60;
+    if (d > 9999) return comma(d) + '일';   // 지수 표기가 새어나오지 않게
     if (d > 0) return d + '일 ' + h + '시간';
     if (h > 0) return h + '시간 ' + m + '분';
     if (m > 0) return m + '분 ' + s + '초';
@@ -70,9 +80,12 @@ var Fmt = (function () {
 
   /** 배율 표기 (×1.25) */
   function mult(x) {
+    // toFixed 는 NaN 을 그대로 흘려보낸다 — 화면에 '×NaN' 이 뜨던 자리다
+    if (x === null || x === undefined || (typeof x === 'number' && isNaN(x))) return '×1.00';
+    if (!isFinite(x)) return '×' + num(x);
     if (x >= 1000) return '×' + num(x);
     return '×' + x.toFixed(2);
   }
 
-  return { num: num, rate: rate, won: won, time: time, mult: mult, comma: comma };
+  return { num: num, rate: rate, won: won, time: time, mult: mult, comma: comma, INF: INF };
 })();

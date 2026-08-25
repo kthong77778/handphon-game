@@ -39,7 +39,7 @@
       <!-- 위: 조리하는 곳 (스크롤되지 않는다) -->
       <div class="shop-top" id="shopTop">
         <div class="tap-zone" id="tapZone">
-          <div class="tap-target" id="tapTarget">
+          <div class="tap-target" id="tapTarget" role="button" tabindex="0" aria-label="조리하기">
             <div class="tap-emoji" id="tapEmoji">🍢</div>
             <div class="tap-label" id="tapLabel">어묵 꼬치</div>
             <div class="tap-power" id="tapPower">+1 원</div>
@@ -78,7 +78,7 @@
               <button data-amt="max">최대</button>
             </div>
           </div>
-          <div class="list" id="genList"></div>
+          <div class="list" id="genList" role="list"></div>
         </div>
       </div>
     </section>
@@ -87,7 +87,7 @@
     <section class="tab-page" data-page="upgrade" hidden>
       <h2 class="section-title">업그레이드</h2>
       <p class="hint" id="upgradeHint"></p>
-      <div class="list" id="upgradeList"></div>
+      <div class="list" id="upgradeList" role="list"></div>
     </section>
 
     <!-- 환생 탭 -->
@@ -108,7 +108,7 @@
         <p class="hint small" id="prestigeReq"></p>
       </div>
       <h2 class="section-title">명성 상점</h2>
-      <div class="list" id="fameShopList"></div>
+      <div class="list" id="fameShopList" role="list"></div>
     </section>
 
     <!-- 기록 탭 -->
@@ -154,12 +154,14 @@
       <div class="card stats" id="statsBox"></div>
       <h2 class="section-title">설정</h2>
       <div class="card">
+        <button class="btn" id="muteBtn">🔊 소리 켜짐</button>
+        <button class="btn" id="helpBtn">❓ 조작 안내 다시 보기</button>
         <button class="btn" id="saveBtn">지금 저장</button>
         <button class="btn" id="exportBtn">세이브 내보내기</button>
         <button class="btn" id="importBtn">세이브 불러오기</button>
         <button class="btn danger" id="resetBtn">데이터 전체 삭제</button>
       </div>
-      <p class="hint small center">v1.7.0 · 자동 저장 10초 간격</p>
+      <p class="hint small center">v1.8.0 · 자동 저장 10초 간격</p>
     </section>
 
   </main>
@@ -196,6 +198,18 @@
   </div>
 </div>
 
+<!-- 첫 실행 안내 -->
+<div class="modal" id="tourModal" hidden>
+  <div class="modal-box tour">
+    <div class="modal-emoji" id="tourEmoji">🍢</div>
+    <h3 id="tourTitle"></h3>
+    <p id="tourText"></p>
+    <div class="tour-dots" id="tourDots"></div>
+    <button class="btn big" id="tourNext">다음</button>
+    <button class="btn" id="tourSkip">건너뛰기</button>
+  </div>
+</div>
+
 <!-- 확인 모달 (confirm 대체 — 샌드박스 iframe 에서는 confirm 이 막힌다) -->
 <div class="modal" id="askModal" hidden>
   <div class="modal-box">
@@ -227,6 +241,7 @@
 <div id="toast" hidden></div>
 
 <script src="assets/js/format.js"></script>
+<script src="assets/js/sound.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/state.js"></script>
 <script src="assets/js/game.js"></script>

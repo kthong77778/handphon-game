@@ -915,3 +915,22 @@ body{
 }
 .code-box:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .modal-box .btn + .btn{margin-top:-4px}
+
+/* 목록 행이 button 이 되면서 브라우저 기본 스타일이 끼어든다 */
+button.item{
+  width:100%;text-align:left;
+  font-family:inherit;font-size:inherit;color:inherit;
+  appearance:none;
+}
+button.item:focus-visible,
+.tap-target:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ===== 첫 실행 안내 ===== */
+.modal-box.tour{max-width:340px}
+.tour-dots{display:flex;gap:6px;justify-content:center;margin:2px 0 4px}
+.tour-dots i{
+  width:7px;height:7px;border-radius:50%;
+  background:rgba(255,255,255,.18);
+  transition:background .18s,width .18s;
+}
+.tour-dots i.on{background:var(--gold);width:18px;border-radius:999px}

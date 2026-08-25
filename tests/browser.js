@@ -44,7 +44,14 @@ function serve() {
 const D = process.env.SHOT_DIR || path.join(__dirname, '.shots');
 
 const SUITES = [];
-function suite(name, fn) { SUITES.push({ name, fn }); }
+/**
+ * @param {string} name
+ * @param {function} fn
+ * @param {{tour?:boolean}} [opts] tour:true 면 첫 실행 안내를 그대로 둔다.
+ *   나머지 스위트는 이미 안내를 본 상태로 시작한다 — 안 그러면 모든 스위트가
+ *   안내 모달에 막힌다.
+ */
+function suite(name, fn, opts) { SUITES.push({ name, fn, opts: opts || {} }); }
 
 suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
   const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
@@ -800,6 +807,97 @@ suite('시트 · 모달 · 데이터 삭제', async ({ page, ctx, ok, errs }) =>
 });
 
 
+suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs }) => {
+  const p = page;
+  const errors = errs;
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+
+    console.log('[1] 첫 실행 안내');
+    ok(!await p.isHidden('#tourModal'), '처음 들어오면 안내가 뜸');
+    ok((await p.locator('#tourDots i').count())===5, '5장짜리');
+    for (let i=0;i<4;i++){ await p.click('#tourNext'); await p.waitForTimeout(120); }
+    ok((await p.textContent('#tourNext'))==='시작하기', '마지막 장은 시작하기');
+    await p.click('#tourNext'); await p.waitForTimeout(300);
+    ok(await p.isHidden('#tourModal'), '끝내면 닫힘');
+    ok(await p.evaluate(()=>State.get().sawTour)===1, '봤다고 기록');
+    // 안내가 끝나면 첫날 출석 보상이 이어서 뜬다
+    ok(!await p.isHidden('#dailyModal'), '안내 뒤에 출석 보상이 이어짐');
+    await p.click('#dailyOk'); await p.waitForTimeout(250);
+    await p.reload(); await p.waitForTimeout(800);
+    ok(await p.isHidden('#tourModal'), '두 번째부터는 안 뜸');
+    if (!await p.isHidden('#dailyModal')) await p.click('#dailyOk');
+    await p.waitForTimeout(200);
+
+    console.log('\n[2] 키보드로 조리');
+    const t0=await p.evaluate(()=>State.get().taps);
+    await p.focus('#tapTarget');
+    ok(await p.evaluate(()=>document.activeElement.id)==='tapTarget', '조리 버튼에 포커스가 간다');
+    await p.keyboard.press('Enter'); await p.waitForTimeout(80);
+    await p.keyboard.press('Space'); await p.waitForTimeout(80);
+    ok(await p.evaluate(()=>State.get().taps)===t0+2, '엔터·스페이스로 조리됨');
+
+    console.log('\n[3] 목록이 진짜 버튼');
+    await p.evaluate(()=>{const s=State.get();s.money=1e9;Game.invalidate();UI.refresh(true);});
+    await p.waitForTimeout(300);
+    const tags = await p.evaluate(()=>[...document.querySelectorAll('#genList .item')].map(e=>e.tagName));
+    ok(tags.every(t=>t==='BUTTON'), `설비 ${tags.length}행 전부 button`);
+    const g0 = await p.evaluate(()=>State.get().gens.g1||0);
+    await p.evaluate(()=>{ const b=[...document.querySelectorAll('#genList .item')].find(e=>!e.hidden); b.focus(); });
+    await p.keyboard.press('Enter'); await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>State.get().gens.g1||0) > g0, '키보드로 설비 구매됨');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(300);
+    const achv = await p.evaluate(()=>[...document.querySelectorAll('#achvList .item')].map(e=>e.tagName));
+    ok(achv.every(t=>t==='DIV'), '도전과제는 누를 수 없으니 div');
+
+    console.log('\n[4] 소리');
+    ok(await p.evaluate(()=>typeof Sound!=='undefined'), 'Sound 모듈 로드');
+    const audio = await p.evaluate(()=>{ Sound.wake(); return { muted: Sound.muted() }; });
+    ok(audio.muted===false, '기본은 소리 켜짐');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(300);
+    ok((await p.textContent('#muteBtn')).includes('켜짐'), '버튼 문구: ' + await p.textContent('#muteBtn'));
+    await p.click('#muteBtn'); await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>Sound.muted())===true, '누르면 음소거');
+    ok((await p.textContent('#muteBtn')).includes('꺼짐'), '문구 바뀜');
+    await p.reload(); await p.waitForTimeout(700);
+    ok(await p.evaluate(()=>Sound.muted())===true, '음소거가 세이브에 남음');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
+    await p.click('#muteBtn'); await p.waitForTimeout(150);
+    // 소리를 내도 터지지 않아야 한다
+    await p.evaluate(()=>['tap','buy','upgrade','levelup','golden','thief','caught','lost','boost','prestige','achv','reward','blocked']
+      .forEach(n=>Sound.play(n, 10)));
+    ok(true, '13종 소리 재생에 예외 없음');
+
+    console.log('\n[5] 안내 다시 보기');
+    await p.click('#helpBtn'); await p.waitForTimeout(250);
+    ok(!await p.isHidden('#tourModal'), '설정에서 다시 볼 수 있음');
+    await p.click('#tourSkip'); await p.waitForTimeout(200);
+    ok(await p.isHidden('#tourModal'), '건너뛰기 동작');
+
+    console.log('\n[6] 점장');
+    await p.evaluate(()=>{
+      const s=State.get(); s.fameLv.f_manager=5; s.money=1e10;
+      Data.GENERATORS.forEach(g=>s.gens[g.id]=10);
+      s.lastSeen = Date.now() - 3*3600*1000;
+      State.save = function(){return true;};
+      localStorage.setItem('bunsik_idle_save_v1', JSON.stringify(s));
+    });
+    await p.reload(); await p.waitForTimeout(900);
+    ok(!await p.isHidden('#offlineModal'), '오프라인 모달');
+    ok((await p.textContent('#offlineText')).includes('점장'), '점장 예고가 보임');
+    const auto0 = await p.evaluate(()=>State.get().autoBought);
+    await p.click('#offlineOk'); await p.waitForTimeout(500);
+    ok(await p.evaluate(()=>State.get().autoBought) > auto0, '점장이 설비를 사둠',
+       '+' + (await p.evaluate(()=>State.get().autoBought) - auto0) + '개');
+
+    console.log('\n[7] ∞ 표기');
+    const infTxt = await p.evaluate(()=>{
+      const s=State.get(); s.money=Infinity; Game.invalidate(); UI.refresh(true);
+      return document.getElementById('money').textContent;
+    });
+    ok(infTxt.includes('∞'), '무한대가 ∞ 로 보임: ' + infTxt);
+}, { tour: true });
+
 /* ---------- 러너 ---------- */
 (async () => {
   const filter = process.argv[2];
@@ -824,6 +922,17 @@ suite('시트 · 모달 · 데이터 삭제', async ({ page, ctx, ok, errs }) =>
       deviceScaleFactor: 2, isMobile: true, hasTouch: true,
       baseURL: `http://127.0.0.1:${port}`
     });
+    if (!s.opts.tour) {
+      // addInitScript 는 새로고침마다 돈다. 조건 없이 쓰면 세이브를 덮어써서
+      // '새로고침 후에도 유지' 같은 검사가 통째로 깨진다.
+      await ctx.addInitScript(() => {
+        try {
+          if (!localStorage.getItem('bunsik_idle_save_v1')) {
+            localStorage.setItem('bunsik_idle_save_v1', JSON.stringify({ sawTour: 1 }));
+          }
+        } catch (e) {}
+      });
+    }
     const page = await ctx.newPage();
     const errs = [];
     page.on('pageerror', e => errs.push('pageerror: ' + e.message));
