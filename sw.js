@@ -1,5 +1,5 @@
 /* 오프라인에서도 실행되도록 앱 셸을 캐시한다 */
-var CACHE = 'bunsik-idle-v1';
+var CACHE = 'bunsik-idle-v5';
 
 var ASSETS = [
   './',
@@ -10,6 +10,7 @@ var ASSETS = [
   './assets/js/data.js',
   './assets/js/state.js',
   './assets/js/game.js',
+  './assets/js/scene.js',
   './assets/js/ui.js',
   './assets/js/main.js',
   './assets/icon.svg',

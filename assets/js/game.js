@@ -24,31 +24,125 @@ var Game = (function () {
   }
 
   /* ---------- 배율 ---------- */
+  // 배율 계산은 업그레이드 65종을 매번 훑어야 해서, 값이 바뀔 때만 다시 계산한다.
+  // 세이브를 건드리는 곳은 반드시 bump() 를 불러 캐시를 무효화할 것.
+  var cacheVer = 0;
+  var cache = { ver: -1 };
+
+  function bump() { cacheVer++; }
+
+  function calc() {
+    if (cache.ver === cacheVer) return cache;
+    var s = S();
+
+    // 버프를 뺀, 모든 수익에 곱해지는 고정 배율
+    var stat = 1;
+    stat *= 1 + 0.02 * s.fame;                    // 명성 1당 +2%
+    stat *= 1 + 0.01 * achievementCount();        // 도전과제 1개당 +1%
+    stat *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
+
+    var genM = {};
+    Data.GENERATORS.forEach(function (g) { genM[g.id] = 1; });
+
+    var tapBase = 1;
+    var tapPct = 0;
+
+    Data.UPGRADES.forEach(function (u) {
+      if (!s.upgrades[u.id]) return;
+      if (u.kind === 'all') stat *= u.value;
+      else if (u.kind === 'gen') { if (genM[u.target]) genM[u.target] *= u.value; }
+      else if (u.kind === 'tap') tapBase *= u.value;
+      else if (u.kind === 'tapPct') tapPct += u.value;
+    });
+    tapBase *= Math.pow(3, fameLv('f_tap'));
+
+    // 버프를 뺀 초당 수익
+    var base = 0;
+    Data.GENERATORS.forEach(function (g) {
+      base += g.rate * (s.gens[g.id] || 0) * genM[g.id];
+    });
+    base *= stat;
+
+    cache.ver = cacheVer;
+    cache.stat = stat;
+    cache.genM = genM;
+    cache.tapBase = tapBase;
+    cache.tapPct = tapPct;
+    cache.base = base;
+    return cache;
+  }
+
   function achievementCount() {
     return Object.keys(S().achievements).length;
   }
 
-  /** 모든 수익에 곱해지는 전역 배율 */
-  function globalMult() {
+  /* ---------- 버프 (황금 손님 / 손님 몰이) ---------- */
+
+  /** 수익에 곱해지는 일시적 배율 */
+  function buffMult() {
     var s = S();
     var m = 1;
-    m *= 1 + 0.02 * s.fame;                    // 명성 1당 +2%
-    m *= 1 + 0.01 * achievementCount();        // 도전과제 1개당 +1%
-    m *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'all' && s.upgrades[u.id]) m *= u.value;
-    });
+    if (s.goldLeft > 0) m *= s.goldMult;
+    if (s.boostLeft > 0) m *= Data.BOOST.mult;
     return m;
+  }
+
+  /** 지금 켜져 있는 버프 목록 (HUD 표시용) */
+  function activeBuffs() {
+    var s = S();
+    var out = [];
+    if (s.boostLeft > 0) out.push({ icon: '📣', label: '×' + Data.BOOST.mult, left: s.boostLeft });
+    if (s.goldLeft > 0) out.push({ icon: '⚡', label: '×' + Fmt.num(s.goldMult), left: s.goldLeft });
+    if (s.goldTapLeft > 0) out.push({ icon: '👐', label: '탭 ×' + Fmt.num(s.goldTapMult), left: s.goldTapLeft });
+    return out;
+  }
+
+  /** 자리를 비운 동안에도 버프와 쿨다운은 흘러간다 (돈은 offlineReward 가 따로 계산) */
+  function advanceTimers(sec) { tickBuffs(sec); }
+
+  /** 남은 시간을 dt 만큼 흘려보낸다 */
+  function tickBuffs(dt) {
+    var s = S();
+    if (s.boostLeft > 0) s.boostLeft = Math.max(0, s.boostLeft - dt);
+    if (s.boostCd > 0) s.boostCd = Math.max(0, s.boostCd - dt);
+    if (s.goldLeft > 0) s.goldLeft = Math.max(0, s.goldLeft - dt);
+    if (s.goldTapLeft > 0) s.goldTapLeft = Math.max(0, s.goldTapLeft - dt);
+    if (comboLeft > 0) {
+      comboLeft = Math.max(0, comboLeft - dt);
+      if (comboLeft === 0) combo = 0;
+    }
+    if (restLeft > 0) restLeft = Math.max(0, restLeft - dt);
+  }
+
+  /* ---------- 콤보 (빠르게 연타하면 붙는 배율) ---------- */
+  var COMBO_WINDOW = 1.2;   // 이 시간 안에 다시 탭해야 콤보 유지 (초)
+  var COMBO_MAX = 50;       // 여기까지만 오른다
+  var COMBO_STEP = 0.04;    // 콤보 1당 +4%
+
+  var combo = 0;
+  var comboLeft = 0;
+
+  function comboCount() { return combo; }
+  function comboRatio() { return COMBO_WINDOW > 0 ? comboLeft / COMBO_WINDOW : 0; }
+  function comboMult() { return 1 + Math.min(combo, COMBO_MAX) * COMBO_STEP; }
+
+  function pushCombo() {
+    combo = Math.min(combo + 1, COMBO_MAX);
+    comboLeft = COMBO_WINDOW;
+    var s = S();
+    if (combo > s.bestCombo) s.bestCombo = combo;
+  }
+
+  function resetCombo() { combo = 0; comboLeft = 0; }
+
+  /** 모든 수익에 곱해지는 최종 배율 (버프 포함) */
+  function globalMult() {
+    return calc().stat * buffMult();
   }
 
   /** 특정 설비에만 붙는 배율 */
   function genMult(id) {
-    var s = S();
-    var m = 1;
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'gen' && u.target === id && s.upgrades[u.id]) m *= u.value;
-    });
-    return m;
+    return calc().genM[id] || 1;
   }
 
   /* ---------- 설비 ---------- */
@@ -87,44 +181,211 @@ var Game = (function () {
     return Math.max(0, Math.min(n, 1000));
   }
 
-  /** 설비 1종의 초당 수익 */
-  function genRate(id) {
+  /** 설비 1종의 초당 수익 (noBuff 면 일시 버프를 뺀 값) */
+  function genRate(id, noBuff) {
+    var c = calc();
     var g = GEN_BY_ID[id];
-    return g.rate * genCount(id) * genMult(id) * globalMult();
+    return g.rate * genCount(id) * (c.genM[id] || 1) * c.stat * (noBuff ? 1 : buffMult());
   }
 
-  /** 전체 초당 수익 */
-  function perSec() {
-    var total = 0;
-    Data.GENERATORS.forEach(function (g) { total += genRate(g.id); });
-    return total;
+  /** 전체 초당 수익 (noBuff 면 일시 버프를 뺀 값) */
+  function perSec(noBuff) {
+    return calc().base * (noBuff ? 1 : buffMult());
   }
+
+  /* ---------- 매크로(오토클릭) 방지 ---------- */
+  // 사람을 잘못 막는 쪽이 봇을 놓치는 쪽보다 훨씬 나쁘다.
+  // 그래서 서로 독립적인 신호가 "동시에" 맞을 때만 막고, 벌은 몇 초 쉬는 것으로 끝낸다.
+  //
+  //  1) isTrusted  — 스크립트가 만든 가짜 클릭. 여기서 대부분 걸러진다.
+  //  2) 초당 상한  — 하드웨어 오토클릭이라도 이득을 못 보게 한다.
+  //  3) 간격 + 좌표 — 간격이 기계처럼 고르고 '동시에' 좌표가 픽셀 단위로 붙박이일 때.
+  //     간격만 보면 리듬 타듯 치는 사람이 걸린다. 좌표만 보면 마우스를 안 움직이는
+  //     사람이 걸린다. 둘 다여야 봇이다.
+  var MACRO = {
+    maxPerSec: 14,     // 사람이 낼 수 있는 현실적인 연타 상한
+    sample: 32,        // 판단에 쓸 표본 수
+    maxCv: 0.09,       // 간격의 변동계수(표준편차/평균)가 이보다 작으면 기계적
+    maxSpread: 2,      // 탭 좌표가 이 픽셀 안에서만 움직이면 붙박이
+    rest: 5            // 걸렸을 때 조리가 멈추는 시간 (초)
+  };
+
+  var taps = [];       // 최근 탭 {t, x, y}
+  var restLeft = 0;
+
+  function meanOf(a) {
+    var m = 0;
+    for (var i = 0; i < a.length; i++) m += a[i];
+    return m / a.length;
+  }
+
+  function stdev(a, m) {
+    var v = 0;
+    for (var i = 0; i < a.length; i++) v += (a[i] - m) * (a[i] - m);
+    return Math.sqrt(v / a.length);
+  }
+
+  function spread(a) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] < lo) lo = a[i];
+      if (a[i] > hi) hi = a[i];
+    }
+    return hi - lo;
+  }
+
+  /** 표본이 기계처럼 보이는가 */
+  function looksAutomated() {
+    if (taps.length < MACRO.sample) return false;
+
+    var gaps = [], xs = [], ys = [], i;
+    for (i = 1; i < taps.length; i++) gaps.push(taps[i].t - taps[i - 1].t);
+    for (i = 0; i < taps.length; i++) { xs.push(taps[i].x); ys.push(taps[i].y); }
+
+    var m = meanOf(gaps);
+    if (m <= 0) return false;
+    if (stdev(gaps, m) / m >= MACRO.maxCv) return false;   // 간격이 사람만큼 흔들린다
+
+    // 좌표를 모르면(합성/키보드 등) 간격만으로는 단정하지 않는다
+    if (!isFinite(xs[0])) return false;
+    return spread(xs) <= MACRO.maxSpread && spread(ys) <= MACRO.maxSpread;
+  }
+
+  /**
+   * 이번 탭을 인정할지 판단한다.
+   * @returns {string} 빈 문자열이면 정상, 아니면 막은 이유
+   *   'auto'  스크립트가 만든 가짜 이벤트
+   *   'fast'  초당 상한 초과
+   *   'macro' 간격과 좌표가 둘 다 기계적
+   *   'rest'  macro 로 걸려서 쉬는 중
+   */
+  function judgeTap(trusted, t, x, y) {
+    if (trusted === false) return 'auto';
+    if (restLeft > 0) return 'rest';
+
+    taps.push({ t: t, x: x, y: y });
+    if (taps.length > MACRO.sample) taps.shift();
+
+    // 최근 1초 안에 몇 번이나 눌렸나
+    var n = 0;
+    for (var i = taps.length - 1; i >= 0 && t - taps[i].t < 1000; i--) n++;
+    if (n > MACRO.maxPerSec) return 'fast';
+
+    if (looksAutomated()) {
+      restLeft = MACRO.rest;
+      taps.length = 0;
+      S().macroBlocks++;
+      resetCombo();
+      return 'macro';
+    }
+    return '';
+  }
+
+  function macroRestLeft() { return restLeft; }
+
+  function resetGuard() { taps.length = 0; restLeft = 0; }
 
   /* ---------- 탭 ---------- */
+  /** 한 번 탭할 때 버는 돈 (콤보 · 황금 손님 탭 버프 포함) */
   function tapValue() {
     var s = S();
-    var base = 1;
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'tap' && s.upgrades[u.id]) base *= u.value;
-    });
-    base *= Math.pow(3, fameLv('f_tap'));
-
-    var pct = 0;
-    Data.UPGRADES.forEach(function (u) {
-      if (u.kind === 'tapPct' && s.upgrades[u.id]) pct += u.value;
-    });
-
-    return base * globalMult() + perSec() * pct;
+    var c = calc();
+    var tapM = (s.goldTapLeft > 0 ? s.goldTapMult : 1) * comboMult();
+    return (c.tapBase * tapM * c.stat * buffMult()) + (perSec() * c.tapPct);
   }
 
-  function tap() {
+  /**
+   * 조리 1회.
+   * @param {boolean} trusted 실제 사용자 입력이면 true (합성 이벤트는 false)
+   * @param {number} at 탭 시각(ms). 테스트에서 주입할 수 있게 열어둔다.
+   * @param {number} x 탭 좌표. 모르면 생략 — 그땐 좌표 신호를 쓰지 않는다.
+   * @param {number} y
+   * @returns {{value:number, blocked:string}}
+   */
+  function tap(trusted, at, x, y) {
+    var blocked = judgeTap(trusted !== false,
+                           at === undefined ? State.now() : at,
+                           x === undefined ? NaN : x,
+                           y === undefined ? NaN : y);
+    if (blocked) return { value: 0, blocked: blocked };
+
+    pushCombo();
     var v = tapValue();
     var s = S();
     s.money += v;
     s.runEarned += v;
     s.totalEarned += v;
     s.taps++;
-    return v;
+    if (v > s.bestTap) s.bestTap = v;
+    return { value: v, blocked: '' };
+  }
+
+  /* ---------- 스킨 & 등급 ---------- */
+
+  var TAP_SKIN_BY_ID = {};
+  Data.TAP_SKINS.forEach(function (k) { TAP_SKIN_BY_ID[k.id] = k; });
+
+  var CROWD_SKIN_BY_ID = {};
+  Data.CROWD_SKINS.forEach(function (k) { CROWD_SKIN_BY_ID[k.id] = k; });
+
+  /** 버프·콤보를 뺀 순수 탭 수익. 등급이 버프 때문에 오르내리면 안 된다. */
+  function tapBaseValue() {
+    var c = calc();
+    return c.tapBase * c.stat + perSec(true) * c.tapPct;
+  }
+
+  function tapSkin() {
+    return TAP_SKIN_BY_ID[S().tapSkin] || Data.TAP_SKINS[0];
+  }
+
+  function crowdSkin() {
+    return CROWD_SKIN_BY_ID[S().crowdSkin] || Data.CROWD_SKINS[0];
+  }
+
+  /** 지금 조리하는 메뉴 (0부터 시작하는 단계 번호 포함) */
+  function tapStep() {
+    var steps = tapSkin().steps;
+    var v = tapBaseValue();
+    var i = 0;
+    for (var k = 0; k < steps.length; k++) {
+      if (v >= steps[k].at) i = k;
+    }
+    return { index: i, total: steps.length, step: steps[i] };
+  }
+
+  /** 다음 메뉴까지 얼마가 더 필요한가 (마지막 단계면 null) */
+  function nextTapStep() {
+    var t = tapStep();
+    var steps = tapSkin().steps;
+    if (t.index >= steps.length - 1) return null;
+    var nx = steps[t.index + 1];
+    return { step: nx, need: Math.max(0, nx.at - tapBaseValue()) };
+  }
+
+  /** 지금 거리에 나올 손님 후보들 */
+  function crowdTier() {
+    var tiers = crowdSkin().tiers;
+    var ps = perSec(true);
+    var i = 0;
+    for (var k = 0; k < tiers.length; k++) {
+      if (ps >= tiers[k].at) i = k;
+    }
+    return {
+      index: i, total: tiers.length,
+      name: tiers[i].name,
+      cast: tiers[i].cast,
+      acc: tiers[i].acc || []
+    };
+  }
+
+  function setSkin(kind, id) {
+    var list = kind === 'tap' ? Data.TAP_SKINS : Data.CROWD_SKINS;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id !== id) continue;
+      S()[kind === 'tap' ? 'tapSkin' : 'crowdSkin'] = id;
+      return true;
+    }
+    return false;
   }
 
   /* ---------- 해금 조건 ---------- */
@@ -163,6 +424,7 @@ var Game = (function () {
     if (s.money < cost || amount <= 0) return false;
     s.money -= cost;
     s.gens[id] = genCount(id) + amount;
+    bump();
     return true;
   }
 
@@ -173,6 +435,7 @@ var Game = (function () {
     if (s.money < u.cost) return false;
     s.money -= u.cost;
     s.upgrades[id] = true;
+    bump();
     return true;
   }
 
@@ -185,6 +448,7 @@ var Game = (function () {
     if (s.fame < cost) return false;
     s.fame -= cost;
     s.fameLv[id] = lv + 1;
+    bump();
     return true;
   }
 
@@ -216,15 +480,72 @@ var Game = (function () {
     if (gain <= 0) return 0;
     var s = S();
 
+    // 명예의 전당에 이번 회차를 남긴다
+    s.runs.push({
+      n: s.prestiges + 1,
+      earned: s.runEarned,
+      fame: gain,
+      seconds: s.runTime
+    });
+    if (s.runs.length > State.MAX_RUNS) s.runs = s.runs.slice(-State.MAX_RUNS);
+    if (gain > s.bestFameGain) s.bestFameGain = gain;
+    if (!s.fastestPrestige || s.runTime < s.fastestPrestige) s.fastestPrestige = s.runTime;
+
     s.fame += gain;
     s.prestiges++;
+    s.runTime = 0;
     s.money = startMoney();
     s.runEarned = 0;
     s.gens = {};
     // 일반 업그레이드만 초기화 (명성상점/도전과제는 영구)
     s.upgrades = {};
 
+    // 회차가 끝나면 일시 버프도 함께 정리
+    s.goldLeft = 0;
+    s.goldTapLeft = 0;
+    s.boostLeft = 0;
+    resetCombo();
+
+    bump();
     return gain;
+  }
+
+  /* ---------- 명예의 전당 ---------- */
+
+  /** 역대 회차를 명성 순으로. 동점이면 빨리 끝낸 회차가 위로. */
+  function topRuns(limit) {
+    return S().runs.slice().sort(function (a, b) {
+      if (b.fame !== a.fame) return b.fame - a.fame;
+      return a.seconds - b.seconds;
+    }).slice(0, limit || 10);
+  }
+
+  /** 지금 환생하면 역대 몇 위가 되는가 (1부터, 순위 밖이면 0) */
+  function projectedRank() {
+    var gain = fameGain();
+    if (gain <= 0) return 0;
+    var s = S();
+    var better = 0;
+    for (var i = 0; i < s.runs.length; i++) {
+      var r = s.runs[i];
+      if (r.fame > gain || (r.fame === gain && r.seconds < s.runTime)) better++;
+    }
+    return better + 1;
+  }
+
+  /** 개인 최고 기록 모음 */
+  function records() {
+    var s = S();
+    return [
+      { icon: '💰', name: '한 회차 최고 매출', value: Fmt.won(s.bestRunEarned) },
+      { icon: '📈', name: '최고 순간 초당 수익', value: Fmt.won(s.bestPerSec) },
+      { icon: '👊', name: '한 번에 가장 많이 번 탭', value: Fmt.won(s.bestTap) },
+      { icon: '✨', name: '한 번에 얻은 최고 명성', value: Fmt.num(s.bestFameGain) },
+      { icon: '⚡', name: '최단 환생 시간', value: s.fastestPrestige ? Fmt.time(s.fastestPrestige) : '—' },
+      { icon: '🔥', name: '최고 콤보', value: Fmt.comma(s.bestCombo) + '콤보' },
+      { icon: '🌟', name: '잡은 황금 손님', value: Fmt.comma(s.goldens) + '명' },
+      { icon: '🚨', name: '직접 잡은 도둑', value: Fmt.comma(s.thievesCaught) + '명' }
+    ];
   }
 
   /* ---------- 오프라인 ---------- */
@@ -242,7 +563,8 @@ var Game = (function () {
    */
   function offlineReward(elapsedSec) {
     var capped = Math.min(elapsedSec, offlineCapSeconds());
-    var gain = perSec() * capped * offlineEfficiency();
+    // 자리를 비운 동안에는 일시 버프가 흐르지 않으므로 버프를 뺀 수익으로 계산한다
+    var gain = perSec(true) * capped * offlineEfficiency();
     return { seconds: elapsedSec, capped: capped, gain: gain };
   }
 
@@ -257,11 +579,18 @@ var Game = (function () {
   /* ---------- 진행 ---------- */
   function tick(dt) {
     var s = S();
-    var gain = perSec() * dt;
+    tickBuffs(dt);
+    var rate = perSec();
+    var gain = rate * dt;
     s.money += gain;
     s.runEarned += gain;
     s.totalEarned += gain;
     s.playTime += dt;
+    s.runTime += dt;
+
+    // 명예의 전당 기록 갱신
+    if (rate > s.bestPerSec) s.bestPerSec = rate;
+    if (s.runEarned > s.bestRunEarned) s.bestRunEarned = s.runEarned;
     return gain;
   }
 
@@ -278,7 +607,184 @@ var Game = (function () {
         unlocked.push(a);
       }
     });
+    if (unlocked.length) bump();   // 도전과제 개수가 전체 배율에 들어간다
     return unlocked;
+  }
+
+  /* ---------- 황금 손님 ---------- */
+
+  /** 다음 황금 손님이 올 때까지의 대기 시간 (초) */
+  function nextGoldenGap() {
+    var g = Data.GOLDEN;
+    var scale = Math.pow(g.gapPerLv, fameLv('f_gold'));
+    return (g.minGap + Math.random() * (g.maxGap - g.minGap)) * scale;
+  }
+
+  /** 등장할 황금 손님 종류를 가중치로 하나 뽑는다 */
+  function rollGolden() {
+    var types = Data.GOLDEN.types;
+    var total = 0;
+    types.forEach(function (t) { total += t.weight; });
+    var r = Math.random() * total;
+    for (var i = 0; i < types.length; i++) {
+      r -= types[i].weight;
+      if (r <= 0) return types[i];
+    }
+    return types[0];
+  }
+
+  /**
+   * 황금 손님을 잡았을 때의 처리.
+   * @returns {{type:object, money:number, text:string}}
+   */
+  function claimGolden(type, trusted) {
+    if (trusted === false) return null;
+    var s = S();
+    s.goldens++;
+    var money = 0;
+    var text;
+
+    if (type.id === 'cash') {
+      // 초반에 초당 수익이 0이어도 허탕이 되지 않도록 탭 수익으로 바닥을 깐다
+      money = Math.max(perSec(true) * 240, tapValue() * 25, 100);
+      s.money += money;
+      s.runEarned += money;
+      s.totalEarned += money;
+      text = '💰 ' + Fmt.won(money) + ' 획득!';
+    } else if (type.id === 'rush') {
+      // 이미 걸려 있으면 더 센 쪽을 남기고 시간을 새로 채운다
+      s.goldMult = Math.max(s.goldLeft > 0 ? s.goldMult : 1, type.mult);
+      s.goldLeft = Math.max(s.goldLeft, type.dur);
+      text = '⚡ ' + type.dur + '초 동안 수익 ×' + type.mult + '!';
+    } else {
+      s.goldTapMult = Math.max(s.goldTapLeft > 0 ? s.goldTapMult : 1, type.mult);
+      s.goldTapLeft = Math.max(s.goldTapLeft, type.dur);
+      text = '👐 ' + type.dur + '초 동안 탭 수익 ×' + type.mult + '!';
+    }
+
+    return { type: type, money: money, text: text };
+  }
+
+  /* ---------- 도둑 & 경찰 ---------- */
+
+  function nextThiefGap() {
+    var t = Data.THIEF;
+    return t.minGap + Math.random() * (t.maxGap - t.minGap);
+  }
+
+  /** 도둑이 노리는 금액. 설비·업그레이드는 절대 건드리지 않는다. */
+  function thiefTarget() {
+    var t = Data.THIEF;
+    var s = S();
+    return Math.min(s.money * t.stealPct, perSec(true) * t.stealCapSec);
+  }
+
+  /** 지금 도둑을 내보낼 만한가 (훔칠 게 없으면 안 나온다) */
+  function thiefWorthwhile() {
+    return thiefTarget() >= Data.THIEF.minSteal;
+  }
+
+  /** 경찰이 자동으로 잡아줄 확률 */
+  function policeChance() {
+    var t = Data.THIEF;
+    return Math.min(0.9, t.policeBase + t.policePerLv * fameLv('f_police'));
+  }
+
+  /**
+   * 도둑을 직접 잡았다.
+   * @returns {{bonus:number, saved:number}|null} 가짜 이벤트면 null
+   */
+  function catchThief(amount, trusted) {
+    if (trusted === false) return null;
+    var s = S();
+    var bonus = amount * Data.THIEF.catchBonus;
+    s.money += bonus;
+    s.runEarned += bonus;
+    s.totalEarned += bonus;
+    s.thievesCaught++;
+    return { bonus: bonus, saved: amount };
+  }
+
+  /** 경찰이 잡아줬다 — 피해는 없지만 보너스도 없다 */
+  function policeCaught(amount) {
+    S().thiefSaves++;
+    return { saved: amount };
+  }
+
+  /** 놓쳤다 — 이때 비로소 돈이 빠진다 */
+  function thiefEscaped(amount) {
+    var s = S();
+    // 계산한 뒤 돈이 줄었을 수도 있으니 다시 한 번 막는다
+    var lost = Math.max(0, Math.min(amount, s.money));
+    s.money -= lost;
+    s.stolen += lost;
+    s.thefts++;
+    return { lost: lost };
+  }
+
+  /* ---------- 손님 몰이 (부스트 버튼) ---------- */
+
+  function boostCooldown() {
+    return Data.BOOST.cd * Math.pow(Data.BOOST.cdPerLv, fameLv('f_boost'));
+  }
+
+  function boostReady() {
+    var s = S();
+    return s.boostCd <= 0 && s.boostLeft <= 0;
+  }
+
+  function startBoost() {
+    var s = S();
+    if (!boostReady()) return false;
+    s.boostLeft = Data.BOOST.dur;
+    s.boostCd = boostCooldown() + Data.BOOST.dur;   // 효과가 끝난 뒤부터 쿨다운이 도는 셈
+    s.boosts++;
+    return true;
+  }
+
+  /* ---------- 일일 출석 보상 ---------- */
+
+  /** 로컬 기준 오늘 날짜 (YYYY-MM-DD) */
+  function today() {
+    var d = new Date();
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function shiftDay(dateStr, days) {
+    var p = String(dateStr).split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    d.setDate(d.getDate() + days);
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function dailyReady() { return S().dailyDate !== today(); }
+
+  /**
+   * 출석 보상 지급. 하루 한 번만 받을 수 있다.
+   * @returns {{streak:number, gain:number}|null}
+   */
+  function claimDaily() {
+    var s = S();
+    var t = today();
+    if (s.dailyDate === t) return null;
+
+    // 어제 받았으면 연속, 아니면 처음부터
+    s.dailyStreak = (s.dailyDate && shiftDay(s.dailyDate, 1) === t) ? s.dailyStreak + 1 : 1;
+    s.dailyDate = t;
+    s.dailyClaims++;
+
+    var d = Data.DAILY;
+    var days = Math.min(s.dailyStreak, d.maxStreak);
+    var seconds = d.baseSeconds + d.perStreak * (days - 1);
+    var gain = Math.max(perSec(true) * seconds, d.minMoney);
+
+    s.money += gain;
+    s.runEarned += gain;
+    s.totalEarned += gain;
+
+    return { streak: s.dailyStreak, days: days, seconds: seconds, gain: gain };
   }
 
   /** 뱃지(빨간 점)용: 지금 살 수 있는 게 있나 */
@@ -321,6 +827,9 @@ var Game = (function () {
     startMoney: startMoney,
     doPrestige: doPrestige,
     PRESTIGE_BASE: PRESTIGE_BASE,
+    topRuns: topRuns,
+    projectedRank: projectedRank,
+    records: records,
     offlineCapSeconds: offlineCapSeconds,
     offlineEfficiency: offlineEfficiency,
     offlineReward: offlineReward,
@@ -328,6 +837,40 @@ var Game = (function () {
     tick: tick,
     checkAchievements: checkAchievements,
     hasAffordableUpgrade: hasAffordableUpgrade,
-    hasAffordableFame: hasAffordableFame
+    hasAffordableFame: hasAffordableFame,
+
+    invalidate: bump,
+    MACRO: MACRO,
+    macroRestLeft: macroRestLeft,
+    resetGuard: resetGuard,
+    buffMult: buffMult,
+    activeBuffs: activeBuffs,
+    advanceTimers: advanceTimers,
+    comboCount: comboCount,
+    comboRatio: comboRatio,
+    comboMult: comboMult,
+    resetCombo: resetCombo,
+    nextGoldenGap: nextGoldenGap,
+    rollGolden: rollGolden,
+    claimGolden: claimGolden,
+    nextThiefGap: nextThiefGap,
+    thiefTarget: thiefTarget,
+    thiefWorthwhile: thiefWorthwhile,
+    policeChance: policeChance,
+    catchThief: catchThief,
+    policeCaught: policeCaught,
+    thiefEscaped: thiefEscaped,
+    boostCooldown: boostCooldown,
+    boostReady: boostReady,
+    startBoost: startBoost,
+    dailyReady: dailyReady,
+    tapBaseValue: tapBaseValue,
+    tapSkin: tapSkin,
+    crowdSkin: crowdSkin,
+    tapStep: tapStep,
+    nextTapStep: nextTapStep,
+    crowdTier: crowdTier,
+    setSkin: setSkin,
+    claimDaily: claimDaily
   };
 })();
