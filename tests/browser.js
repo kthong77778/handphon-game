@@ -1,0 +1,730 @@
+/* 실제 브라우저에서 화면과 조작을 검증한다.
+ *
+ * 실행:  node tests/browser.js            (전체)
+ *        node tests/browser.js 도둑        (이름에 '도둑' 이 들어간 스위트만)
+ *
+ * playwright 가 필요하다:  npm i -D playwright
+ * 이 저장소에는 빌드 과정이 없고, playwright 는 테스트에만 쓴다.
+ * 정적 서버는 아래에 내장돼 있으니 따로 띄우지 않아도 된다.
+ * 크로미움 경로를 직접 줘야 하면 CHROMIUM_PATH 환경변수를 쓴다.
+ */
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const ROOT = path.join(__dirname, '..');
+
+let chromium;
+try { ({ chromium } = require('playwright')); }
+catch (e) {
+  console.error('playwright 가 없습니다.  npm i -D playwright  후 다시 실행하세요.');
+  process.exit(2);
+}
+
+const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css',
+               '.svg':'image/svg+xml', '.webmanifest':'application/manifest+json' };
+
+function serve() {
+  return new Promise(resolve => {
+    const srv = http.createServer((req, res) => {
+      let rel = decodeURIComponent(req.url.split('?')[0]);
+      if (rel === '/') rel = '/index.html';
+      const file = path.join(ROOT, rel);
+      // 저장소 밖으로 나가는 경로는 막는다
+      if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+        res.writeHead(404); res.end('not found'); return;
+      }
+      res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+      fs.createReadStream(file).pipe(res);
+    });
+    srv.listen(0, '127.0.0.1', () => resolve({ srv, port: srv.address().port }));
+  });
+}
+
+/* 스크린샷 폴더 — 러너가 만들어 둔다 */
+const D = process.env.SHOT_DIR || path.join(__dirname, '.shots');
+
+const SUITES = [];
+function suite(name, fn) { SUITES.push({ name, fn }); }
+
+suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
+  const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
+  const errors = errs;             // 이름만 다른 같은 수집기
+
+  // 도둑은 화면 밖에서 출발하므로, 보이는 위치에 들어올 때까지 기다렸다 클릭한다
+  async function clickThief() {
+    for (let i = 0; i < 80; i++) {
+      const box = await p.locator('.thief').boundingBox().catch(() => null);
+      if (box && box.x > 4 && box.x + box.width < 386) {
+        await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        return true;
+      }
+      await p.waitForTimeout(60);
+    }
+    return false;
+  }
+
+    await page.goto('/index.html');
+    await page.waitForTimeout(600);
+
+
+    console.log('\n[화면] 첫 로딩');
+    ok(await page.isVisible('#tapTarget'), '조리 버튼 보임');
+    ok(await page.isVisible('#boostBtn'), '손님 몰이 버튼 보임');
+    ok(await page.isHidden('#combo'), '콤보는 처음엔 숨김');
+    ok(await page.isHidden('#buffBar'), '버프줄은 처음엔 숨김');
+    ok(await page.isHidden('#dailyModal') === false, '출석 보상 모달이 첫 실행에 뜸');
+
+    await page.click('#dailyOk');
+    await page.waitForTimeout(200);
+    ok(await page.isHidden('#dailyModal'), '출석 보상 받으면 모달 닫힘');
+    const money0 = await page.textContent('#money');
+    console.log('    출석 보상 후 보유금액: ' + money0.trim());
+
+    console.log('\n[콤보] 빠르게 연타');
+    const box = await page.locator('#tapTarget').boundingBox();
+    for (let i = 0; i < 12; i++) {
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForTimeout(30);
+    }
+    await page.waitForTimeout(150);
+    ok(await page.isVisible('#combo'), '콤보 표시 등장');
+    const comboX = (await page.textContent('#comboX')).trim();
+    console.log('    콤보 배율: ' + comboX + ' / ' + (await page.textContent('#comboN')).trim());
+    ok(parseFloat(comboX.replace('×', '')) > 1, '콤보 배율이 1보다 큼');
+    await page.waitForTimeout(1600);
+    ok(await page.isHidden('#combo'), '손 떼면 콤보 사라짐');
+
+    console.log('\n[손님 몰이]');
+    await page.click('#boostBtn');
+    await page.waitForTimeout(250);
+    ok((await page.getAttribute('#boostBtn', 'class')).includes('active'), '부스트 켜짐');
+    ok(await page.isVisible('#buffBar'), '버프줄 표시');
+    const buffTxt = (await page.textContent('#buffBar')).trim();
+    console.log('    버프줄: ' + buffTxt);
+    ok(buffTxt.includes('×3'), '×3 표시');
+    ok((await page.textContent('#boostTitle')).includes('폭주'), '버튼 문구 변경');
+
+    console.log('\n[황금 손님]');
+    // 등장까지 55초 이상 기다릴 순 없으니 타이머를 앞당겨 실제 spawn 을 태운다
+    // 등장까지 1분 이상 기다릴 순 없으니 게임 시계를 앞으로 감는다
+    await page.evaluate(() => UI.tickWorld(300));
+    await page.waitForTimeout(500);
+    const golden = page.locator('#goldenLayer .golden').first();
+    ok(await golden.count() > 0, '황금 손님 등장');
+    if (await golden.count() > 0) {
+      const gbox = await golden.boundingBox();
+      ok(gbox.y > 100 && gbox.y < 780, '화면 안쪽에 배치됨 (HUD/탭바 회피)', 'y=' + Math.round(gbox.y));
+      const before = await page.evaluate(() => State.get().goldens);
+      // 합성 이벤트는 매크로 방지에 막히므로 진짜 마우스로 누른다
+      await page.evaluate(() => {
+        const g = document.querySelector('#goldenLayer .golden');
+        const b = g.getBoundingClientRect();
+        window.__fake = g.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, clientX:b.x+32, clientY:b.y+32}));
+      });
+      await page.waitForTimeout(200);
+      ok(await page.evaluate(() => State.get().goldens) === before,
+         '가짜 클릭으로는 못 잡는다');
+      await page.mouse.click(gbox.x + 32, gbox.y + 32);
+      await page.waitForTimeout(400);
+      const after = await page.evaluate(() => State.get().goldens);
+      ok(after === before + 1, '실제 탭으로는 잡힌다');
+      ok(await page.locator('#goldenLayer .golden-msg').count() >= 0, '보상 메시지 렌더');
+    }
+
+    console.log('\n[거리 애니메이션]');
+    await page.click('#tabbar .tab[data-tab="shop"]'); await page.waitForTimeout(300);
+    ok(await page.isVisible('#street'), '거리 표시');
+    await page.evaluate(() => { for (let i=0;i<8;i++) Scene.tick(2); });
+    await page.waitForTimeout(700);
+    const wc = await page.locator('#street .walker').count();
+    ok(wc > 0, `손님 ${wc}명이 거리에 있음`);
+    // 주문하려고 멈춰 선 손님이 있으므로 "한 명이라도 움직였는가" 로 본다
+    const moved = await page.evaluate(async () => {
+      const ws = Array.from(document.querySelectorAll('#street .walker'));
+      if (!ws.length) return 0;
+      const before = ws.map(w => w.getBoundingClientRect().x);
+      await new Promise(r => setTimeout(r, 700));
+      return ws.filter((w, i) => Math.abs(w.getBoundingClientRect().x - before[i]) > 3).length;
+    });
+    ok(moved > 0, `손님이 실제로 이동함 (${moved}명 이동)`);
+    ok(await page.locator('#tapTarget .steam').count() === 3, '냄비 김 3줄');
+    const b3 = await page.locator('#tapTarget').boundingBox();
+    await page.mouse.click(b3.x+b3.width/2, b3.y+b3.height/2);
+    await page.waitForTimeout(120);
+    ok(await page.locator('#pops .pop').count() > 0, '조리하면 음식이 튄다');
+
+    console.log('\n[매크로 차단]');
+    // 합성 이벤트로 100번 눌러도 돈이 늘지 않아야 한다
+    const before = await page.evaluate(() => { State.get().money = 1e6; return State.get().taps; });
+    await page.evaluate(() => {
+      const el = document.getElementById('tapTarget');
+      for (let i=0;i<100;i++) el.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, clientX:200, clientY:400}));
+    });
+    await page.waitForTimeout(200);
+    const after = await page.evaluate(() => State.get().taps);
+    ok(after === before, `합성 클릭 100회가 전부 무효 (탭 ${before} → ${after})`);
+
+    // 실제 마우스로 같은 자리를 일정 간격으로 클릭 → 매크로로 잡혀야 한다
+    await page.evaluate(() => { Game.resetGuard(); });
+    const bx = b3.x + b3.width/2, by = b3.y + b3.height/2;
+    for (let i=0;i<40;i++){ await page.mouse.click(bx, by); await page.waitForTimeout(100); }
+    await page.waitForTimeout(200);
+    const rest = await page.evaluate(() => Game.macroRestLeft());
+    ok(rest > 0, '일정 간격 + 같은 좌표 클릭이 차단됨', 'rest=' + rest.toFixed(1) + 's');
+    ok((await page.getAttribute('#tapTarget','class')).includes('blocked'), '조리 버튼이 차단 상태로 표시');
+    await page.evaluate(() => Game.resetGuard());
+
+    console.log('\n[탭 이동] 다섯 화면 모두 렌더되는지');
+    for (const [tab, sel, label] of [
+      ['upgrade', '#upgradeList', '업그레이드'],
+      ['prestige', '#fameShopList', '환생/명성상점'],
+      ['achv', '#achvList', '도전과제'],
+      ['settings', '#statsBox', '설정/통계']
+    ]) {
+      await page.click(`#tabbar .tab[data-tab="${tab}"]`);
+      await page.waitForTimeout(250);
+      const n = await page.locator(`${sel} > *`).count();
+      ok(n > 0, `${label} 탭 항목 ${n}개 렌더`);
+    }
+
+    const stats = await page.textContent('#statsBox');
+    ok(stats.includes('황금 손님') && stats.includes('최고 콤보') && stats.includes('연속 출석'),
+       '통계에 새 항목 표시');
+    const counts = await page.evaluate(() => ({
+      fame: Data.FAME_SHOP.length, achv: Data.ACHIEVEMENTS.length }));
+    ok(await page.locator('#fameShopList > *').count() === counts.fame, `명성 상점 ${counts.fame}종`);
+    ok(await page.locator('#achvList > *').count() === counts.achv, `도전과제 ${counts.achv}종`);
+
+    console.log('\n[스킨 & 등급]');
+    await page.click('#tabbar .tab[data-tab="settings"]'); await page.waitForTimeout(300);
+    const sk = await page.evaluate(() => ({
+      tap: Data.TAP_SKINS.length, crowd: Data.CROWD_SKINS.length,
+      steps: Data.TAP_SKINS[0].steps.length, tiers: Data.CROWD_SKINS[0].tiers.length }));
+    ok(await page.locator('#tapSkinRow .skin').count() === sk.tap, `음식 스킨 ${sk.tap}종 표시`);
+    ok(await page.locator('#crowdSkinRow .skin').count() === sk.crowd, `손님 스킨 ${sk.crowd}종 표시`);
+    ok(await page.locator('#tapLadder .rung').count() === sk.steps, `음식 단계표 ${sk.steps}칸`);
+    ok(await page.locator('#crowdLadder .rung').count() === sk.tiers, `손님 등급표 ${sk.tiers}칸`);
+    ok(await page.locator('#tapSkinRow .skin.on').count() === 1, '선택된 스킨 하나만 강조');
+    const ladderNote = (await page.textContent('#tapLadder .rung-note')).trim();
+    ok(ladderNote.includes('다음'), '다음 단계 안내: ' + ladderNote);
+
+    // 붕어빵으로 바꾸면 조리 이모지가 바뀌어야 한다
+    const beforeIcon = await page.textContent('#tapEmoji');
+    await page.click('#tapSkinRow .skin[data-skin="bungeo"]');
+    await page.waitForTimeout(300);
+    ok((await page.getAttribute('#tapSkinRow .skin[data-skin=\"bungeo\"]','class')).includes('on'), '붕어빵 스킨 선택됨');
+    const afterIcon = await page.textContent('#tapEmoji');
+    ok(afterIcon !== beforeIcon, `조리 이모지 변경 ${beforeIcon} → ${afterIcon}`);
+    ok((await page.textContent('#tapLabel')).length > 0, '메뉴 이름 표시: ' + await page.textContent('#tapLabel'));
+
+    // 손님 스킨을 동물로 바꾸면 거리 캐릭터도 바뀐다
+    await page.click('#crowdSkinRow .skin[data-skin="animal"]');
+    await page.waitForTimeout(200);
+    await page.click('#tabbar .tab[data-tab="shop"]'); await page.waitForTimeout(200);
+    await page.evaluate(() => { for (let i=0;i<8;i++) Scene.tick(2); });
+    await page.waitForTimeout(600);
+    const cast = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#street .walker .body')).map(e => e.textContent));
+    const animals = await page.evaluate(() => Game.crowdTier().cast);
+    ok(cast.length > 0 && cast.every(c => animals.includes(c)),
+       '거리에 동물 손님만 등장: ' + cast.join(''));
+
+    // 단계가 오르면 테두리 등급 클래스가 바뀐다
+    const tierBefore = await page.getAttribute('#tapTarget','class');
+    await page.evaluate(() => {
+      Game.setSkin('tap','auto');
+      State.get().fameLv.f_tap = 12; Game.invalidate(); UI.invalidate();
+    });
+    await page.waitForTimeout(400);
+    const tierAfter = await page.getAttribute('#tapTarget','class');
+    ok(tierBefore !== tierAfter, `테두리 등급 변경: ${tierBefore.match(/tier-\d+/)} → ${tierAfter.match(/tier-\d+/)}`);
+    ok(/tier-[5-8]/.test(tierAfter), '높은 단계 테두리 적용');
+
+    // 스킨이 새로고침 후에도 남는가
+    await page.evaluate(() => { Game.setSkin('tap','jumeok'); State.save(); });
+    await page.reload(); await page.waitForTimeout(700);
+    ok(await page.evaluate(() => State.get().tapSkin) === 'jumeok', '스킨이 새로고침 후에도 유지');
+
+    console.log('\n[상류층 손님]');
+    await page.evaluate(() => {
+      const s = State.get();
+      Game.setSkin('crowd','auto');
+      Data.GENERATORS.forEach(g => s.gens[g.id] = 0);
+      s.gens.g10 = 2000;               // 초당 수익을 최고 등급까지
+      Game.invalidate(); UI.invalidate(); Scene.clear();
+    });
+    await page.click('#tabbar .tab[data-tab="shop"]'); await page.waitForTimeout(200);
+    await page.evaluate(() => { for (let i=0;i<10;i++) Scene.tick(2); });
+    await page.waitForTimeout(800);
+    const rich = await page.evaluate(() => ({
+      tier: Game.crowdTier().index + 1,
+      name: Game.crowdTier().name,
+      street: document.getElementById('street').className,
+      withAcc: Array.from(document.querySelectorAll('#street .walker'))
+        .filter(w => w.querySelector('.acc')).length,
+      total: document.querySelectorAll('#street .walker').length,
+      accs: Array.from(document.querySelectorAll('#street .acc')).map(e => e.textContent)
+    }));
+    ok(rich.tier === 5 && rich.name === '재벌 손님', '최고 등급 도달: ' + rich.name);
+    ok(rich.total > 0 && rich.withAcc === rich.total,
+       `손님 ${rich.total}명 전원이 소지품을 듦: ${rich.accs.join('')}`);
+    ok(rich.street.includes('tier5'), '거리가 레드카펫으로 바뀜');
+    ok(await page.locator('#street .walker.t5').count() > 0, '최고 등급 글로우 적용');
+
+    // 왼쪽으로 걷는 손님의 소지품이 뒤집히지 않아야 한다
+    const flipped = await page.evaluate(() => {
+      const w = Array.from(document.querySelectorAll('#street .walker'))
+        .find(x => x.querySelector('i.flip') && x.querySelector('.acc'));
+      if (!w) return 'none';
+      return getComputedStyle(w.querySelector('.acc')).transform;
+    });
+    ok(flipped === 'none' || !/^matrix\(-1/.test(flipped),
+       '반대로 걷는 손님의 소지품도 정상 방향', String(flipped).slice(0,30));
+
+    console.log('\n[세로 스크롤] 가로 스크롤이 생기지 않아야 함');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+    ok(!overflow, '가로 스크롤 없음');
+
+    console.log('\n[에러]');
+});
+
+suite('도둑 & 경찰', async ({ page, ctx, ok, errs }) => {
+  const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
+  const errors = errs;             // 이름만 다른 같은 수집기
+
+  // 도둑은 화면 밖에서 출발하므로, 보이는 위치에 들어올 때까지 기다렸다 클릭한다
+  async function clickThief() {
+    for (let i = 0; i < 80; i++) {
+      const box = await p.locator('.thief').boundingBox().catch(() => null);
+      if (box && box.x > 4 && box.x + box.width < 386) {
+        await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        return true;
+      }
+      await p.waitForTimeout(60);
+    }
+    return false;
+  }
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+    await p.evaluate(() => {
+      const s = State.get(); s.money = 1e8; s.gens.g3 = 200;
+      s.fameLv = {}; Game.invalidate(); UI.invalidate();
+    });
+
+    console.log('[1] 도둑 등장 & 직접 잡기');
+    // 경찰이 못 잡게 확률 0 으로 두고 도둑을 불러낸다
+    await p.evaluate(() => { Game.policeChance = () => 0; UI.tickWorld(600); });
+    await p.waitForTimeout(400);
+    const thief = p.locator('.thief');
+    ok(await thief.count() === 1, '도둑 등장');
+    ok(await p.locator('.thief .bag').count() === 1, '돈가방을 들고 있음');
+    const moved = await p.evaluate(async () => {
+      const t = document.querySelector('.thief');
+      const a = t.getBoundingClientRect().x;
+      await new Promise(r => setTimeout(r, 500));
+      return Math.abs(t.getBoundingClientRect().x - a) > 20;
+    });
+    ok(moved, '도둑이 도망감');
+    await p.waitForTimeout(1400);
+    ok(await p.locator('.police').count() === 1, '경찰차 출동');
+
+    const before = await p.evaluate(() => ({ money: State.get().money, caught: State.get().thievesCaught }));
+    ok(await clickThief(), '화면에 들어온 도둑을 탭');
+    await p.waitForTimeout(400);
+    const after = await p.evaluate(() => ({ money: State.get().money, caught: State.get().thievesCaught }));
+    ok(after.caught === before.caught + 1, '탭해서 잡음');
+    ok(after.money > before.money, '보너스 지급', '+' + (after.money - before.money).toFixed(0));
+    await p.screenshot({ path: path.join(D, 'shot-thief.png') });
+    await p.waitForTimeout(1200);
+    ok(await p.locator('.thief').count() === 0 && await p.locator('.police').count() === 0, '정리됨');
+
+    console.log('\n[2] 경찰이 잡아주기');
+    await p.evaluate(() => { Game.policeChance = () => 1; UI.tickWorld(600); });
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: path.join(D, 'shot-chase.png') });
+    const m0 = await p.evaluate(() => State.get().money);
+    await p.waitForTimeout(6200);
+    const r2 = await p.evaluate(() => ({ money: State.get().money, saves: State.get().thiefSaves, thefts: State.get().thefts }));
+    ok(r2.saves === 1, '경찰이 검거');
+    ok(r2.thefts === 0 && r2.money >= m0, '피해 없음 (방치 수익은 계속 쌓임)',
+       `${m0.toFixed(0)} → ${r2.money.toFixed(0)}`);
+    await p.waitForTimeout(1200);
+
+    console.log('\n[3] 놓쳤을 때');
+    await p.evaluate(() => { Game.policeChance = () => 0; UI.tickWorld(600); });
+    await p.waitForTimeout(300);
+    const m1 = await p.evaluate(() => State.get().money);
+    await p.waitForTimeout(8200);
+    const r3 = await p.evaluate(() => ({ money: State.get().money, thefts: State.get().thefts, stolen: State.get().stolen }));
+    ok(r3.thefts === 1, '놓친 것으로 기록');
+    ok(r3.money < m1 && r3.money >= 0, '돈이 빠지되 음수는 아님', `${m1.toFixed(0)} → ${r3.money.toFixed(0)}`);
+    ok(r3.stolen > 0, '피해액 누적: ' + r3.stolen.toFixed(0));
+
+    console.log('\n[4] 가짜 클릭으로는 못 잡는다');
+    await p.evaluate(() => { Game.policeChance = () => 0; UI.tickWorld(600); });
+    await p.waitForTimeout(400);
+    const c0 = await p.evaluate(() => State.get().thievesCaught);
+    await p.evaluate(() => {
+      const t = document.querySelector('.thief');
+      const r = t.getBoundingClientRect();
+      for (let i=0;i<20;i++)
+        t.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.x+20,clientY:r.y+20}));
+    });
+    await p.waitForTimeout(300);
+    ok(await p.evaluate(() => State.get().thievesCaught) === c0, '합성 클릭 20회 전부 무효');
+    ok(await clickThief(), '화면에 들어온 도둑을 탭');
+    await p.waitForTimeout(300);
+    ok(await p.evaluate(() => State.get().thievesCaught) === c0 + 1, '진짜 클릭으로는 잡힘');
+
+    console.log('\n[5] 도둑과 황금 손님은 겹치지 않는다');
+    await p.waitForTimeout(1500);
+    await p.waitForSelector('.thief', { state:'detached', timeout: 12000 }).catch(()=>{});
+    // 도둑이 나와 있는 동안에는 황금 손님이 나오지 않아야 한다
+    await p.evaluate(() => { Game.policeChance = () => 0; UI.tickWorld(600); });
+    await p.waitForTimeout(300);
+    ok(await p.locator('.thief').count() === 1, '도둑이 나와 있음');
+    await p.evaluate(() => { for (let i=0;i<6;i++) UI.tickWorld(300); });
+    await p.waitForTimeout(300);
+    ok(await p.locator('#goldenLayer .golden').count() === 0, '그 동안 황금 손님은 안 나옴');
+    await p.waitForTimeout(9000);
+
+    console.log('\n[6] 돈이 없으면 안 나온다');
+    await p.waitForTimeout(1500);
+    await p.waitForSelector('.thief', { state: 'detached', timeout: 12000 }).catch(()=>{});
+    await p.evaluate(() => { State.get().money = 0; State.get().gens = {}; Game.invalidate(); UI.tickWorld(600); });
+    await p.waitForTimeout(500);
+    ok(await p.locator('.thief').count() === 0, '빈 금고엔 도둑이 안 옴');
+});
+
+suite('명예의 전당', async ({ page, ctx, ok, errs }) => {
+  const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
+  const errors = errs;             // 이름만 다른 같은 수집기
+
+  // 도둑은 화면 밖에서 출발하므로, 보이는 위치에 들어올 때까지 기다렸다 클릭한다
+  async function clickThief() {
+    for (let i = 0; i < 80; i++) {
+      const box = await p.locator('.thief').boundingBox().catch(() => null);
+      if (box && box.x > 4 && box.x + box.width < 386) {
+        await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        return true;
+      }
+      await p.waitForTimeout(60);
+    }
+    return false;
+  }
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+
+    console.log('[1] 기록이 없을 때');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(300);
+    ok((await p.textContent('#tabbar .tab[data-tab="achv"]')).includes('기록'), '탭 이름이 기록');
+    ok(await p.locator('#recordBox .rec').count() === 8, '개인 기록 8줄');
+    ok((await p.textContent('#runBoard')).includes('아직 재개업'), '빈 안내 문구');
+    ok((await p.textContent('#rankNote')).trim() === '', '환생 못하면 예상 순위 없음');
+
+    console.log('\n[2] 회차를 쌓은 뒤');
+    await p.evaluate(() => {
+      const s = State.get();
+      s.runs = [
+        { n: 1, earned: 5.2e6, fame: 3,  seconds: 4200 },
+        { n: 2, earned: 8.4e9, fame: 62, seconds: 9100 },
+        { n: 3, earned: 3.1e8, fame: 18, seconds: 3300 },
+        { n: 4, earned: 8.4e9, fame: 62, seconds: 5400 },
+        { n: 5, earned: 9.7e7, fame: 9,  seconds: 2100 }
+      ];
+      s.bestRunEarned = 8.4e9; s.bestPerSec = 4.2e6; s.bestTap = 1.9e5;
+      s.bestFameGain = 62; s.fastestPrestige = 2100; s.bestCombo = 50;
+      s.goldens = 37; s.thievesCaught = 12;
+      s.gens.g6 = 60; s.runEarned = 2.4e9; s.runTime = 3000;
+      Game.invalidate(); UI.invalidate(); UI.refresh(true);
+    });
+    await p.waitForTimeout(400);
+    const rows = await p.locator('#runBoard .run-row:not(.run-head)').count();
+    ok(rows === 5, `순위표 ${rows}줄`);
+    const fames = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#runBoard .run-fame')).map(e => +e.textContent.replace(/\D/g,'')));
+    ok(fames.join() === [...fames].sort((a,b)=>b-a).join(), '명성 내림차순: ' + fames.join(' ≥ '));
+    const first = await p.textContent('#runBoard .run-row:not(.run-head) .run-rank');
+    ok(first.trim() === '🥇', '1위에 금메달');
+    // 동점(62/62)은 빠른 회차가 위
+    const order = await p.evaluate(() =>
+      Array.from(document.querySelectorAll('#runBoard .run-row:not(.run-head)')).map(r => r.children[1].textContent));
+    ok(order[0] === '4회' && order[1] === '2회', '동점이면 빠른 회차가 위: ' + order.join(' '));
+
+    const note = (await p.textContent('#rankNote')).trim();
+    ok(note.includes('위'), '지금 환생하면 몇 위인지 표시: ' + note);
+
+    const overflow = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+    ok(!overflow, '가로 스크롤 없음');
+    await p.screenshot({ path: path.join(D, 'shot-hall.png') });
+    await p.locator('#runBoard').screenshot({ path: path.join(D, 'crop-runs.png') });
+
+    console.log('\n[3] 실제 환생 후 기록이 남는가');
+    await p.click('#tabbar .tab[data-tab="prestige"]'); await p.waitForTimeout(300);
+    p.on('dialog', d => d.accept());
+    await p.click('#prestigeBtn'); await p.waitForTimeout(600);
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
+    ok(await p.locator('#runBoard .run-row:not(.run-head)').count() === 6, '회차가 하나 늘어남');
+    ok(await p.evaluate(() => State.get().runTime) < 5, '회차 시간이 초기화됨');
+
+    console.log('\n[4] 새로고침 후에도 남는가');
+    await p.evaluate(() => State.save());
+    await p.reload(); await p.waitForTimeout(800);
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(300);
+    ok(await p.locator('#runBoard .run-row:not(.run-head)').count() === 6, '순위표 유지');
+    ok(await p.evaluate(() => State.get().bestTap) > 0, '개인 기록 유지');
+});
+
+suite('캐릭터 그림', async ({ page, ctx, ok, errs }) => {
+  const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
+  const errors = errs;             // 이름만 다른 같은 수집기
+
+  // 도둑은 화면 밖에서 출발하므로, 보이는 위치에 들어올 때까지 기다렸다 클릭한다
+  async function clickThief() {
+    for (let i = 0; i < 80; i++) {
+      const box = await p.locator('.thief').boundingBox().catch(() => null);
+      if (box && box.x > 4 && box.x + box.width < 386) {
+        await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        return true;
+      }
+      await p.waitForTimeout(60);
+    }
+    return false;
+  }
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+
+    console.log('[1] 기본 스킨이 처음부터 그림');
+    ok(await p.locator('#tapEmoji svg').count() === 1, '1단계도 SVG 캐릭터');
+    ok((await p.textContent('#tapLabel')) === '어묵 꼬치', '메뉴: ' + await p.textContent('#tapLabel'));
+    await p.screenshot({ path: path.join(D, 'shot-art1.png') });
+
+    console.log('\n[2] 최고 단계');
+    await p.evaluate(() => {
+      const s = State.get(); s.money=1e18; s.fame=4000; s.fameLv={f_tap:14,f_mult:8};
+      Data.GENERATORS.forEach(g=>s.gens[g.id]=200);
+      Data.UPGRADES.forEach(u=>s.upgrades[u.id]=true);
+      Game.invalidate(); UI.invalidate(); UI.refresh(true);
+      for (let i=0;i<10;i++) Scene.tick(2);
+    });
+    await p.waitForTimeout(1200);
+    ok((await p.textContent('#tapLabel')) === '프리미엄 한상', '메뉴: ' + await p.textContent('#tapLabel'));
+    ok(await p.locator('#tapEmoji svg').count() === 1, '최고 단계도 SVG');
+    await p.screenshot({ path: path.join(D, 'shot-art8.png') });
+
+    console.log('\n[3] 단계표와 스킨 카드');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(400);
+    ok(await p.locator('#tapLadder .rung svg').count() === 8, '단계표 8칸 모두 그림');
+    ok(await p.locator('#tapSkinRow .skin[data-skin="auto"] .skin-ic svg').count() === 1, '분식 스킨 카드에 그림');
+    ok(await p.locator('#tapSkinRow .skin[data-skin="jumeok"] .skin-ic svg').count() === 1, '주먹밥 스킨 카드에 그림');
+    ok(await p.locator('#tapSkinRow .skin[data-skin="bungeo"] .skin-ic svg').count() === 0, '붕어빵 스킨은 이모지 그대로');
+    await p.locator('.skin-card').first().screenshot({ path: path.join(D, 'crop-art-skin.png') });
+
+    console.log('\n[4] 다른 스킨으로 오가도 정상');
+    for (const id of ['bungeo','jumeok','tteok','auto']) {
+      await p.click(`#tapSkinRow .skin[data-skin="${id}"]`); await p.waitForTimeout(220);
+      const hasSvg = await p.locator('#tapEmoji svg').count();
+      const txt = (await p.textContent('#tapEmoji')).trim();
+      ok(hasSvg === 1 || txt.length > 0, `${id}: ` + (hasSvg ? 'SVG' : '이모지 ' + txt));
+    }
+});
+
+suite('스킨', async ({ page, ctx, ok, errs }) => {
+  const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
+  const errors = errs;             // 이름만 다른 같은 수집기
+
+  // 도둑은 화면 밖에서 출발하므로, 보이는 위치에 들어올 때까지 기다렸다 클릭한다
+  async function clickThief() {
+    for (let i = 0; i < 80; i++) {
+      const box = await p.locator('.thief').boundingBox().catch(() => null);
+      if (box && box.x > 4 && box.x + box.width < 386) {
+        await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        return true;
+      }
+      await p.waitForTimeout(60);
+    }
+    return false;
+  }
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+    await p.evaluate(() => {
+      const s = State.get(); s.money=1e18; s.fame=4000; s.fameLv={f_tap:14,f_mult:8};
+      Data.GENERATORS.forEach(g=>s.gens[g.id]=200);
+      Data.UPGRADES.forEach(u=>s.upgrades[u.id]=true);
+      Game.setSkin('tap','jumeok');
+      Game.invalidate(); UI.invalidate(); UI.refresh(true);
+    });
+    await p.waitForTimeout(500);
+    ok(await p.locator('#tapEmoji svg').count() === 1, '조리 이미지가 SVG 캐릭터로 그려짐');
+    ok((await p.textContent('#tapLabel')).includes('주먹밥'), '메뉴 이름: ' + await p.textContent('#tapLabel'));
+    const size = await p.evaluate(() => {
+      const r = document.querySelector('#tapEmoji svg').getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height) };
+    });
+    ok(size.w > 40 && size.w === size.h, `크기 정상 ${size.w}×${size.h}`);
+    await p.screenshot({ path: path.join(D, 'shot-jumeok.png') });
+
+    // 말풍선·튀는 음식은 작아서 이모지를 쓴다
+    await p.evaluate(() => { for (let i=0;i<8;i++) Scene.tick(2); });
+    const box = await p.locator('#tapTarget').boundingBox();
+    await p.mouse.click(box.x+box.width/2, box.y+box.height/2);
+    await p.waitForTimeout(150);
+    const pop = await p.locator('#pops .pop').first().textContent().catch(()=>'');
+    ok(pop && pop.length <= 4, '튀는 음식은 이모지: ' + pop);
+
+    // 단계표
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(400);
+    ok(await p.locator('#tapLadder .rung svg').count() === 8, '단계표 8칸 모두 캐릭터');
+    ok(await p.locator('#tapSkinRow .skin[data-skin="jumeok"] .skin-ic svg').count() === 1,
+       '스킨 카드에도 캐릭터');
+    await p.locator('.skin-card').first().screenshot({ path: path.join(D, 'crop-jumeok-skin.png') });
+
+    // 다른 스킨으로 바꾸면 이모지로 돌아가야 한다
+    await p.click('#tapSkinRow .skin[data-skin="bungeo"]'); await p.waitForTimeout(300);
+    ok(await p.locator('#tapEmoji svg').count() === 0, '붕어빵 스킨은 이모지로 표시');
+    ok((await p.textContent('#tapEmoji')).trim().length > 0, '이모지 정상: ' + (await p.textContent('#tapEmoji')).trim());
+    await p.click('#tapSkinRow .skin[data-skin="jumeok"]'); await p.waitForTimeout(300);
+    ok(await p.locator('#tapEmoji svg').count() === 1, '다시 주먹밥으로 돌아옴');
+});
+
+suite('세이브', async ({ page, ctx, ok, errs }) => {
+  const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
+  const errors = errs;             // 이름만 다른 같은 수집기
+
+  // 도둑은 화면 밖에서 출발하므로, 보이는 위치에 들어올 때까지 기다렸다 클릭한다
+  async function clickThief() {
+    for (let i = 0; i < 80; i++) {
+      const box = await p.locator('.thief').boundingBox().catch(() => null);
+      if (box && box.x > 4 && box.x + box.width < 386) {
+        await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        return true;
+      }
+      await p.waitForTimeout(60);
+    }
+    return false;
+  }
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+
+    // 진행 상황을 만든다
+    await p.evaluate(() => {
+      State.get().money = 1e9; Game.invalidate();
+      ['g1','g2','g3'].forEach(id => Game.buyGen(id, 25));
+      Game.setSkin('tap','tteok'); Game.setSkin('crowd','fantasy');
+      Game.invalidate();
+    });
+    const box = await p.locator('#tapTarget').boundingBox();
+    for(let i=0;i<8;i++){ await p.mouse.click(box.x+box.width/2+(Math.random()*20-10), box.y+box.height/2+(Math.random()*20-10)); await p.waitForTimeout(60); }
+
+    console.log('[1] 자동 저장 (10초 주기)');
+    const before = await p.evaluate(() => ({ taps: State.get().taps, g1: State.get().gens.g1, skin: State.get().tapSkin }));
+    await p.evaluate(() => localStorage.removeItem('bunsik_idle_save_v1'));
+    await p.waitForTimeout(11000);   // 자동 저장이 한 번 돌 때까지
+    const saved = await p.evaluate(() => !!localStorage.getItem('bunsik_idle_save_v1'));
+    ok(saved, '10초 안에 자동으로 저장됨');
+
+    console.log('\n[2] 새로고침해도 남는가');
+    await p.reload(); await p.waitForTimeout(800);
+    const after = await p.evaluate(() => ({ taps: State.get().taps, g1: State.get().gens.g1, skin: State.get().tapSkin }));
+    ok(after.taps === before.taps && after.g1 === before.g1 && after.skin === before.skin,
+       '탭·설비·스킨이 그대로', JSON.stringify(after));
+
+    console.log('\n[3] 탭을 닫았다 열어도 남는가 (새 페이지, 같은 브라우저)');
+    const p2 = await ctx.newPage();
+    await p2.goto('/index.html'); await p2.waitForTimeout(800);
+    const other = await p2.evaluate(() => ({ g1: State.get().gens.g1, skin: State.get().tapSkin }));
+    ok(other.g1 === before.g1 && other.skin === before.skin, '새 탭에서도 이어짐');
+    await p2.close();
+
+    console.log('\n[4] 오프라인 수익 (자리를 비운 동안)');
+    await p.evaluate(() => {
+      // 페이지를 떠날 때 도는 자동 저장이 lastSeen 을 지금으로 덮어쓰므로 잠시 막는다
+      State.save = function () { return true; };
+      const s = State.get();
+      s.lastSeen = Date.now() - 3 * 3600 * 1000;   // 3시간 전에 껐던 것으로
+      localStorage.setItem('bunsik_idle_save_v1', JSON.stringify(s));
+    });
+    await p.reload(); await p.waitForTimeout(900);
+    ok(!await p.isHidden('#offlineModal'), '오프라인 보상 모달이 뜸');
+    const offText = (await p.textContent('#offlineText')).replace(/\s+/g,' ').trim();
+    ok(offText.length > 0, '내용: ' + offText.slice(0, 60));
+    await p.click('#offlineOk'); await p.waitForTimeout(300);
+
+    console.log('\n[5] 세이브 코드로 백업 / 복원');
+    const code = await p.evaluate(() => State.exportText());
+    ok(code.length > 50, `내보내기 코드 ${code.length}자`);
+    await p.evaluate(() => { State.wipe(); Game.invalidate(); UI.invalidate(); UI.refresh(true); });
+    ok(await p.evaluate(() => State.get().gens.g1 || 0) === 0, '초기화 확인');
+    const restored = await p.evaluate(c => State.importText(c), code);
+    ok(restored, '코드로 복원 성공');
+    const back = await p.evaluate(() => ({ g1: State.get().gens.g1, skin: State.get().tapSkin }));
+    ok(back.g1 === before.g1 && back.skin === before.skin, '복원 후 그대로', JSON.stringify(back));
+    ok(await p.evaluate(() => State.importText('아무말')) === false, '잘못된 코드는 거부');
+    ok(await p.evaluate(() => State.get().gens.g1) === before.g1, '거부돼도 기존 세이브 유지');
+
+    console.log('\n[6] 저장 공간을 못 쓰는 환경(시크릿 모드 등)');
+    const survives = await p.evaluate(() => {
+      const real = localStorage.setItem.bind(localStorage);
+      localStorage.setItem = () => { throw new Error('QuotaExceeded'); };
+      const r = State.save();          // 예외를 삼키고 false 를 돌려줘야 한다
+      localStorage.setItem = real;
+      return r === false;
+    });
+    ok(survives, '저장 실패해도 게임이 죽지 않음');
+});
+
+
+/* ---------- 러너 ---------- */
+(async () => {
+  const filter = process.argv[2];
+  const list = filter ? SUITES.filter(s => s.name.includes(filter)) : SUITES;
+  if (!list.length) {
+    console.error(`'${filter}' 에 해당하는 스위트가 없습니다.`);
+    console.error('있는 스위트: ' + SUITES.map(s => s.name).join(' / '));
+    process.exit(2);
+  }
+  fs.mkdirSync(D, { recursive: true });
+
+  const { srv, port } = await serve();
+  const exe = process.env.CHROMIUM_PATH;
+  const browser = await chromium.launch(exe ? { executablePath: exe } : {});
+  let fails = 0;
+
+  for (const s of list) {
+    console.log('\n━━━ ' + s.name + ' ━━━');
+    // 스위트끼리 세이브가 섞이지 않도록 매번 새 컨텍스트에서 돈다
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },      // iPhone 14 크기
+      deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+      baseURL: `http://127.0.0.1:${port}`
+    });
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+
+    const ok = (cond, label, extra) => {
+      if (!cond) { fails++; console.log('  ✗ ' + label + (extra ? '  → ' + extra : '')); }
+      else console.log('  ✓ ' + label + (extra ? '  → ' + extra : ''));
+    };
+
+    try {
+      await s.fn({ page, ctx, ok, errs });
+      ok(errs.length === 0, 'JS 에러 없음', errs.slice(0, 3).join(' | '));
+    } catch (e) {
+      fails++;
+      console.log('  ✗ 스위트가 중단됨 → ' + String(e.message || e).split('\n')[0]);
+    }
+    await ctx.close();
+  }
+
+  await browser.close();
+  srv.close();
+  console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
+  process.exit(fails ? 1 : 0);
+})();

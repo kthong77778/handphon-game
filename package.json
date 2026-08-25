@@ -1,0 +1,17 @@
+{
+  "name": "handphon-game",
+  "version": "1.6.0",
+  "private": true,
+  "description": "분식집 키우기 — 방치형 모바일 웹게임 (빌드 없는 정적 사이트, playwright 는 테스트 전용)",
+  "scripts": {
+    "test": "node tests/logic.js && node tests/macro-stress.js",
+    "test:logic": "node tests/logic.js",
+    "test:macro": "node tests/macro-stress.js",
+    "test:progression": "node tests/progression.js",
+    "test:browser": "node tests/browser.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

@@ -10,4 +10,7 @@ desktop.ini
 
 # 로그 / 임시
 *.log
+
+# 테스트
 node_modules/
+tests/.shots/

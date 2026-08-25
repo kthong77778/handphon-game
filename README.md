@@ -89,10 +89,43 @@ npx serve .
 2. Source: `Deploy from a branch`, Branch: `main` / `/(root)` 선택 후 저장
 3. 1~2분 뒤 `https://kthong77778.github.io/handphon-game/` 에서 접속
 
+## 개발
+
+```bash
+node tests/logic.js         # 게임 로직 133항목 (의존성 없음)
+node tests/macro-stress.js  # 매크로 오탐률 — 사람 오탐 0% 가 합격선
+node tests/progression.js   # 진행 속도 — 밸런스를 건드렸으면 반드시 확인
+node tests/browser.js       # 실제 브라우저 124항목 (npm i -D playwright 필요)
+node tests/browser.js 도둑   # 이름으로 스위트 하나만
+```
+
+브라우저 테스트는 정적 서버를 내장하고 있어 따로 띄우지 않아도 됩니다.
+크로미움 경로를 직접 줘야 하면 `CHROMIUM_PATH` 를 씁니다.
+
+### Claude Code 에이전트 팀
+
+`.claude/agents/` 에 영역별 담당을 두었습니다. 해당 주제로 작업을 부탁하면
+그 에이전트가 맡아, 자기 영역의 규칙과 이미 겪은 실패를 알고 시작합니다.
+
+| 에이전트 | 맡는 것 |
+|---|---|
+| `balance` | 수치와 진행 속도 — 가격·효과·환생 공식·단계 문턱 |
+| `ui` | 화면 구조와 조작 — 탭, 목록, 설정·스킨 화면, 레이아웃 |
+| `art` | 그림과 연출 — 손그림 SVG, 거리 손님, 추격, 애니메이션 |
+| `save` | 세이브와 호환성 — 필드 추가, 정산, 마이그레이션 |
+| `fairness` | 매크로 방지 — 판정과 임계값 |
+| `qa` | 검증 — 전체 테스트, 실패 진단, 테스트 추가 |
+
+프로젝트 전체에 걸친 규칙(캐시 무효화, `[hidden]` 규칙, 트랜지션 경쟁 상태 등)은
+`CLAUDE.md` 에 모여 있습니다.
+
 ## 프로젝트 구조
 
 ```
 index.html               화면 구조 (탭 5개)
+CLAUDE.md                작업 지침 — 코드 지도와 반드시 지킬 것
+.claude/agents/          영역별 담당 에이전트 6종
+tests/                   로직·매크로·진행속도·브라우저 테스트
 manifest.webmanifest     PWA 설정 (홈 화면 추가용)
 sw.js                    서비스워커 (오프라인 실행 캐시)
 assets/
