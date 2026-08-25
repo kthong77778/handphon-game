@@ -295,6 +295,167 @@ var Data = (function () {
       mouth: '<path d="M42 55c3 5 13 5 16 0" stroke="#2f3540" stroke-width="3" fill="none" stroke-linecap="round"/>' })
   ];
 
+
+  /* ---------- 분식 캐릭터 (인라인 SVG) ----------
+     기본 스킨은 누구나 처음 보는 화면이라 이모지 대신 직접 그린다.
+     주먹밥 스킨과 같은 얼굴 규칙을 써서 톤을 맞춘다. */
+
+  var INK = '#2f3540';
+
+  // 눈·입·볼터치를 한 곳에서 만든다 (모든 캐릭터가 같은 얼굴 규칙을 쓰게)
+  function face(o) {
+    o = o || {};
+    var cx = o.cx === undefined ? 50 : o.cx;
+    var cy = o.cy === undefined ? 50 : o.cy;
+    var gap = o.gap || 11;
+    var sc = o.scale || 1;
+    var p = [];
+
+    if (o.blush) {
+      p.push('<ellipse cx="' + (cx - gap - 8 * sc) + '" cy="' + (cy + 6 * sc) + '" rx="' + (6 * sc) +
+             '" ry="' + (4 * sc) + '" fill="#ffa8b6" opacity=".7"/>');
+      p.push('<ellipse cx="' + (cx + gap + 8 * sc) + '" cy="' + (cy + 6 * sc) + '" rx="' + (6 * sc) +
+             '" ry="' + (4 * sc) + '" fill="#ffa8b6" opacity=".7"/>');
+    }
+
+    if (o.eyes === 'happy') {
+      p.push('<path d="M' + (cx - gap - 5 * sc) + ' ' + cy + 'q' + (5 * sc) + ' ' + (-6 * sc) + ' ' + (10 * sc) + ' 0' +
+             'M' + (cx + gap - 5 * sc) + ' ' + cy + 'q' + (5 * sc) + ' ' + (-6 * sc) + ' ' + (10 * sc) + ' 0" ' +
+             'stroke="' + INK + '" stroke-width="' + (3.2 * sc) + '" fill="none" stroke-linecap="round"/>');
+    } else if (o.eyes === 'wink') {
+      p.push('<ellipse cx="' + (cx - gap) + '" cy="' + cy + '" rx="' + (3.6 * sc) + '" ry="' + (4.6 * sc) + '" fill="' + INK + '"/>');
+      p.push('<path d="M' + (cx + gap - 5 * sc) + ' ' + cy + 'q' + (5 * sc) + ' ' + (-6 * sc) + ' ' + (10 * sc) + ' 0" ' +
+             'stroke="' + INK + '" stroke-width="' + (3.2 * sc) + '" fill="none" stroke-linecap="round"/>');
+    } else if (o.eyes === 'star') {
+      [-gap, gap].forEach(function (dx) {
+        var x = cx + dx, y = cy;
+        p.push('<path d="M' + x + ' ' + (y - 6 * sc) + 'l' + (1.8 * sc) + ' ' + (4 * sc) + 'l' + (4.4 * sc) + ' .6l' +
+               (-3.2 * sc) + ' ' + (3.1 * sc) + 'l.8 ' + (4.3 * sc) + 'l' + (-3.8 * sc) + ' ' + (-2.1 * sc) + 'l' +
+               (-3.8 * sc) + ' ' + (2.1 * sc) + 'l.8 ' + (-4.3 * sc) + 'l' + (-3.2 * sc) + ' ' + (-3.1 * sc) + 'l' +
+               (4.4 * sc) + ' -.6z" fill="' + INK + '"/>');
+      });
+    } else {
+      p.push('<ellipse cx="' + (cx - gap) + '" cy="' + cy + '" rx="' + (3.6 * sc) + '" ry="' + (4.6 * sc) + '" fill="' + INK + '"/>');
+      p.push('<ellipse cx="' + (cx + gap) + '" cy="' + cy + '" rx="' + (3.6 * sc) + '" ry="' + (4.6 * sc) + '" fill="' + INK + '"/>');
+    }
+
+    var my = cy + (o.mouthY === undefined ? 9 : o.mouthY) * sc;
+    if (o.mouth === 'open') {
+      p.push('<path d="M' + (cx - 6 * sc) + ' ' + my + 'q' + (6 * sc) + ' ' + (8 * sc) + ' ' + (12 * sc) + ' 0z" fill="' + INK + '"/>');
+    } else if (o.mouth === 'cat') {
+      p.push('<path d="M' + (cx - 7 * sc) + ' ' + my + 'q' + (3.5 * sc) + ' ' + (4 * sc) + ' ' + (7 * sc) + ' 0q' +
+             (3.5 * sc) + ' ' + (4 * sc) + ' ' + (7 * sc) + ' 0" stroke="' + INK + '" stroke-width="' + (2.8 * sc) +
+             '" fill="none" stroke-linecap="round"/>');
+    } else {
+      p.push('<path d="M' + (cx - 6 * sc) + ' ' + my + 'q' + (6 * sc) + ' ' + (4.5 * sc) + ' ' + (12 * sc) + ' 0" ' +
+             'stroke="' + INK + '" stroke-width="' + (2.9 * sc) + '" fill="none" stroke-linecap="round"/>');
+    }
+    return p.join('');
+  }
+
+  function svg(inner) {
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+           inner + '</svg>';
+  }
+
+  var STICK = '<rect x="46.5" y="52" width="7" height="42" rx="3.5" fill="#e0bd85" stroke="rgba(0,0,0,.14)" stroke-width="1.5"/>';
+  var STEAM = '<g fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round">' +
+              '<path d="M38 20q5-5 0-10"/><path d="M50 16q5-5 0-10"/><path d="M62 20q5-5 0-10"/></g>';
+  var CROWN2 = '<path d="M35 12l5 7 10-11 10 11 5-7 2 13H33z" fill="#ffcc44" stroke="#c99a17" stroke-width="1.5"/>';
+  var SPARK2 = '<path d="M87 24l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#ffe07a"/>' +
+               '<path d="M12 30l1.6 4 4 1.6-4 1.6L12 41l-1.6-3.8-4-1.6 4-1.6z" fill="#ffe07a"/>';
+
+  var SNACKS = [
+    // 1 어묵 꼬치 — 꼬치에 꿴 어묵 세 장
+    svg(STICK +
+      '<g stroke="rgba(0,0,0,.15)" stroke-width="1.5">' +
+      '<rect x="24" y="58" width="52" height="17" rx="6" fill="#eed6a2"/>' +
+      '<rect x="22" y="30" width="56" height="22" rx="7" fill="#f7e4bc"/>' +
+      '<rect x="24" y="8" width="52" height="17" rx="6" fill="#eed6a2"/>' +
+      '</g>' +
+      '<g stroke="#dcc08a" stroke-width="2" fill="none" stroke-linecap="round">' +
+      '<path d="M30 66q6-4 12 0t12 0 12 0"/><path d="M30 16q6-4 12 0t12 0 12 0"/></g>' +
+      face({ cy: 39, gap: 10, mouthY: 8 })),
+
+    // 2 떡꼬치 — 고추장 양념을 뒤집어썼다
+    svg(STICK +
+      '<g stroke="rgba(0,0,0,.14)" stroke-width="1.5">' +
+      '<rect x="28" y="56" width="44" height="18" rx="9" fill="#e0503a"/>' +
+      '<rect x="28" y="34" width="44" height="18" rx="9" fill="#ef6042"/>' +
+      '<rect x="28" y="12" width="44" height="18" rx="9" fill="#e0503a"/>' +
+      '</g>' +
+      '<path d="M30 40q10 5 20 0t20 0" stroke="#ffb199" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+      face({ cy: 43, gap: 10, eyes: 'happy', mouthY: 7 })),
+
+    // 3 핫도그 — 케첩 지그재그
+    svg('<rect x="46.5" y="72" width="7" height="22" rx="3.5" fill="#e0bd85"/>' +
+      '<rect x="26" y="12" width="48" height="66" rx="24" fill="#e6a councils"/>'.replace('#e6a councils', '#e8ab4e') +
+      '<rect x="26" y="12" width="48" height="66" rx="24" fill="none" stroke="rgba(0,0,0,.15)" stroke-width="2"/>' +
+      '<path d="M32 22q9 6 18 0t18 0M32 38q9 6 18 0t18 0M32 54q9 6 18 0t18 0" ' +
+      'stroke="#e0503a" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".9"/>' +
+      face({ cy: 44, gap: 10, blush: true, mouthY: 8 })),
+
+    // 4 왕만두 — 김이 모락모락
+    svg(STEAM +
+      '<path d="M50 26c16 0 30 11 30 26 0 12-13 20-30 20S20 64 20 52c0-15 14-26 30-26z" ' +
+      'fill="#fdf6e6" stroke="rgba(0,0,0,.16)" stroke-width="2"/>' +
+      '<path d="M28 36q6-8 11 0M44 32q6-8 12 0M61 36q6-8 11 0" stroke="rgba(0,0,0,.16)" ' +
+      'stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+      face({ cy: 52, gap: 11, eyes: 'happy', blush: true, mouthY: 9 })),
+
+    // 5 모둠튀김 — 새우튀김
+    svg(// 새우 꼬리 — 튀김옷 밖으로 부채처럼 펼쳐진다
+      '<path d="M62 72q12 2 18 10l-8 3 5 7-11-2-2 8-8-9z" fill="#ff8f66" ' +
+      'stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round"/>' +
+      '<path d="M50 12c14 0 24 12 24 28 0 20-11 34-24 34S26 60 26 40C26 24 36 12 50 12z" ' +
+      'fill="#f3b martial"/>'.replace('#f3b martial', '#f2b950') +
+      '<path d="M50 12c14 0 24 12 24 28 0 20-11 34-24 34S26 60 26 40C26 24 36 12 50 12z" ' +
+      'fill="none" stroke="rgba(0,0,0,.15)" stroke-width="2"/>' +
+      '<g fill="#e09b30"><circle cx="36" cy="26" r="3"/><circle cx="64" cy="30" r="3"/>' +
+      '<circle cx="40" cy="66" r="3"/><circle cx="62" cy="62" r="3"/></g>' +
+      face({ cy: 44, gap: 10, eyes: 'wink', mouthY: 8 })),
+
+    // 6 라면 정식 — 면과 계란
+    svg(STEAM +
+      '<path d="M22 44h56q-3 30-28 30T22 44z" fill="#e8e3f5" stroke="rgba(0,0,0,.16)" stroke-width="2"/>' +
+      '<path d="M18 40h64v7H18z" rx="3" fill="#8b5cf6"/>' +
+      '<g stroke="#f5d76e" stroke-width="3.4" fill="none" stroke-linecap="round">' +
+      '<path d="M30 40q4-9 10-4M46 40q4-11 10-3M62 40q3-8 8-3"/></g>' +
+      '<circle cx="64" cy="56" r="8" fill="#fffdf5"/><circle cx="64" cy="56" r="4" fill="#ffbf47"/>' +
+      '<g fill="#5fb85f"><circle cx="34" cy="54" r="3"/><circle cx="44" cy="62" r="3"/></g>' +
+      face({ cy: 55, cx: 45, gap: 9, scale: .85, eyes: 'happy', blush: true, mouthY: 8 })),
+
+    // 7 부대찌개 — 보글보글 끓는 냄비
+    svg('<g fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round">' +
+      '<path d="M34 22q5-6 0-12"/><path d="M50 18q5-6 0-12"/><path d="M66 22q5-6 0-12"/></g>' +
+      // 손잡이
+      '<rect x="4" y="40" width="16" height="7" rx="3.5" fill="#4a4560"/>' +
+      '<rect x="80" y="40" width="16" height="7" rx="3.5" fill="#4a4560"/>' +
+      // 냄비
+      '<path d="M16 38h68v18q0 26-34 26T16 56z" fill="#6b6480" stroke="rgba(0,0,0,.22)" stroke-width="2"/>' +
+      // 국물
+      '<ellipse cx="50" cy="40" rx="30" ry="7" fill="#c9452f"/>' +
+      '<path d="M20 40q0 14 30 14t30-14v4q0 14-30 14T20 44z" fill="#c9452f"/>' +
+      // 건더기와 거품
+      '<ellipse cx="36" cy="38" rx="8" ry="4" fill="#f2b950" transform="rotate(-12 36 38)"/>' +
+      '<ellipse cx="62" cy="41" rx="8" ry="4" fill="#f7e4bc" transform="rotate(10 62 41)"/>' +
+      '<circle cx="46" cy="36" r="3" fill="#ffd9a0" opacity=".95"/>' +
+      face({ cy: 62, gap: 10, eyes: 'happy', mouth: 'open', mouthY: 8 })),
+
+    // 8 프리미엄 한상 — 왕관 쓴 도시락
+    svg(CROWN2 + SPARK2 +
+      // 반찬이 담긴 윗칸
+      '<rect x="14" y="28" width="72" height="26" rx="6" fill="#ffe9a8" stroke="#c99a17" stroke-width="2"/>' +
+      '<g stroke="rgba(0,0,0,.15)" stroke-width="1.5">' +
+      '<rect x="20" y="33" width="20" height="16" rx="3" fill="#fffdf5"/>' +
+      '<rect x="43" y="33" width="15" height="16" rx="3" fill="#ff8f66"/>' +
+      '<rect x="61" y="33" width="19" height="16" rx="3" fill="#8fd18f"/></g>' +
+      '<circle cx="30" cy="41" r="4" fill="#ff7a5c"/>' +
+      // 얼굴이 올라가는 앞판
+      '<path d="M12 54h76v22q0 8-8 8H20q-8 0-8-8z" fill="#ffd75e" stroke="#c99a17" stroke-width="2"/>' +
+      face({ cy: 66, gap: 11, eyes: 'star', blush: true, mouthY: 8 })),
+  ];
+
   /* ---------- 조리 음식 스킨 ---------- */
   // 탭 수익이 오르면 steps 를 따라 메뉴가 올라간다.
   // at 은 "이 수익부터 이 메뉴" 라는 뜻 (버프·콤보를 뺀 순수 탭 수익 기준).
@@ -311,12 +472,12 @@ var Data = (function () {
 
   var TAP_SKINS = [
     {
-      id: 'auto', icon: '🍢', name: '분식 성장형',
+      id: 'auto', icon: '🍢', svg: SNACKS[0], name: '분식 성장형',
       desc: '어묵 꼬치에서 시작해 한상 차림까지',
       steps: ladder([
         ['🍢', '어묵 꼬치'], ['🍡', '떡꼬치'], ['🌭', '핫도그'], ['🥟', '왕만두'],
         ['🍤', '모둠튀김'], ['🍜', '라면 정식'], ['🍲', '부대찌개'], ['🍱', '프리미엄 한상']
-      ])
+      ], SNACKS)
     },
     {
       id: 'bungeo', icon: '🐟', name: '붕어빵 가게',
