@@ -238,19 +238,48 @@ body{
   z-index:20;
 }
 .tab{
-  flex:1;position:relative;
+  flex:1;position:relative;z-index:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   background:none;border:none;
   color:var(--dim);font-family:inherit;
   font-size:10.5px;font-weight:600;
   cursor:pointer;
-  transition:color .12s;
+  transition:color .14s;
 }
-.tab span{font-size:20px;line-height:1;transition:transform .12s}
-.tab.active{color:var(--txt)}
-.tab.active span{transform:translateY(-1px) scale(1.12)}
+/* 지금 보고 있는 탭 뒤에 깔리는 알약 — 어디에 있는지 한눈에 */
+.tab::before{
+  content:'';position:absolute;
+  left:50%;top:4px;
+  width:44px;height:29px;margin-left:-22px;
+  border-radius:11px;
+  background:rgba(139,92,246,.22);
+  border:1px solid rgba(139,92,246,.5);
+  opacity:0;transform:scale(.82);
+  transition:opacity .16s,transform .16s cubic-bezier(.3,.9,.4,1.4);
+  pointer-events:none;
+  z-index:-1;                      /* 글자를 덮지 않도록 뒤로 (.tab 이 쌓임 맥락) */
+}
+/* 위쪽 표시줄 */
+.tab::after{
+  content:'';position:absolute;top:0;left:50%;
+  width:30px;height:3px;margin-left:-15px;
+  border-radius:0 0 3px 3px;
+  background:var(--accent);
+  box-shadow:0 0 8px rgba(139,92,246,.9);
+  transform:scaleX(0);
+  transition:transform .18s cubic-bezier(.3,.9,.4,1.4);
+}
+.tab span{font-size:20px;line-height:1;transition:transform .14s,filter .14s}
+.tab.active{color:var(--txt);font-weight:800}
+.tab.active::before{opacity:1;transform:scale(1)}
+.tab.active::after{transform:scaleX(1)}
+.tab.active span{
+  transform:translateY(-2px) scale(1.18);
+  filter:drop-shadow(0 0 6px rgba(139,92,246,.85));
+}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:12px}
 .tab .dot{
-  position:absolute;top:7px;right:calc(50% - 20px);
+  position:absolute;top:5px;right:calc(50% - 22px);z-index:2;
   width:8px;height:8px;border-radius:50%;
   background:var(--good);
   box-shadow:0 0 6px var(--good);
@@ -314,7 +343,10 @@ body{
   padding:5px 10px;border-radius:7px;cursor:pointer;
   transition:background .12s,color .12s;
 }
-.buy-amt button.active{background:var(--accent);color:#fff}
+.buy-amt button.active{
+  background:var(--accent);color:#fff;
+  box-shadow:0 0 10px rgba(139,92,246,.65);
+}
 
 /* 도전과제: 잠긴 항목은 내용 가림 */
 .item.achv-locked .item-icon{filter:grayscale(1)}
@@ -450,12 +482,12 @@ body{
 
 /* ===== 가게 앞 거리 (손님들이 오가는 곳) ===== */
 .street{
-  position:relative;height:66px;
+  position:relative;height:84px;
   margin:-4px -14px 10px;         /* 화면 끝까지, 가게와 이어지게 */
   overflow:hidden;
   /* 가운데에서 가게 불빛이 새어나오고, 아래쪽은 보도 */
   background:
-    radial-gradient(120% 84% at 50% -14%,rgba(255,204,68,.16),transparent 62%),
+    radial-gradient(90% 92% at 16% 2%,rgba(255,204,68,.18),transparent 64%),
     linear-gradient(180deg,transparent 66%,rgba(58,49,99,.42) 66%,rgba(26,20,48,.92));
   border-bottom:1px solid rgba(58,49,99,.55);
 }
@@ -468,17 +500,17 @@ body{
 /* 등급이 오르면 거리도 격이 오른다 — 5등급은 레드카펫 */
 .street.tier3{
   background:
-    radial-gradient(120% 84% at 50% -14%,rgba(167,139,250,.19),transparent 62%),
+    radial-gradient(90% 92% at 16% 2%,rgba(167,139,250,.2),transparent 64%),
     linear-gradient(180deg,transparent 66%,rgba(139,92,246,.28) 66%,rgba(26,20,48,.92));
 }
 .street.tier4{
   background:
-    radial-gradient(120% 84% at 50% -14%,rgba(96,165,250,.18),transparent 62%),
+    radial-gradient(90% 92% at 16% 2%,rgba(96,165,250,.2),transparent 64%),
     linear-gradient(180deg,transparent 66%,rgba(96,165,250,.22) 66%,rgba(24,22,52,.94));
 }
 .street.tier5{
   background:
-    radial-gradient(120% 84% at 50% -14%,rgba(255,204,68,.22),transparent 62%),
+    radial-gradient(90% 92% at 16% 2%,rgba(255,204,68,.24),transparent 64%),
     linear-gradient(180deg,transparent 66%,rgba(139,26,48,.85) 66%,rgba(92,16,32,.96));
   border-bottom-color:rgba(255,204,68,.5);
 }
@@ -491,10 +523,31 @@ body{
 
 /* 가게 앞 바닥에 떨어지는 조명 */
 .street::before{
-  content:'';position:absolute;left:50%;bottom:0;
-  width:200px;height:24px;transform:translateX(-50%);
-  background:radial-gradient(60% 100% at 50% 100%,rgba(255,204,68,.16),transparent 72%);
+  content:'';position:absolute;left:0;bottom:0;
+  width:210px;height:26px;
+  background:radial-gradient(58% 100% at 30% 100%,rgba(255,204,68,.2),transparent 72%);
 }
+
+/* ===== 거리 왼쪽에 선 가게 ===== */
+.shopfront{
+  position:absolute;left:2px;bottom:0;
+  width:118px;height:82px;
+  z-index:1;                       /* 손님이 가게 앞을 지나간다 */
+  pointer-events:none;
+  filter:drop-shadow(0 0 10px rgba(255,204,68,.28));
+}
+.shopfront svg{display:block;width:100%;height:100%}
+/* 냄비에서 오르는 김 */
+.shopfront .smoke{animation:shopSmoke 2.8s ease-out infinite}
+@keyframes shopSmoke{
+  0%{opacity:0;transform:translateY(4px)}
+  30%{opacity:.85}
+  100%{opacity:0;transform:translateY(-8px)}
+}
+/* 등급이 오르면 간판 불빛도 세진다 */
+.street.tier3 .shopfront{filter:drop-shadow(0 0 12px rgba(167,139,250,.5))}
+.street.tier4 .shopfront{filter:drop-shadow(0 0 14px rgba(96,165,250,.55))}
+.street.tier5 .shopfront{filter:drop-shadow(0 0 18px rgba(255,204,68,.7))}
 
 .walker{
   position:absolute;left:0;bottom:20px;
@@ -576,7 +629,7 @@ body{
 .tap-target.blocked .tap-power{color:var(--bad)}
 
 @media (prefers-reduced-motion:reduce){
-  .walker .body,.walker .acc,.steam{animation:none}
+  .walker .body,.walker .acc,.steam,.shopfront .smoke{animation:none}
   .street{opacity:.7}
 }
 
@@ -679,10 +732,23 @@ body{
 .skin:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .skin .skin-ic{font-size:25px;line-height:1}
 .skin .skin-nm{font-size:10.5px;font-weight:700;text-align:center;line-height:1.25}
+.skin{position:relative}
 .skin.on{
   border-color:var(--gold);
   background:linear-gradient(180deg,rgba(255,204,68,.16),var(--bg2));
   color:var(--txt);
+  box-shadow:0 0 12px rgba(255,204,68,.35);
+}
+/* 지금 쓰는 스킨에는 체크를 달아 둔다 — 테두리 색만으로는 잘 안 보였다 */
+.skin.on::after{
+  content:'✓';
+  /* 카드 밖으로 빼면 가로 스크롤 영역에 잘린다 — 안쪽에 붙인다 */
+  position:absolute;top:3px;right:3px;
+  width:17px;height:17px;line-height:17px;
+  border-radius:50%;
+  background:var(--gold);color:#3a2a00;
+  font-size:11px;font-weight:900;text-align:center;
+  box-shadow:0 0 8px rgba(255,204,68,.6);
 }
 
 /* 단계표 */
@@ -839,11 +905,11 @@ body{
 
 .shop-top{
   flex:0 0 auto;
-  height:var(--top-h,292px);
+  height:var(--top-h,310px);
   overflow:hidden;
   transition:height .3s cubic-bezier(.3,.8,.4,1);
 }
-@media (min-height:760px){ .shop-top{--top-h:322px} }
+@media (min-height:760px){ .shop-top{--top-h:340px} }
 
 /* 시트를 올리면 조리 구간이 접힌다 */
 .tab-page.shop.up .shop-top{--top-h:118px}

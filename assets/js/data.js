@@ -480,6 +480,55 @@ var Data = (function () {
   // at 은 "이 수익부터 이 메뉴" 라는 뜻 (버프·콤보를 뺀 순수 탭 수익 기준).
   // 실제 진행 시뮬레이션에 맞춰 잡았다 — 첫 회차 하루 안에 6단계까지 보이고,
   // 7·8단계는 환생 이후의 목표가 된다. 환생하면 탭 수익과 함께 단계도 내려간다.
+  /* ---------- 가게 앞 그림 ---------- */
+  // 거리 왼쪽에 서 있는 포장마차. 손님은 오른쪽에서 걸어와 이 앞에 선다.
+  // 간판 글자만 스킨을 따라간다 (분식 / 붕어빵 / 주먹밥 ...).
+  function shopFront(sign) {
+    var ink = 'stroke="' + INK + '" stroke-width="2" stroke-linejoin="round"';
+    return '<svg viewBox="0 0 132 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<ellipse cx="66" cy="89" rx="56" ry="3.4" fill="rgba(0,0,0,.4)"/>' +
+      '<rect x="16" y="34" width="100" height="50" rx="3" fill="#3a2b1e"/>' +
+      '<rect x="22" y="37" width="88" height="21" rx="3" fill="#ffcc44" opacity=".34"/>' +
+      '<rect x="11" y="28" width="7" height="60" rx="2" fill="#7a5433" ' + ink + '/>' +
+      '<rect x="114" y="28" width="7" height="60" rx="2" fill="#7a5433" ' + ink + '/>' +
+      '<path d="M6 34L18 15h96l12 19z" fill="#e05a4e" ' + ink + '/>' +
+      '<g fill="#fff4e0" fill-opacity=".95">' +
+        '<path d="M30 15h12l-6 19H21z"/><path d="M54 15h12v19H51z"/>' +
+        '<path d="M78 15h12l6 19H81z"/><path d="M102 15h12l12 19h-15z"/></g>' +
+      '<path d="M6 34L18 15h96l12 19z" fill="none" ' + ink + '/>' +
+      '<path d="M6 34 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0" fill="#e05a4e" ' + ink + '/>' +
+      '<g class="smoke" fill="none" stroke="#ffffff" stroke-opacity=".4"' +
+        ' stroke-width="2.4" stroke-linecap="round">' +
+        '<path d="M33 38q4-4 0-7"/><path d="M47 38q4-4 0-7"/></g>' +
+      '<rect x="38" y="16" width="56" height="17" rx="4" fill="#fff4e0" ' + ink + '/>' +
+      '<text x="66" y="29" text-anchor="middle" font-size="12.5" font-weight="800"' +
+        ' fill="#c0392b" font-family="system-ui,-apple-system,sans-serif">' + sign + '</text>' +
+      '<g stroke="' + INK + '" stroke-width="1.6"><path d="M19 38v4"/><path d="M113 38v4"/></g>' +
+      '<circle cx="19" cy="46" r="4.2" fill="#ffe07a" stroke="' + INK + '" stroke-width="1.6"/>' +
+      '<circle cx="113" cy="46" r="4.2" fill="#ffe07a" stroke="' + INK + '" stroke-width="1.6"/>' +
+      // 주인 — 판매대 뒤라 어깨 위만 보인다
+      '<path d="M72 62q14-16 28 0v6H72z" fill="#e05a4e" ' + ink + '/>' +
+      '<circle cx="86" cy="44" r="8.5" fill="#f6d3ae" ' + ink + '/>' +
+      '<path d="M77 42q9-12 18 0z" fill="#fff4e0" ' + ink + '/>' +
+      '<rect x="77" y="40" width="18" height="4" rx="2" fill="#e05a4e" ' + ink + '/>' +
+      '<g fill="' + INK + '"><circle cx="83" cy="46" r="1.4"/><circle cx="89" cy="46" r="1.4"/></g>' +
+      '<path d="M83.5 49.5q2.5 2.2 5 0" fill="none" stroke="' + INK + '"' +
+        ' stroke-width="1.6" stroke-linecap="round"/>' +
+      '<g stroke="#e0bd85" stroke-width="2.6" stroke-linecap="round">' +
+        '<path d="M34 52v-11"/><path d="M40 51v-10"/><path d="M46 52v-11"/></g>' +
+      '<g fill="#f7e4bc" ' + ink + '>' +
+        '<rect x="30.5" y="39" width="7" height="10" rx="3"/>' +
+        '<rect x="36.5" y="37" width="7" height="10" rx="3"/>' +
+        '<rect x="42.5" y="39" width="7" height="10" rx="3"/></g>' +
+      '<path d="M28 52h24l-2 6H30z" fill="#b8c0cc" ' + ink + '/>' +
+      '<ellipse cx="40" cy="52" rx="12" ry="3.2" fill="#9aa4b3" ' + ink + '/>' +
+      '<rect x="14" y="58" width="104" height="7" rx="2.5" fill="#c98a4b" ' + ink + '/>' +
+      '<rect x="18" y="65" width="96" height="23" fill="#8a5a33" ' + ink + '/>' +
+      '<g stroke="rgba(0,0,0,.28)" stroke-width="1.6">' +
+        '<path d="M42 66v21"/><path d="M66 66v21"/><path d="M90 66v21"/></g>' +
+      '</svg>';
+  }
+
   var TAP_STEP_AT = [0, 8, 100, 800, 6e3, 5e4, 1e6, 5e7];
 
   // svgs 를 주면 큰 화면과 단계표에서는 그림을, 말풍선처럼 작은 곳에서는 이모지를 쓴다
@@ -491,7 +540,7 @@ var Data = (function () {
 
   var TAP_SKINS = [
     {
-      id: 'auto', icon: '🍢', svg: SNACKS[0], name: '분식 성장형',
+      id: 'auto', sign: '분식', icon: '🍢', svg: SNACKS[0], name: '분식 성장형',
       desc: '어묵 꼬치에서 시작해 한상 차림까지',
       steps: ladder([
         ['🍢', '어묵 꼬치'], ['🍡', '떡꼬치'], ['🌭', '핫도그'], ['🥟', '왕만두'],
@@ -499,7 +548,7 @@ var Data = (function () {
       ], SNACKS)
     },
     {
-      id: 'bungeo', icon: '🐟', name: '붕어빵 가게',
+      id: 'bungeo', sign: '붕어빵', icon: '🐟', name: '붕어빵 가게',
       desc: '겨울 간식으로 통일',
       steps: ladder([
         ['🐟', '붕어빵'], ['🐠', '슈크림 붕어빵'], ['🥚', '계란빵'], ['🥞', '호떡'],
@@ -507,7 +556,7 @@ var Data = (function () {
       ])
     },
     {
-      id: 'jumeok', icon: '🍙', svg: ONIGIRI[3], name: '주먹밥 부락',
+      id: 'jumeok', sign: '주먹밥', icon: '🍙', svg: ONIGIRI[3], name: '주먹밥 부락',
       desc: '얼굴 달린 주먹밥 친구들',
       steps: ladder([
         ['🍙', '주먹밥'], ['🍘', '구운 주먹밥'], ['🍚', '깨 주먹밥'], ['🥗', '야채 주먹밥'],
@@ -515,7 +564,7 @@ var Data = (function () {
       ], ONIGIRI)
     },
     {
-      id: 'tteok', icon: '🍡', name: '떡·디저트',
+      id: 'tteok', sign: '떡집', icon: '🍡', name: '떡·디저트',
       desc: '달달한 것만 골라서',
       steps: ladder([
         ['🍡', '경단'], ['🧁', '컵케이크'], ['🍮', '푸딩'], ['🥮', '월병'],
@@ -523,7 +572,7 @@ var Data = (function () {
       ])
     },
     {
-      id: 'noodle', icon: '🍜', name: '면 요리',
+      id: 'noodle', sign: '면집', icon: '🍜', name: '면 요리',
       desc: '국물부터 볶음까지',
       steps: ladder([
         ['🍜', '라면'], ['🥢', '잔치국수'], ['🍝', '파스타'], ['🥡', '짜장면'],
@@ -644,6 +693,7 @@ var Data = (function () {
     TAP_SKINS: TAP_SKINS,
     CROWD_SKINS: CROWD_SKINS,
     HEADWEAR: HEADWEAR,
+    shopFront: shopFront,
     GOLDEN: GOLDEN,
     THIEF: THIEF,
     MANAGER: MANAGER,

@@ -542,6 +542,106 @@ suite('캐릭터 그림', async ({ page, ctx, ok, errs }) => {
     }
 });
 
+suite('가게 그림 · 손님 방향 · 활성 탭', async ({ page, ctx, ok, errs }) => {
+  const p = page;
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+
+    console.log('[1] 거리 왼쪽에 가게가 서 있다');
+    ok(await p.locator('#street .shopfront svg').count() === 1, '가게 그림이 그려짐');
+    const street = await p.locator('#street').boundingBox();
+    const shop = await p.locator('#street .shopfront').boundingBox();
+    ok(shop.x - street.x < 12, `왼쪽 끝에 붙음 (${Math.round(shop.x - street.x)}px)`);
+    ok(shop.x + shop.width < street.x + street.width / 2, '거리 왼쪽 절반 안에 들어옴');
+    ok(Math.abs((shop.y + shop.height) - (street.y + street.height)) < 3, '바닥에 닿아 있음');
+    ok((await p.textContent('#street .shopfront text')) === '분식', '간판: 분식');
+    await p.locator('#street').screenshot({ path: path.join(D, 'shot-street-shop.png') });
+
+    console.log('\n[2] 간판은 스킨을 따라간다');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(300);
+    await p.click('#tapSkinRow .skin[data-skin="bungeo"]');
+    await p.click('#tabbar .tab[data-tab="shop"]'); await p.waitForTimeout(400);
+    await p.evaluate(() => Scene.tick(0.1));
+    ok((await p.textContent('#street .shopfront text')) === '붕어빵', '간판: 붕어빵');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
+    await p.click('#tapSkinRow .skin[data-skin="auto"]');
+    ok(await p.locator('#tapSkinRow .skin[data-skin="auto"].on').count() === 1, '고른 스킨에 표시가 남음');
+    await p.click('#tabbar .tab[data-tab="shop"]'); await p.waitForTimeout(300);
+
+    console.log('\n[3] 손님은 전부 오른쪽에서 온다');
+    // 미리 깔아둔 손님(이미 걸어온 자리에서 시작한다)을 치우고 새로 받는다
+    const xs = await p.evaluate(async () => {
+      const s = State.get();
+      Data.GENERATORS.forEach(g => s.gens[g.id] = 30);
+      Game.invalidate();
+      Scene.clear();
+      const street = document.getElementById('street');
+      const w = street.clientWidth;
+      const seen = [];
+      for (let i = 0; i < 12; i++) {
+        Scene.tick(2);
+        street.querySelectorAll('.walker').forEach(n => {
+          if (n.dataset.seen) return;
+          n.dataset.seen = '1';
+          // spawnWalker 가 바로 glide 를 걸어 style.transform 은 이미 도착점이다.
+          // 그래서 도착점과, 아직 거의 안 움직인 실제 위치를 함께 본다.
+          const m = /translateX\((-?[\d.]+)px\)/.exec(n.style.transform || '');
+          const r = n.getBoundingClientRect();
+          seen.push({ to: m ? +m[1] : null, left: r.left - street.getBoundingClientRect().left, w: w });
+        });
+        await new Promise(r => setTimeout(r, 20));
+      }
+      return seen;
+    });
+    ok(xs.length >= 5, `손님 ${xs.length}명 관찰`);
+    // 주문하는 손님은 가게 앞(왼쪽)에 한 번 멈췄다 가므로 도착점이 -40 이 아닐 수 있다
+    ok(xs.every(v => v.to !== null && v.to < v.left), '전부 왼쪽으로 걸어감');
+    ok(xs.every(v => v.to < v.w / 2), '멈추는 자리도 가게가 있는 왼쪽 절반');
+    ok(xs.every(v => v.left > v.w - 20), '전부 오른쪽 화면 밖에서 들어옴');
+    ok(await p.locator('#street .walker i.flip').count() > 0, '가게 쪽(왼쪽)을 보고 걸음');
+
+    // 가게 앞에서 돌아 나가면 오른쪽을 본다. 가게를 지나쳐 왼쪽으로 빠지면
+    // 손님이 가게 그림을 덮어 가리므로, 왼쪽 끝까지 가는 손님이 없어야 한다.
+    const home = await p.evaluate(async () => {
+      let turned = false, past = 0;
+      const street = document.getElementById('street');
+      for (let i = 0; i < 60; i++) {
+        street.querySelectorAll('.walker').forEach(n => {
+          if (!n.querySelector('i.flip')) turned = true;
+          if (n.getBoundingClientRect().right < street.getBoundingClientRect().left + 8) past++;
+        });
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return { turned: turned, past: past };
+    });
+    ok(home.turned, '가게 앞에서 돌아 나감');
+    ok(home.past === 0, '가게를 지나쳐 왼쪽으로 빠지는 손님 없음');
+
+    console.log('\n[4] 지금 보고 있는 탭이 뚜렷하다');
+    for (const name of ['upgrade', 'settings', 'shop']) {
+      await p.click(`#tabbar .tab[data-tab="${name}"]`); await p.waitForTimeout(320);
+      const on = await p.evaluate((n) => {
+        const b = document.querySelector(`#tabbar .tab[data-tab="${n}"]`);
+        const pill = getComputedStyle(b, '::before');
+        const bar = getComputedStyle(b, '::after');
+        return {
+          active: b.classList.contains('active'),
+          pill: +pill.opacity,
+          bar: bar.transform,
+          weight: getComputedStyle(b).fontWeight
+        };
+      }, name);
+      ok(on.active && on.pill > 0.9, `${name}: 알약이 켜짐`);
+      ok(!/matrix\(0,/.test(on.bar), `${name}: 위 표시줄이 펼쳐짐`);
+      ok(+on.weight >= 700, `${name}: 글씨가 굵어짐`);
+    }
+    const off = await p.evaluate(() =>
+      +getComputedStyle(document.querySelector('#tabbar .tab[data-tab="achv"]'), '::before').opacity);
+    ok(off < 0.1, '안 보는 탭에는 알약이 없음');
+    await p.locator('#tabbar').screenshot({ path: path.join(D, 'shot-tabbar.png') });
+});
+
 suite('스킨', async ({ page, ctx, ok, errs }) => {
   const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
   const errors = errs;             // 이름만 다른 같은 수집기

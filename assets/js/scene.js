@@ -8,7 +8,11 @@ var Scene = (function () {
   // 어떤 손님이 오는지는 스킨과 초당 수익(등급)이 정한다 — Game.crowdTier()
   // 튀는 음식도 지금 조리하는 메뉴의 스킨을 따라간다.
 
+  var SHOP_W = 118;     // 거리 왼쪽에 서 있는 가게 그림의 너비 (px)
+
   var street = null;    // 손님들이 걸어다니는 층
+  var shopEl = null;    // 왼쪽 가게 그림
+  var shopSign = '';    // 지금 간판에 걸린 글자
   var pops = null;      // 조리할 때 음식이 튀는 층
   var walkers = [];
   var spawnLeft = 0;
@@ -44,12 +48,9 @@ var Scene = (function () {
     var w = street.clientWidth;
     if (w < 40) return;
 
-    var rightward = Math.random() < 0.5;
     var boosted = State.get().boostLeft > 0;
-    var span = w + 80;
     // 손님 몰이 중엔 다들 뛰어온다
     var speed = rnd(boosted ? 90 : 34, boosted ? 150 : 62);   // px/s
-    var dur = span / speed;   // 끝에서 끝까지 걸리는 시간 (아래에서 남은 거리로 다시 잰다)
 
     var node = document.createElement('div');
     node.className = 'walker' + (boosted ? ' hurry' : '');
@@ -69,7 +70,8 @@ var Scene = (function () {
       node.appendChild(acc);
     }
     body.className = 'body';
-    if (!rightward) face.className = 'flip';
+    // 손님은 오른쪽에서 걸어와 왼쪽 가게로 향한다 — 얼굴도 왼쪽을 본다
+    face.className = 'flip';
     face.appendChild(body);
     node.appendChild(face);
     // 이모지 글리프는 CSS 박스보다 아래로 삐져나오므로 바닥에서 충분히 띄운다
@@ -77,19 +79,18 @@ var Scene = (function () {
     node.style.fontSize = Math.round(rnd(21, 29)) + 'px';
     node.style.opacity = String(rnd(0.75, 1));
 
-    var start = rightward ? -40 : w + 40;
-    var to = rightward ? w + 40 : -40;
+    // 오른쪽에서 걸어와 가게 앞에 섰다가 왔던 길로 돌아간다.
+    // 가게를 지나쳐 왼쪽으로 빼면 손님이 가게 그림 위를 덮어 가려 버린다.
+    var start = w + 40;
+    var turn = rnd(SHOP_W - 6, SHOP_W + 50);
+    if (turn > w - 30) turn = Math.max(20, w * 0.55);
     // 이미 걸어온 것처럼 시작하면 거리에 자연스럽게 흩어진다
-    var from = progress ? start + (to - start) * progress : start;
+    var from = progress ? start + (turn - start) * progress : start;
     node.style.transform = 'translateX(' + from + 'px)';
 
     street.appendChild(node);
     var walker = { node: node, body: body, timer: 0 };
     walkers.push(walker);
-
-    // 셋 중 하나는 가게 앞에 멈춰서 주문하고 간다
-    var orders = !REDUCED && Math.random() < 0.34;
-    var stopX = rightward ? rnd(w * 0.3, w * 0.55) : rnd(w * 0.45, w * 0.7);
 
     function glide(x, seconds, done) {
       // 시작 위치를 브라우저가 확정하도록 강제로 레이아웃을 읽는다.
@@ -101,25 +102,26 @@ var Scene = (function () {
       walker.timer = setTimeout(done, seconds * 1000 + 60);
     }
 
-    // 이미 지나친 자리에서 주문하려 들면 안 된다
-    if (orders && (rightward ? stopX <= from : stopX >= from)) orders = false;
-
-    if (orders) {
-      var legA = Math.abs(stopX - from) / speed;
-      var legB = Math.abs(to - stopX) / speed;
-      glide(stopX, legA, function () {
-        if (!node.parentNode) return;
-        node.classList.add('waiting');
-        bubble(node, orderIcon());
-        walker.timer = setTimeout(function () {
-          if (!node.parentNode) return;
-          node.classList.remove('waiting');
-          glide(to, legB, function () { removeWalker(walker); });
-        }, 1100);
-      });
-    } else {
-      glide(to, Math.abs(to - from) / speed, function () { removeWalker(walker); });
+    /** 돌아갈 때는 오른쪽을 보고 걷는다 */
+    function goHome() {
+      face.className = '';
+      glide(start, Math.abs(start - turn) / speed, function () { removeWalker(walker); });
     }
+
+    // 셋 중 하나는 가게 앞에서 주문하고 간다
+    var orders = !REDUCED && Math.random() < 0.34;
+
+    glide(turn, Math.abs(turn - from) / speed, function () {
+      if (!node.parentNode) return;
+      if (!orders) return goHome();
+      node.classList.add('waiting');
+      bubble(node, orderIcon());
+      walker.timer = setTimeout(function () {
+        if (!node.parentNode) return;
+        node.classList.remove('waiting');
+        goHome();
+      }, 1100);
+    });
   }
 
   /** 손님이 주문하는 메뉴 — 지금 스킨에서 파는 것 중 하나 */
@@ -138,6 +140,17 @@ var Scene = (function () {
     b.textContent = food;
     node.appendChild(b);
     setTimeout(function () { b.remove(); }, 1200);
+  }
+
+  /* ---------- 왼쪽 가게 ---------- */
+
+  /** 스킨이 바뀌면 간판만 다시 그린다 (매 프레임 innerHTML 을 갈아끼우지 않는다) */
+  function syncShop() {
+    if (!shopEl) return;
+    var sign = Game.tapSkin().sign || '분식';
+    if (sign === shopSign) return;
+    shopSign = sign;
+    shopEl.innerHTML = Data.shopFront(sign);
   }
 
   /* ---------- 조리할 때 튀는 음식 ---------- */
@@ -168,6 +181,8 @@ var Scene = (function () {
       streetTier = ti;
     }
 
+    syncShop();
+
     spawnLeft -= dt;
     if (spawnLeft > 0) return;
     spawnLeft = rnd(0.5, 1.6);
@@ -183,6 +198,10 @@ var Scene = (function () {
   function init(streetEl, popsEl) {
     street = streetEl;
     pops = popsEl;
+    shopEl = document.createElement('div');
+    shopEl.className = 'shopfront';
+    street.appendChild(shopEl);
+    syncShop();
     try {
       REDUCED = window.matchMedia &&
                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
