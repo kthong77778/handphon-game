@@ -461,12 +461,13 @@ var UI = (function () {
       var ct = Game.crowdTier();
       ladderEl.innerHTML = cur.tiers.map(function (tr, i) {
         var cls = i < ct.index ? 'done' : (i === ct.index ? 'now' : '');
-        return '<span class="rung ' + cls + '">' + tr.cast[0] + '</span>';
+        return '<span class="rung ' + cls + '" title="' + tr.name + '">' +
+               tr.cast[0] + (tr.acc.length ? '<u>' + tr.acc[0] + '</u>' : '') + '</span>';
       }).join('');
       var nxt = cur.tiers[ct.index + 1];
-      ladderEl.innerHTML += '<span class="rung-note">' + (nxt
-        ? '다음 등급 · 초당 ' + Fmt.won(nxt.at)
-        : '마지막 등급입니다') + '</span>';
+      ladderEl.innerHTML += '<span class="rung-note"><b>' + ct.name + '</b>' + (nxt
+        ? ' · 다음은 ' + nxt.name + ' (초당 ' + Fmt.won(nxt.at) + ')'
+        : ' · 마지막 등급입니다') + '</span>';
     }
   }
 

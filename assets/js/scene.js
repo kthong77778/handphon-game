@@ -57,8 +57,17 @@ var Scene = (function () {
     var body = document.createElement('span');
     var tier = Game.crowdTier();
     body.textContent = pick(tier.cast);
-    if (tier.index >= 2) node.classList.add('vip');   // 등급이 오르면 은은하게 빛난다
-    if (tier.index >= 4) node.classList.add('legend');
+    node.classList.add('t' + (tier.index + 1));
+
+    // 등급이 오르면 값나가는 것을 들고 온다
+    if (tier.acc && tier.acc.length) {
+      var icon = pick(tier.acc);
+      var acc = document.createElement('b');
+      acc.className = 'acc' + (Data.HEADWEAR.indexOf(icon) >= 0 ? ' head' : '');
+      acc.textContent = icon;
+      // face 는 왼쪽으로 걸을 때 좌우 반전되므로, 소지품은 그 바깥에 붙인다
+      node.appendChild(acc);
+    }
     body.className = 'body';
     if (!rightward) face.className = 'flip';
     face.appendChild(body);
@@ -146,8 +155,18 @@ var Scene = (function () {
 
   /* ---------- 매 프레임 ---------- */
 
+  var streetTier = -1;
+
   function tick(dt) {
     if (!street) return;
+
+    // 손님 등급이 오르면 거리도 함께 격이 오른다 (5등급은 레드카펫)
+    var ti = Game.crowdTier().index;
+    if (ti !== streetTier) {
+      street.className = 'street tier' + (ti + 1);
+      streetTier = ti;
+    }
+
     spawnLeft -= dt;
     if (spawnLeft > 0) return;
     spawnLeft = rnd(0.5, 1.6);
@@ -157,6 +176,7 @@ var Scene = (function () {
   /** 환생이나 세이브 교체처럼 판을 새로 깔 때 */
   function clear() {
     walkers.slice().forEach(removeWalker);
+    streetTier = -1;
   }
 
   function init(streetEl, popsEl) {

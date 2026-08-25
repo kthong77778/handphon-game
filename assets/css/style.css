@@ -459,6 +459,30 @@ body{
   background-image:repeating-linear-gradient(90deg,
     rgba(255,255,255,.045) 0 1px,transparent 1px 34px);
 }
+/* 등급이 오르면 거리도 격이 오른다 — 5등급은 레드카펫 */
+.street.tier3{
+  background:
+    radial-gradient(120% 84% at 50% -14%,rgba(167,139,250,.19),transparent 62%),
+    linear-gradient(180deg,transparent 66%,rgba(139,92,246,.28) 66%,rgba(26,20,48,.92));
+}
+.street.tier4{
+  background:
+    radial-gradient(120% 84% at 50% -14%,rgba(96,165,250,.18),transparent 62%),
+    linear-gradient(180deg,transparent 66%,rgba(96,165,250,.22) 66%,rgba(24,22,52,.94));
+}
+.street.tier5{
+  background:
+    radial-gradient(120% 84% at 50% -14%,rgba(255,204,68,.22),transparent 62%),
+    linear-gradient(180deg,transparent 66%,rgba(139,26,48,.85) 66%,rgba(92,16,32,.96));
+  border-bottom-color:rgba(255,204,68,.5);
+}
+/* 레드카펫 금색 테두리 */
+.street.tier5::after{
+  background-image:
+    linear-gradient(180deg,rgba(255,204,68,.75) 0 2px,transparent 2px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 34px);
+}
+
 /* 가게 앞 바닥에 떨어지는 조명 */
 .street::before{
   content:'';position:absolute;left:50%;bottom:0;
@@ -546,7 +570,7 @@ body{
 .tap-target.blocked .tap-power{color:var(--bad)}
 
 @media (prefers-reduced-motion:reduce){
-  .walker .body,.steam{animation:none}
+  .walker .body,.walker .acc,.steam{animation:none}
   .street{opacity:.7}
 }
 
@@ -588,9 +612,37 @@ body{
 }
 .tap-label{font-weight:700;color:#c4b5fd}
 
-/* 등급이 높은 손님은 은은하게 빛난다 */
-.walker.vip .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 7px rgba(167,139,250,.75))}
-.walker.legend .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(255,204,68,.9))}
+/* ===== 손님 등급 ===== */
+/* 3등급부터 차림새가 좋아지고, 5등급은 금빛이 돈다 */
+.walker.t3 .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 6px rgba(167,139,250,.7))}
+.walker.t4 .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 9px rgba(96,165,250,.85))}
+.walker.t5 .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 12px rgba(255,204,68,.95))}
+
+/* 손님이 들고 오는 소지품 (걷는 방향이 반전돼도 뒤집히지 않는다) */
+.walker .acc{
+  position:absolute;
+  right:-.4em;top:.1em;
+  font-size:.44em;line-height:1;
+  font-weight:400;font-style:normal;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));
+  animation:accBob 1.9s ease-in-out infinite;
+}
+/* 모자·왕관은 머리 위에 얹는다 — 몸과 같은 박자로 흔들려야 붙어 보인다 */
+.walker .acc.head{
+  right:auto;left:50%;top:-.42em;
+  font-size:.4em;
+  animation:hopHead .42s ease-in-out infinite;
+}
+.walker.hurry .acc.head{animation-duration:.26s}
+.walker.waiting .acc.head{animation-play-state:paused}
+@keyframes accBob{
+  0%,100%{transform:translateY(0) rotate(-7deg)}
+  50%{transform:translateY(-2.5px) rotate(7deg)}
+}
+@keyframes hopHead{
+  0%,100%{transform:translateX(-50%) translateY(0)}
+  50%{transform:translateX(-50%) translateY(-5px)}
+}
 
 /* ===== 스킨 고르기 ===== */
 .skin-card{gap:11px}
@@ -649,3 +701,11 @@ body{
   font-size:11.5px;color:var(--dim);
   padding-top:4px;
 }
+
+/* 등급표에 소지품 작게 곁들이기 */
+.rung{position:relative;display:inline-block}
+.rung u{
+  position:absolute;right:-.28em;top:-.1em;
+  font-size:.5em;text-decoration:none;
+}
+.rung-note b{color:var(--gold)}

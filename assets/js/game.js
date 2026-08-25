@@ -369,7 +369,12 @@ var Game = (function () {
     for (var k = 0; k < tiers.length; k++) {
       if (ps >= tiers[k].at) i = k;
     }
-    return { index: i, total: tiers.length, cast: tiers[i].cast };
+    return {
+      index: i, total: tiers.length,
+      name: tiers[i].name,
+      cast: tiers[i].cast,
+      acc: tiers[i].acc || []
+    };
   }
 
   function setSkin(kind, id) {
