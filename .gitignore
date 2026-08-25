@@ -12,5 +12,6 @@ desktop.ini
 *.log
 
 # 테스트
-node_modules/
+# 슬래시를 붙이면 디렉터리만 잡혀서, 심볼릭 링크로 걸어둔 node_modules 를 놓친다
+node_modules
 tests/.shots/
