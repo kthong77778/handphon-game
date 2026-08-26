@@ -547,5 +547,71 @@ console.log('\n[10] 깨진 세이브 방어');
   ok(isFinite(Game.perSec()), '수익 계산이 NaN 이 되지 않음', Game.perSec());
 }
 
+console.log('\n[11] 일일 퀘스트');
+{
+  State.set({ money: 0 }); Game.invalidate();
+  ok(Game.questRoll(), '오늘 퀘스트가 깔림');
+  const list = Game.quests();
+  ok(list.length === Data.QUEST.count, `${Data.QUEST.count}개`, list.length);
+  ok(new Set(list.map(q => q.def.id)).size === list.length, '서로 다른 퀘스트');
+  ok(list.every(q => q.goal > 0), '목표가 모두 0보다 큼');
+  ok(Game.questRoll() === false, '같은 날 다시 부르면 그대로 (다시 뽑기 불가)');
+
+  // 날짜만 지우면 새로 깔린다 — 무엇이 깔리는지는 날짜가 정하므로 같은 조합이어야 한다
+  const before = Game.quests().map(q => q.def.id).join(',');
+  State.get().questDate = '';
+  Game.questRoll();
+  ok(Game.quests().map(q => q.def.id).join(',') === before, '같은 날이면 같은 조합');
+
+  // 진행도
+  const q0 = Game.quests()[0];
+  Game.questBump(q0.def.kind, q0.goal);
+  ok(Game.quests()[0].done, `${q0.name} 달성`);
+  ok(Game.claimQuest(0) !== null, '보상을 받음');
+  ok(Game.claimQuest(0) === null, '두 번은 못 받음');
+  ok(State.get().questsDone === 1, '완료 수 1');
+  ok(Game.questClaimable() === false, '더 받을 게 없으면 뱃지 꺼짐');
+
+  // 남은 것까지 끝내면 완주 보너스
+  Game.quests().forEach(q => { if (!q.taken) Game.questBump(q.def.kind, q.goal); });
+  Game.quests().forEach(q => Game.claimQuest(q.index));
+  ok(Game.questAllDone(), '셋 다 완료');
+  const all = Game.claimQuestAll();
+  ok(all !== null && all.gain > 0, '완주 보너스 지급', all && Fmt.won(all.gain));
+  ok(Game.claimQuestAll() === null, '완주 보너스도 한 번만');
+
+  // 날짜가 바뀌면 진행도가 초기화된다
+  State.get().questDate = '2000-01-01';
+  Game.questRoll();
+  ok(Game.quests().every(q => q.prog === 0 && !q.taken), '날이 바뀌면 처음부터');
+  ok(State.get().questAllTaken === 0, '완주 보너스도 다시');
+  ok(State.get().questsDone === 3, '완료 수는 평생 누적으로 남음');
+}
+
+console.log('\n[12] 퀘스트 세이브 방어');
+{
+  // 배열 길이가 어긋나면 통째로 버려야 한다 — 반쯤 남으면 진행도가 엉뚱한 데 붙는다
+  State.set({ questDate: '2030-05-05', questIds: ['q_tap'], questGoals: [1, 2, 3],
+              questProg: [0, 0, 0], questTaken: [0, 0, 0] });
+  ok(State.get().questDate === '', '길이가 어긋난 퀘스트 세이브는 버림');
+  State.set({ questDate: '2030-05-05', questIds: ['q_tap', 'q_없음', 'q_gen'],
+              questGoals: [1, 2, 3], questProg: [0, 0, 0], questTaken: [0, 0, 0] });
+  ok(State.get().questDate === '', '없는 퀘스트 id 가 섞이면 버림');
+
+  const good = { questDate: '2030-05-05', questIds: ['q_tap', 'q_gen', 'q_up'],
+                 questGoals: [10, 5, 2], questProg: [3, 1, 0], questTaken: [0, 0, 0] };
+  State.set(good);
+  ok(State.get().questDate === '2030-05-05', '멀쩡한 것은 그대로 살아남음');
+  ok(Game.quests()[0].prog === 3, '진행도 유지');
+
+  // 구버전 세이브에는 퀘스트 필드가 아예 없다
+  State.set({ v: 1, money: 100 });
+  ok(Array.isArray(State.get().questIds) && State.get().questIds.length === 0,
+     '구버전 세이브도 빈 퀘스트로 시작');
+  ok(Game.quests().length === 0, '깔리기 전에는 빈 목록');
+  Game.questRoll();
+  ok(Game.quests().length === Data.QUEST.count, '한 번 부르면 채워짐');
+}
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);

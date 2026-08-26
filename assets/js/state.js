@@ -59,6 +59,15 @@ var State = (function () {
       dailyStreak: 0,
       dailyClaims: 0,
 
+      // 일일 퀘스트 — 날짜가 바뀌면 game.js 의 questRoll() 이 새로 깐다
+      questDate: '',     // 지금 깔린 퀘스트가 어느 날 것인가
+      questIds: [],      // 오늘의 퀘스트 id (Data.QUEST.count 개)
+      questGoals: [],    // 각 목표치 ('오늘 벌기' 는 그날 수익에 맞춰 정해진다)
+      questProg: [],     // 각 진행도
+      questTaken: [],    // 보상을 받았는가 (0/1)
+      questAllTaken: 0,  // 셋 다 끝낸 보너스를 받았는가 (0/1)
+      questsDone: 0,     // 지금까지 끝낸 퀘스트 수 (평생)
+
       startedAt: now(),
       lastSeen: now()
     };
@@ -76,7 +85,8 @@ var State = (function () {
                    'thievesCaught', 'thiefSaves', 'thefts', 'stolen',
                    'runTime', 'bestRunEarned', 'bestPerSec', 'bestTap',
                    'bestFameGain', 'fastestPrestige',
-                   'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought'];
+                   'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
+                   'questAllTaken', 'questsDone'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
       if (isFinite(v) && v >= 0) s[k] = v;
@@ -128,6 +138,29 @@ var State = (function () {
 
     if (typeof raw.dailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dailyDate)) {
       s.dailyDate = raw.dailyDate;
+    }
+
+    // 퀘스트 — 네 배열의 길이가 어긋나면 통째로 버린다.
+    // 반쯤 깨진 채로 두면 진행도가 엉뚱한 퀘스트에 붙는다.
+    if (typeof raw.questDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.questDate)) {
+      var n = Data.QUEST.count;
+      var ids = Array.isArray(raw.questIds) ? raw.questIds : [];
+      var okIds = ids.length === n && ids.every(function (id) {
+        return Data.QUESTS.some(function (q) { return q.id === id; });
+      });
+      function nums(v) {
+        if (!Array.isArray(v) || v.length !== n) return null;
+        var out = v.map(function (x) { return Math.max(0, Number(x) || 0); });
+        return out.every(isFinite) ? out : null;
+      }
+      var goals = nums(raw.questGoals), prog = nums(raw.questProg), taken = nums(raw.questTaken);
+      if (okIds && goals && prog && taken) {
+        s.questDate = raw.questDate;
+        s.questIds = ids.slice();
+        s.questGoals = goals;
+        s.questProg = prog;
+        s.questTaken = taken.map(function (x) { return x ? 1 : 0; });
+      }
     }
 
     if (!s.startedAt) s.startedAt = now();

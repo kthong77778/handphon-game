@@ -223,7 +223,13 @@
 
   /* ---------- 첫 실행 안내 ---------- */
   function maybeTour() {
-    if (State.get().sawTour) return;
+    var s = State.get();
+    if (s.sawTour) return;
+    // 끝까지 봤을 때가 아니라 '띄운 순간' 봤다고 적고 바로 저장한다.
+    // 안내 도중에 앱을 닫으면 다음에 또 뜨던 것을 막는다 — 설정에서 언제든
+    // 다시 볼 수 있으니 한 번 띄운 것으로 충분하다.
+    s.sawTour = 1;
+    State.save();
     // 안내가 끝난 뒤에 정산한다. 먼저 띄우면 모달이 겹치고,
     // 아예 건너뛰면 첫날 출석 보상을 그날 못 받는다.
     UI.showTour(0, settleReturn);
@@ -233,6 +239,7 @@
   function boot() {
     State.load();
     Game.invalidate();
+    Game.questRoll();          // 오늘 퀘스트가 없으면 여기서 깔린다
     UI.init(handlers);
     if (State.get().sawTour) settleReturn();
     else maybeTour();          // 처음이면 정산 모달과 겹치지 않게 안내부터

@@ -646,6 +646,31 @@ var Data = (function () {
 
   /* ---------- 도전과제 ---------- */
   // 하나 달성할 때마다 전체 수익 +1%
+  /* ---------- 일일 퀘스트 ---------- */
+  // 도전과제가 '평생 한 번' 이라면 퀘스트는 '오늘 하루' 다.
+  // 매일 자정에 세 개가 새로 깔린다. 어떤 세 개인지는 날짜로 정해져서
+  // 새로고침해도 바뀌지 않는다 (돌려 뽑기를 막는다).
+  var QUEST = {
+    count: 3,          // 하루에 깔리는 개수
+    rewardSec: 420,    // 하나당 보상 = 초당 수익 × 이만큼
+    allSec: 900,       // 셋 다 끝내면 추가로
+    minMoney: 300,     // 아직 수익이 없을 때의 최소 보상
+    earnSec: 600,      // '오늘 벌기' 목표 = 초당 수익 × 이만큼
+    minEarn: 400
+  };
+
+  // kind: 진행도를 올리는 사건. max 면 합이 아니라 최고 기록으로 친다.
+  var QUESTS = [
+    { id: 'q_tap',    kind: 'tap',    icon: '👆', goal: 60,  name: '조리 60번' },
+    { id: 'q_gen',    kind: 'gen',    icon: '🧑‍🍳', goal: 12,  name: '설비 12개 사기' },
+    { id: 'q_up',     kind: 'up',     icon: '⬆️', goal: 2,   name: '업그레이드 2개 사기' },
+    { id: 'q_combo',  kind: 'combo',  icon: '🔥', goal: 25,  name: '콤보 25 만들기', max: true },
+    { id: 'q_golden', kind: 'golden', icon: '🌟', goal: 3,   name: '황금 손님 3명 받기' },
+    { id: 'q_thief',  kind: 'thief',  icon: '🚨', goal: 2,   name: '도둑 2명 잡기' },
+    { id: 'q_boost',  kind: 'boost',  icon: '📣', goal: 2,   name: '손님 몰이 2번 쓰기' },
+    { id: 'q_earn',   kind: 'earn',   icon: '💰', goal: 0,   name: '오늘 벌기', money: true }
+  ];
+
   function genCount(s, id) { return s.gens[id] || 0; }
 
   var ACHIEVEMENTS = [
@@ -681,7 +706,9 @@ var Data = (function () {
     { id: 'ac30', icon: '🌀', name: '백 번의 재개업',  desc: '환생 100회',                     check: function (s) { return s.prestiges >= 100; } },
     { id: 'ac31', icon: '💠', name: '명성 100만',      desc: '명성 100만 보유',                check: function (s) { return s.fame >= 1e6; } },
     { id: 'ac32', icon: '👑', name: '분식 왕조',       desc: '분식 왕조 10레벨',               check: function (s) { return (s.fameLv.f_legend || 0) >= 10; } },
-    { id: 'ac33', icon: '♾️', name: '천문학적',        desc: '누적 1극원 벌기',                check: function (s) { return s.totalEarned >= 1e48; } }
+    { id: 'ac33', icon: '♾️', name: '천문학적',        desc: '누적 1극원 벌기',                check: function (s) { return s.totalEarned >= 1e48; } },
+    { id: 'ac34', icon: '📋', name: '성실한 사장',     desc: '퀘스트 10개 완료',               check: function (s) { return s.questsDone >= 10; } },
+    { id: 'ac35', icon: '🗂️', name: '퀘스트 수집가',   desc: '퀘스트 60개 완료',               check: function (s) { return s.questsDone >= 60; } }
   ];
 
   return {
@@ -698,6 +725,8 @@ var Data = (function () {
     THIEF: THIEF,
     MANAGER: MANAGER,
     BOOST: BOOST,
-    DAILY: DAILY
+    DAILY: DAILY,
+    QUEST: QUEST,
+    QUESTS: QUESTS
   };
 })();

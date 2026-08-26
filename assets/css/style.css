@@ -348,6 +348,35 @@ body{
   box-shadow:0 0 10px rgba(139,92,246,.65);
 }
 
+/* ===== 오늘의 퀘스트 ===== */
+.item.quest .item-desc{font-variant-numeric:tabular-nums}
+.qbar{
+  margin-top:6px;
+  height:5px;border-radius:999px;
+  background:rgba(255,255,255,.09);
+  overflow:hidden;
+}
+.qbar > i{
+  display:block;height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--accent),#a78bfa);
+  transition:width .25s ease;
+}
+.item.quest-ready{
+  border-color:var(--good);
+  background:linear-gradient(180deg,rgba(52,211,153,.14),var(--bg2));
+}
+.item.quest-ready .qbar > i{background:linear-gradient(90deg,var(--good),#6ee7b7)}
+.quest-get{
+  display:inline-block;
+  padding:5px 11px;border-radius:9px;
+  background:var(--good);color:#04231a;
+  font-size:12px;font-weight:800;
+  box-shadow:0 0 10px rgba(52,211,153,.5);
+}
+.item.quest-taken{opacity:.55}
+.item.quest-taken .qbar > i{background:rgba(255,255,255,.3)}
+
 /* 도전과제: 잠긴 항목은 내용 가림 */
 .item.achv-locked .item-icon{filter:grayscale(1)}
 .item.achv-done{border-color:rgba(255,204,68,.5)}

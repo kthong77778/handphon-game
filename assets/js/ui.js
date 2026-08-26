@@ -12,8 +12,9 @@ var UI = (function () {
   function cache() {
     ['money', 'rate', 'fameChip', 'multChip', 'tapZone', 'tapTarget', 'tapPower',
      'genList', 'upgradeList', 'upgradeHint', 'fameShopList', 'achvList', 'statsBox',
+     'questList',
      'pFameNow', 'pFameGain', 'pMultNext', 'prestigeBtn', 'prestigeReq',
-     'dotUpgrade', 'dotPrestige', 'buyAmt', 'toast',
+     'dotUpgrade', 'dotPrestige', 'dotAchv', 'buyAmt', 'toast',
      'offlineModal', 'offlineText', 'offlineOk',
      'buffBar', 'combo', 'comboX', 'comboN', 'comboFill',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
@@ -306,6 +307,86 @@ var UI = (function () {
     }
   }
 
+  /* ---------- 오늘의 퀘스트 ---------- */
+
+  /** 진행도 막대 하나 */
+  function questBar(ratio) {
+    var b = document.createElement('div');
+    b.className = 'qbar';
+    var i = document.createElement('i');
+    i.style.width = Math.round(Math.min(1, ratio) * 100) + '%';
+    b.appendChild(i);
+    return b;
+  }
+
+  function questRow(o) {
+    // 받을 수 있을 때만 누를 수 있다 — 그 외에는 보여주기만 하는 행
+    var row = makeItem(o.icon, { static: !o.claim });
+    var p = parts(row);
+    p.nm.textContent = o.name;
+    p.desc.textContent = o.sub;
+    p.desc.appendChild(questBar(o.ratio));
+    row.className = 'item quest' + (o.taken ? ' quest-taken' : (o.claim ? ' quest-ready' : ''));
+    p.cost.innerHTML = o.taken ? '<span class="achv-check">✔</span>'
+                      : (o.claim ? '<span class="quest-get">받기</span>'
+                                 : '<small>' + o.right + '</small>');
+    if (o.claim) row.addEventListener('click', o.onClaim);
+    return row;
+  }
+
+  function renderQuests() {
+    var s = State.get();
+    var list = Game.quests();
+    var all = Game.questAllDone();
+    var mark = s.questDate + '|' + s.questAllTaken + '|' + list.map(function (q) {
+      return q.prog + '/' + q.goal + (q.taken ? 't' : '');
+    }).join(',');
+    if (sig.quest === mark) return;
+    sig.quest = mark;
+
+    el.questList.innerHTML = '';
+    list.forEach(function (q) {
+      el.questList.appendChild(questRow({
+        icon: q.def.icon,
+        name: q.name,
+        sub: q.taken ? '보상을 받았습니다'
+                     : Fmt.num(q.prog) + ' / ' + Fmt.num(q.goal),
+        right: Math.floor(q.prog / q.goal * 100) + '%',
+        ratio: q.prog / q.goal,
+        taken: q.taken,
+        claim: q.done && !q.taken,
+        onClaim: function () {
+          var r = Game.claimQuest(q.index);
+          if (!r) return;
+          Sound.play('reward');
+          toast('📋 ' + r.name + ' 완료 · ' + Fmt.won(r.gain));
+          sig.quest = '';
+          refresh(true);
+        }
+      }));
+    });
+
+    // 넷째 줄 — 셋 다 끝냈을 때의 보너스
+    var doneN = list.filter(function (q) { return q.taken; }).length;
+    el.questList.appendChild(questRow({
+      icon: '🎁',
+      name: '오늘 퀘스트 완주',
+      sub: s.questAllTaken ? '보상을 받았습니다' : doneN + ' / ' + list.length,
+      right: Math.floor(doneN / Math.max(1, list.length) * 100) + '%',
+      ratio: doneN / Math.max(1, list.length),
+      taken: !!s.questAllTaken,
+      claim: all && !s.questAllTaken,
+      onClaim: function () {
+        var r = Game.claimQuestAll();
+        if (!r) return;
+        Sound.play('levelup');
+        toast('🎁 완주 보너스 ' + Fmt.won(r.gain) + (r.boost ? ' · 손님 몰이 충전!' : ''));
+        sig.quest = '';
+        refresh(true);
+      }
+    }));
+  }
+
   /* ---------- 도전과제 ---------- */
 
   function renderAchievements() {
@@ -412,6 +493,7 @@ var UI = (function () {
 
     el.dotUpgrade.hidden = !Game.hasAffordableUpgrade();
     el.dotPrestige.hidden = !(Game.fameGain() > 0 || Game.hasAffordableFame());
+    el.dotAchv.hidden = !Game.questClaimable();
 
     updateBuffBar();
     updateCombo();
@@ -864,7 +946,7 @@ var UI = (function () {
     if (currentTab === 'shop') updateGenList();
     else if (currentTab === 'upgrade') renderUpgrades();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
-    else if (currentTab === 'achv') { renderHallOfFame(); renderAchievements(); }
+    else if (currentTab === 'achv') { renderQuests(); renderHallOfFame(); renderAchievements(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); updateMuteBtn(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }

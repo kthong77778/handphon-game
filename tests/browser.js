@@ -701,6 +701,83 @@ suite('스킨', async ({ page, ctx, ok, errs }) => {
     ok(await p.locator('#tapEmoji svg').count() === 1, '다시 주먹밥으로 돌아옴');
 });
 
+suite('퀘스트', async ({ page, ctx, ok, errs }) => {
+  const p = page;
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
+
+    console.log('[1] 오늘 퀘스트가 깔린다');
+    // 개수는 Data 에서 읽는다 — 퀘스트를 늘려도 테스트가 깨지지 않게
+    const want = await p.evaluate(() => Data.QUEST.count);
+    const rows = await p.locator('#questList .item').count();
+    ok(rows === want + 1, `퀘스트 ${want}개 + 완주 줄`, rows);
+    ok(await p.locator('#questList .qbar').count() === rows, '전부 진행도 막대가 있음');
+    ok(await p.locator('#questList .quest-get').count() === 0, '처음엔 받을 게 없음');
+    ok(await p.isHidden('#dotAchv'), '탭 뱃지도 꺼져 있음');
+
+    console.log('\n[2] 진행하면 막대가 찬다');
+    const before = await p.evaluate(() =>
+      document.querySelector('#questList .qbar > i').style.width);
+    await p.evaluate(() => {
+      const q = Game.quests()[0];
+      Game.questBump(q.def.kind, Math.ceil(q.goal / 2));
+      UI.refresh(true);
+    });
+    await p.waitForTimeout(250);
+    const half = await p.evaluate(() =>
+      document.querySelector('#questList .qbar > i').style.width);
+    ok(parseFloat(half) > parseFloat(before || '0'), `막대가 참 ${before || '0%'} → ${half}`);
+
+    console.log('\n[3] 다 하면 받을 수 있다');
+    await p.evaluate(() => {
+      const q = Game.quests()[0];
+      Game.questBump(q.def.kind, q.goal);
+      UI.refresh(true);
+    });
+    await p.waitForTimeout(250);
+    ok(await p.locator('#questList .item.quest-ready').count() === 1, '받기 버튼이 생김');
+    ok(await p.isVisible('#dotAchv'), '탭에 뱃지가 뜸');
+    ok(await p.evaluate(() =>
+      document.querySelector('#questList .item.quest-ready').tagName) === 'BUTTON',
+      '받을 수 있는 줄은 button');
+
+    const money0 = await p.evaluate(() => State.get().money);
+    await p.click('#questList .item.quest-ready');
+    await p.waitForTimeout(350);
+    const money1 = await p.evaluate(() => State.get().money);
+    ok(money1 > money0, '보상이 들어옴', Math.round(money1 - money0) + '원');
+    ok(await p.locator('#questList .item.quest-taken').count() === 1, '받은 줄로 바뀜');
+    ok(await p.locator('#questList .quest-get').count() === 0, '두 번 받을 수 없음');
+    ok(await p.evaluate(() => State.get().questsDone) === 1, '완료 수 1');
+    await p.locator('#questList').screenshot({ path: path.join(D, 'shot-quests.png') });
+
+    console.log('\n[4] 셋 다 하면 완주 보너스');
+    await p.evaluate(() => {
+      Game.quests().forEach(q => { Game.questBump(q.def.kind, q.goal); Game.claimQuest(q.index); });
+      UI.refresh(true);
+    });
+    await p.waitForTimeout(250);
+    ok(await p.locator('#questList .quest-get').count() === 1, '완주 줄만 받을 수 있음');
+    const m2 = await p.evaluate(() => State.get().money);
+    await p.click('#questList .quest-get');
+    await p.waitForTimeout(350);
+    ok(await p.evaluate(() => State.get().money) > m2, '완주 보너스가 들어옴');
+    ok(await p.evaluate(() => State.get().questAllTaken) === 1, '완주 보너스 기록됨');
+    ok(await p.isHidden('#dotAchv'), '다 받으면 뱃지가 꺼짐');
+
+    console.log('\n[5] 새로고침해도 받은 상태가 남는다');
+    await p.evaluate(() => State.save());
+    await p.reload(); await p.waitForTimeout(900);
+    if (await p.isVisible('#dailyOk')) await p.click('#dailyOk');
+    if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
+    ok(await p.locator('#questList .item.quest-taken').count() ===
+       (await p.locator('#questList .item').count()), '전부 받은 채로 남아 있음');
+    ok(await p.evaluate(() => State.get().questsDone) >= 3, '완료 수도 남음');
+});
+
 suite('세이브', async ({ page, ctx, ok, errs }) => {
   const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
   const errors = errs;             // 이름만 다른 같은 수집기
@@ -916,16 +993,26 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     console.log('[1] 첫 실행 안내');
     ok(!await p.isHidden('#tourModal'), '처음 들어오면 안내가 뜸');
     ok((await p.locator('#tourDots i').count())===5, '5장짜리');
+    // 끝까지 봐야가 아니라 '띄운 순간' 봤다고 적는다
+    ok(await p.evaluate(()=>State.get().sawTour)===1, '띄우자마자 봤다고 적음');
     for (let i=0;i<4;i++){ await p.click('#tourNext'); await p.waitForTimeout(120); }
     ok((await p.textContent('#tourNext'))==='시작하기', '마지막 장은 시작하기');
     await p.click('#tourNext'); await p.waitForTimeout(300);
     ok(await p.isHidden('#tourModal'), '끝내면 닫힘');
-    ok(await p.evaluate(()=>State.get().sawTour)===1, '봤다고 기록');
     // 안내가 끝나면 첫날 출석 보상이 이어서 뜬다
     ok(!await p.isHidden('#dailyModal'), '안내 뒤에 출석 보상이 이어짐');
     await p.click('#dailyOk'); await p.waitForTimeout(250);
     await p.reload(); await p.waitForTimeout(800);
     ok(await p.isHidden('#tourModal'), '두 번째부터는 안 뜸');
+    if (!await p.isHidden('#dailyModal')) await p.click('#dailyOk');
+    await p.waitForTimeout(200);
+
+    // 보다 말고 나가도 다시 뜨면 안 된다 — 처음 상태로 되돌려 확인한다
+    await p.evaluate(()=>{ State.get().sawTour = 0; State.save(); });
+    await p.reload(); await p.waitForTimeout(800);
+    ok(!await p.isHidden('#tourModal'), '기록을 지우면 다시 뜸');
+    await p.reload(); await p.waitForTimeout(800);      // 첫 장에서 그냥 나갔다 온다
+    ok(await p.isHidden('#tourModal'), '보다 말고 나갔다 와도 다시 뜨지 않음');
     if (!await p.isHidden('#dailyModal')) await p.click('#dailyOk');
     await p.waitForTimeout(200);
 

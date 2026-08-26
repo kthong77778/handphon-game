@@ -26,6 +26,7 @@ var Game = (function () {
     s.money = cap(s.money + amount);
     s.runEarned = cap(s.runEarned + amount);
     s.totalEarned = cap(s.totalEarned + amount);
+    questBump('earn', amount);
     return amount;
   }
 
@@ -149,6 +150,7 @@ var Game = (function () {
     comboLeft = COMBO_WINDOW;
     var s = S();
     if (combo > s.bestCombo) s.bestCombo = combo;
+    questBump('combo', combo);
   }
 
   function resetCombo() { combo = 0; comboLeft = 0; }
@@ -332,6 +334,7 @@ var Game = (function () {
     var s = S();
     earn(s, v);
     s.taps++;
+    questBump('tap', 1);
     if (v > s.bestTap) s.bestTap = v;
     return { value: v, blocked: '' };
   }
@@ -440,6 +443,7 @@ var Game = (function () {
     if (s.money < cost || amount <= 0) return false;
     s.money -= cost;
     s.gens[id] = genCount(id) + amount;
+    questBump('gen', amount);
     bump();
     return true;
   }
@@ -451,6 +455,7 @@ var Game = (function () {
     if (s.money < u.cost) return false;
     s.money -= u.cost;
     s.upgrades[id] = true;
+    questBump('up', 1);
     bump();
     return true;
   }
@@ -633,9 +638,17 @@ var Game = (function () {
   }
 
   /* ---------- 진행 ---------- */
+  var questCheckLeft = 0;
+
   function tick(dt) {
     var s = S();
     tickBuffs(dt);
+
+    // 자정을 넘기면 퀘스트가 새로 깔린다.
+    // 매 프레임 Date 를 새로 만들 이유가 없어 10초에 한 번만 본다.
+    questCheckLeft -= dt;
+    if (questCheckLeft <= 0) { questCheckLeft = 10; questRoll(); }
+
     var rate = perSec();
     var gain = earn(s, rate * dt);
     s.playTime += dt;
@@ -696,6 +709,7 @@ var Game = (function () {
     s.goldens++;
     var money = 0;
     var text;
+    questBump('golden', 1);
 
     if (type.id === 'cash') {
       // 초반에 초당 수익이 0이어도 허탕이 되지 않도록 탭 수익으로 바닥을 깐다
@@ -751,6 +765,7 @@ var Game = (function () {
     var bonus = amount * Data.THIEF.catchBonus;
     earn(s, bonus);
     s.thievesCaught++;
+    questBump('thief', 1);
     return { bonus: bonus, saved: amount };
   }
 
@@ -788,6 +803,7 @@ var Game = (function () {
     s.boostLeft = Data.BOOST.dur;
     s.boostCd = boostCooldown() + Data.BOOST.dur;   // 효과가 끝난 뒤부터 쿨다운이 도는 셈
     s.boosts++;
+    questBump('boost', 1);
     return true;
   }
 
@@ -831,6 +847,132 @@ var Game = (function () {
     earn(s, gain);
 
     return { streak: s.dailyStreak, days: days, seconds: seconds, gain: gain };
+  }
+
+  /* ---------- 일일 퀘스트 ---------- */
+
+  var QUEST_BY_ID = {};
+  Data.QUESTS.forEach(function (q) { QUEST_BY_ID[q.id] = q; });
+
+  /** 날짜 문자열 하나로 정해지는 값 — 같은 날이면 언제 켜도 같은 퀘스트가 나온다 */
+  function daySeed(dateStr) {
+    var h = 2166136261;
+    for (var i = 0; i < dateStr.length; i++) {
+      h ^= dateStr.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return h;
+  }
+
+  /** '오늘 벌기' 처럼 그날 형편에 맞춰야 하는 목표 */
+  function questGoalFor(def) {
+    if (!def.money) return def.goal;
+    return Math.max(Data.QUEST.minEarn, Math.floor(perSec(true) * Data.QUEST.earnSec));
+  }
+
+  /**
+   * 날짜가 바뀌었으면 오늘 퀘스트를 새로 깐다.
+   * 무엇이 깔릴지는 날짜가 정하므로 새로고침으로 다시 뽑을 수 없다.
+   */
+  function questRoll() {
+    var s = S();
+    var t = today();
+    if (s.questDate === t && s.questIds.length === Data.QUEST.count) return false;
+
+    var pool = Data.QUESTS.slice();
+    var seed = daySeed(t);
+    // 순서를 섞는다 (같은 날이면 항상 같은 순서)
+    for (var i = pool.length - 1; i > 0; i--) {
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      var j = seed % (i + 1);
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    var picked = pool.slice(0, Data.QUEST.count);
+
+    s.questDate = t;
+    s.questIds = picked.map(function (q) { return q.id; });
+    s.questGoals = picked.map(questGoalFor);
+    s.questProg = picked.map(function () { return 0; });
+    s.questTaken = picked.map(function () { return 0; });
+    s.questAllTaken = 0;
+    return true;
+  }
+
+  /** 화면에 뿌릴 오늘 퀘스트 */
+  function quests() {
+    var s = S();
+    return s.questIds.map(function (id, i) {
+      var def = QUEST_BY_ID[id];
+      var goal = s.questGoals[i] || 1;
+      var prog = Math.min(s.questProg[i] || 0, goal);
+      return {
+        def: def,
+        index: i,
+        goal: goal,
+        prog: prog,
+        done: prog >= goal,
+        taken: !!s.questTaken[i],
+        name: def.money ? '오늘 ' + Fmt.num(goal) + ' 원 벌기' : def.name
+      };
+    });
+  }
+
+  /**
+   * 사건이 일어났다고 알린다.
+   * @param {string} kind Data.QUESTS 의 kind
+   * @param {number} n 얼마나
+   */
+  function questBump(kind, n) {
+    var s = S();
+    if (!(n > 0)) return;
+    for (var i = 0; i < s.questIds.length; i++) {
+      var def = QUEST_BY_ID[s.questIds[i]];
+      if (!def || def.kind !== kind) continue;
+      // 콤보처럼 '최고 기록' 인 것은 더하면 안 된다
+      s.questProg[i] = def.max ? Math.max(s.questProg[i] || 0, n)
+                               : cap((s.questProg[i] || 0) + n);
+    }
+  }
+
+  function questReward(seconds) {
+    return Math.max(Data.QUEST.minMoney, perSec(true) * seconds);
+  }
+
+  /** 하나 받기. 못 받는 상태면 null */
+  function claimQuest(i) {
+    var s = S();
+    var list = quests();
+    var q = list[i];
+    if (!q || !q.done || q.taken) return null;
+    s.questTaken[i] = 1;
+    s.questsDone++;
+    var gain = questReward(Data.QUEST.rewardSec);
+    earn(s, gain);
+    return { name: q.name, gain: gain };
+  }
+
+  function questAllDone() {
+    var list = quests();
+    return list.length > 0 && list.every(function (q) { return q.taken; });
+  }
+
+  /** 셋 다 받은 뒤의 보너스 — 돈에 더해 손님 몰이를 한 번 채워준다 */
+  function claimQuestAll() {
+    var s = S();
+    if (!questAllDone() || s.questAllTaken) return null;
+    s.questAllTaken = 1;
+    var gain = questReward(Data.QUEST.allSec);
+    earn(s, gain);
+    var freeBoost = s.boostLeft <= 0;
+    if (freeBoost) s.boostCd = 0;     // 바로 쓸 수 있게 쿨다운을 지운다
+    return { gain: gain, boost: freeBoost };
+  }
+
+  /** 뱃지용: 지금 받을 게 있나 */
+  function questClaimable() {
+    var s = S();
+    if (quests().some(function (q) { return q.done && !q.taken; })) return true;
+    return questAllDone() && !s.questAllTaken;
   }
 
   /** 뱃지(빨간 점)용: 지금 살 수 있는 게 있나 */
@@ -912,6 +1054,13 @@ var Game = (function () {
     boostReady: boostReady,
     startBoost: startBoost,
     dailyReady: dailyReady,
+    questRoll: questRoll,
+    quests: quests,
+    questBump: questBump,
+    claimQuest: claimQuest,
+    questAllDone: questAllDone,
+    claimQuestAll: claimQuestAll,
+    questClaimable: questClaimable,
     tapBaseValue: tapBaseValue,
     tapSkin: tapSkin,
     crowdSkin: crowdSkin,
