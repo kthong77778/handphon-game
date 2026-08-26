@@ -28,7 +28,7 @@ var UI = (function () {
      'muteBtn', 'notifyBtn', 'helpBtn',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
-     'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
+     'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard'].forEach(function (id) {
       el[id] = $(id);
     });
   }
@@ -557,6 +557,62 @@ var UI = (function () {
 
   function updateMuteBtn() {
     el.muteBtn.textContent = Sound.muted() ? '🔇 소리 꺼짐' : '🔊 소리 켜짐';
+  }
+
+  /* ---------- 세이브 안전 안내 ---------- */
+
+  function isStandalone() {
+    try {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+             navigator.standalone === true;
+    } catch (e) { return false; }
+  }
+
+  var sgPersist = 'unknown';    // 저장소 보호 여부 (한 번만 확인해 캐시)
+  var sgPersistAsked = false;
+
+  function persistLine() {
+    if (sgPersist === true) return '이 브라우저가 <b class="sg-ok">저장소를 보호 중</b>이에요';
+    if (sgPersist === false) return '이 브라우저는 오래 안 켜면 세이브를 지울 수 있어요';
+    return '저장소 보호 여부를 확인 중…';
+  }
+
+  function refreshSaveGuard() {
+    if (!el.saveGuard) return;
+    var s = State.get();
+
+    // 저장소 보호 여부는 한 번만 물어보고, 답이 오면 다시 그린다
+    if (!sgPersistAsked) {
+      sgPersistAsked = true;
+      State.storagePersisted().then(function (ok) {
+        sgPersist = (ok === true) ? true : (ok === false ? false : 'unknown');
+        sig.guard = '';                 // 다시 그리도록
+        if (currentTab === 'settings') refreshSaveGuard();
+      });
+    }
+
+    var days = s.lastBackup ? Math.floor((State.now() - s.lastBackup) / 86400000) : null;
+    var stand = isStandalone();
+    var mark = days + '|' + stand + '|' + sgPersist;
+    if (sig.guard === mark) return;     // 값이 그대로면 다시 그리지 않는다 (깜빡임 방지)
+    sig.guard = mark;
+
+    var backupLine = days === null
+      ? '<b class="sg-warn">아직 백업한 적 없음</b> — 아래 <b>세이브 내보내기</b>로 코드를 복사해 두세요'
+      : (days === 0 ? '오늘 백업함 👍'
+                    : days + '일 전에 백업함' + (days >= 7 ? ' <b class="sg-warn">— 다시 해두면 좋아요</b>' : ''));
+
+    var homeLine = stand
+      ? '홈 화면 앱으로 실행 중 — 저장이 더 오래 보관됩니다 👍'
+      : '<b>홈 화면에 추가</b>해서 쓰면 세이브가 더 오래 남습니다';
+
+    el.saveGuard.innerHTML =
+      '<div class="sg-row"><span class="sg-ic">🛡️</span><span>' + persistLine() + '</span></div>' +
+      '<div class="sg-row"><span class="sg-ic">💾</span><span>' + backupLine + '</span></div>' +
+      '<div class="sg-row"><span class="sg-ic">📲</span><span>' + homeLine + '</span></div>' +
+      '<p class="sg-note">이 게임은 세이브를 기기 브라우저에만 담습니다. ' +
+        '브라우저가 오래 안 쓴 데이터를 지우면(특히 아이폰 사파리는 약 7일) 사라질 수 있어요. ' +
+        '가끔 <b>세이브 내보내기</b>로 코드를 백업해 두면 안전합니다.</p>';
   }
 
   function updateNotifyBtn() {
@@ -1168,7 +1224,7 @@ var UI = (function () {
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderQuests(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
-    else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); }
+    else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 
@@ -1599,6 +1655,7 @@ var UI = (function () {
     showDaily: showDaily,
     ask: ask,
     textDialog: textDialog,
+    refreshSaveGuard: refreshSaveGuard,
     showTour: showTour,
     setSheet: setSheet,
     tickWorld: tickWorld,

@@ -1249,6 +1249,22 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     ok(await p.locator('#offlineText .offline-full').count() === 0, '덜 찼으면 강조 없음');
     await p.click('#offlineOk'); await p.waitForTimeout(150);
 
+    console.log('\n[4-4] 세이브 안전 카드');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(300);
+    ok(await p.locator('#saveGuard').count() === 1, '세이브 안전 카드 존재');
+    ok(await p.locator('#saveGuard .sg-row').count() === 3, '세 줄(보호·백업·홈화면)');
+    ok(/백업한 적 없음/.test(await p.textContent('#saveGuard')), '아직 백업 안 함 표시');
+    // 내보내면 백업 시각이 남고 문구가 바뀐다
+    await p.click('#exportBtn'); await p.waitForTimeout(300);
+    ok(await p.evaluate(()=>State.get().lastBackup) > 0, '내보내면 백업 시각 기록');
+    // 다이얼로그 닫기
+    if (await p.isVisible('#textCancel')) await p.click('#textCancel');
+    else if (await p.isVisible('#textOk')) await p.click('#textOk');
+    await p.waitForTimeout(200);
+    await p.click('#tabbar .tab[data-tab="shop"]'); await p.waitForTimeout(100);
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(300);
+    ok(/오늘 백업함/.test(await p.textContent('#saveGuard')), '백업 뒤엔 오늘 백업함으로 바뀜');
+
     console.log('\n[5] 안내 다시 보기');
     await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
     await p.click('#helpBtn'); await p.waitForTimeout(250);

@@ -350,6 +350,17 @@ body{
 
 
 
+
+/* ===== 세이브 안전 안내 ===== */
+.save-guard{padding:12px 14px}
+.sg-row{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.45;margin-bottom:7px}
+.sg-ic{flex:0 0 auto}
+.sg-row b{color:var(--txt)}
+.sg-ok{color:var(--good) !important}
+.sg-warn{color:var(--gold) !important}
+.sg-note{margin:6px 0 0;font-size:11px;color:var(--dim);line-height:1.5}
+.sg-note b{color:var(--txt)}
+
 /* 오프라인 보상 가득 참 강조 (복귀 시) */
 .offline-full{
   margin:0 auto 12px;padding:10px 12px;border-radius:12px;

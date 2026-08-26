@@ -42,6 +42,7 @@ var State = (function () {
       mute: 0,           // 소리 끄기 (0/1)
       tapSound: 'classic', // 조리음 종류 (Data.TAP_SOUNDS 의 id)
       notifyOffline: 0,  // 오프라인 보상 가득 참 알림 (0/1)
+      lastBackup: 0,     // 마지막으로 세이브 코드를 내보낸 시각 (백업 알림용)
       sawTour: 0,        // 첫 실행 안내를 봤는가 (0/1)
       autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
@@ -90,7 +91,7 @@ var State = (function () {
                    'runTime', 'bestRunEarned', 'bestPerSec', 'bestTap',
                    'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
-                   'questAllTaken', 'questsDone', 'notifyOffline'];
+                   'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
       if (isFinite(v) && v >= 0) s[k] = v;
@@ -211,6 +212,33 @@ var State = (function () {
     }
   }
 
+  /** 세이브 코드를 백업했다고 표시 (백업 알림 타이머 리셋) */
+  function markBackup() {
+    data.lastBackup = now();
+    save();
+  }
+
+  /** 브라우저에 '이 저장소를 지우지 말아줘' 라고 한 번 요청한다 */
+  function requestPersist() {
+    try {
+      if (navigator.storage && navigator.storage.persist && navigator.storage.persisted) {
+        return navigator.storage.persisted().then(function (already) {
+          if (already) return true;
+          return navigator.storage.persist();
+        }).catch(function () { return false; });
+      }
+    } catch (e) {}
+    return Promise.resolve(false);
+  }
+
+  /** 저장소가 브라우저에 의해 보호되고 있는가 (모르면 null) */
+  function storagePersisted() {
+    try {
+      if (navigator.storage && navigator.storage.persisted) return navigator.storage.persisted();
+    } catch (e) {}
+    return Promise.resolve(null);
+  }
+
   function save() {
     try {
       data.lastSeen = now();
@@ -257,6 +285,9 @@ var State = (function () {
     MAX_RUNS: MAX_RUNS,
     exportText: exportText,
     importText: importText,
+    markBackup: markBackup,
+    requestPersist: requestPersist,
+    storagePersisted: storagePersisted,
     now: now
   };
 })();

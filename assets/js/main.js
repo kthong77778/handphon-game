@@ -75,6 +75,8 @@
         value: txt,
         readonly: true
       });
+      State.markBackup();     // 백업했으니 알림 타이머를 리셋
+      UI.refreshSaveGuard && UI.refreshSaveGuard();
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(function () {
           UI.toast('세이브 코드를 복사했습니다');
@@ -221,6 +223,20 @@
     settleOffline(settleDaily);
   }
 
+  /** 오래 백업을 안 했고 진행이 쌓였으면 한 번 살짝 알려준다 */
+  var backupNagged = false;
+  var BACKUP_AFTER = 7 * 24 * 3600 * 1000;   // 7일
+  function maybeBackupReminder() {
+    if (backupNagged) return;
+    var s = State.get();
+    var worth = s.totalEarned >= 1e6 || s.prestiges >= 1;
+    if (!worth) return;
+    var base = s.lastBackup || s.startedAt || State.now();
+    if (State.now() - base < BACKUP_AFTER) return;
+    backupNagged = true;
+    UI.toast('💾 세이브 백업한 지 오래됐어요 — 설정에서 코드를 복사해 두세요');
+  }
+
   /* ---------- 첫 실행 안내 ---------- */
   function maybeTour() {
     var s = State.get();
@@ -276,12 +292,14 @@
   /* ---------- 시작 ---------- */
   function boot() {
     State.load();
+    State.requestPersist();    // 브라우저에 저장소 보호를 한 번 요청 (자동 삭제 방지)
     Game.invalidate();
     Game.questRoll();          // 오늘 퀘스트가 없으면 여기서 깔린다
     UI.init(handlers);
     if (State.get().sawTour) settleReturn();
     else maybeTour();          // 처음이면 정산 모달과 겹치지 않게 안내부터
     UI.refresh(true);
+    setTimeout(maybeBackupReminder, 4000);   // 첫 정산·모달이 지나간 뒤 살짝
     requestAnimationFrame(loop);
 
     // 앱이 가려질 때 저장 (모바일에서 탭이 그냥 죽는 경우 대비)

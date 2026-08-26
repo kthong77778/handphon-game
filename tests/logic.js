@@ -715,5 +715,26 @@ console.log('\n[16] 퀘스트 세이브 방어');
   ok(Game.quests().length === Data.QUEST.count, '한 번 부르면 채워짐');
 }
 
+console.log('\n[17] 세이브 백업 표시');
+{
+  State.set({ money: 100, lastBackup: 0 }); Game.invalidate();
+  ok(State.get().lastBackup === 0, '처음엔 백업 기록 없음');
+  State.markBackup();
+  var lb = State.get().lastBackup;
+  ok(lb > 0 && Math.abs(lb - State.now()) < 5000, 'markBackup 이 지금 시각을 남김');
+  ok(typeof State.requestPersist === 'function', 'persist 요청 함수 존재');
+  ok(typeof State.storagePersisted === 'function', 'persist 상태 확인 함수 존재');
+  // 노드엔 navigator.storage 가 없으니 조용히 기본값을 돌려줘야 한다 (예외 없이)
+  var okAsync = true;
+  try { State.requestPersist(); State.storagePersisted(); } catch (e) { okAsync = false; }
+  ok(okAsync, 'navigator.storage 없어도 예외 없음');
+  // 백업 시각은 세이브에 남는다
+  State.set(JSON.parse(JSON.stringify(State.get())));
+  ok(State.get().lastBackup === lb, 'lastBackup 이 세이브에 유지됨');
+  // 깨진 값은 걸러진다
+  State.set({ lastBackup: 'abc' });
+  ok(State.get().lastBackup === 0, '엉뚱한 lastBackup 은 0 으로');
+}
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);
