@@ -770,16 +770,25 @@ var UI = (function () {
         ? '다음 · ' + nx.step.name + ' (탭 수익 ' + Fmt.won(nx.step.at) + ')'
         : '마지막 단계입니다') + '</span>';
     } else {
+      // 스킨마다 개성 있는 5단계 성장 — 이름·서사·문턱을 함께 보여준다
       var ct = Game.crowdTier();
-      ladderEl.innerHTML = cur.tiers.map(function (tr, i) {
-        var cls = i < ct.index ? 'done' : (i === ct.index ? 'now' : '');
-        return '<span class="rung ' + cls + '" title="' + tr.name + '">' +
-               tr.cast[0] + (tr.acc.length ? '<u>' + tr.acc[0] + '</u>' : '') + '</span>';
+      var steps = cur.tiers.map(function (tr, i) {
+        var cls = i < ct.index ? 'done' : (i === ct.index ? 'now' : 'wait');
+        var face = tr.cast[0] + (tr.acc.length ? '<u>' + tr.acc[0] + '</u>' : '');
+        var when = i === 0 ? '시작' : '초당 ' + Fmt.won(tr.at);
+        return '<div class="grow-step ' + cls + '">' +
+                 '<span class="gs-face">' + face + '</span>' +
+                 '<span class="gs-body"><b>' + tr.name + '</b>' +
+                   '<i>' + tr.story + '</i></span>' +
+                 '<span class="gs-when">' + when + '</span>' +
+               '</div>';
       }).join('');
       var nxt = cur.tiers[ct.index + 1];
-      ladderEl.innerHTML += '<span class="rung-note"><b>' + ct.name + '</b>' + (nxt
-        ? ' · 다음은 ' + nxt.name + ' (초당 ' + Fmt.won(nxt.at) + ')'
-        : ' · 마지막 등급입니다') + '</span>';
+      var foot = nxt
+        ? '다음 단계 <b>' + nxt.name + '</b> · 초당 ' + Fmt.won(nxt.at) + ' 부터'
+        : '<b>' + ct.name + '</b> — 최고 단계에 도달했습니다!';
+      ladderEl.innerHTML = '<div class="grow">' + steps + '</div>' +
+                           '<div class="grow-foot">' + foot + '</div>';
     }
   }
 

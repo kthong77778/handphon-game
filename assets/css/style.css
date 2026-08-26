@@ -918,6 +918,48 @@ body{
 }
 #tapSoundRow .skin.on .skin-sub{color:var(--txt)}
 
+
+/* ===== 손님 성장 단계 (스킨별) ===== */
+.grow{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.grow-step{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:12px;
+  background:var(--bg2);border:1px solid var(--line);
+  position:relative;
+}
+.grow-step.done{opacity:.6}
+.grow-step.now{
+  border-color:var(--gold);
+  background:linear-gradient(90deg,rgba(255,204,68,.16),var(--bg2));
+  box-shadow:0 0 12px rgba(255,204,68,.25);
+}
+.grow-step.wait{opacity:.82}
+.gs-face{
+  flex:0 0 34px;height:34px;font-size:22px;line-height:34px;text-align:center;
+  position:relative;
+}
+.gs-face u{
+  position:absolute;top:-4px;right:-4px;font-size:12px;text-decoration:none;
+}
+.gs-body{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.gs-body b{font-size:13.5px;font-weight:800}
+.grow-step.now .gs-body b{color:var(--gold)}
+.gs-body i{font-size:11px;color:var(--dim);font-style:normal;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs-when{
+  flex:0 0 auto;font-size:10.5px;font-weight:700;color:var(--dim);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.grow-step.now .gs-when{color:var(--gold)}
+.grow-step.now::before{
+  content:'지금';
+  position:absolute;top:-8px;left:10px;
+  font-size:9.5px;font-weight:800;color:#3a2a00;
+  background:var(--gold);border-radius:6px;padding:1px 6px;
+}
+.grow-foot{margin-top:8px;font-size:12px;color:var(--dim);text-align:center}
+.grow-foot b{color:var(--txt)}
+
 /* 단계표 */
 .ladder{
   display:flex;align-items:center;gap:5px;flex-wrap:wrap;

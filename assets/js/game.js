@@ -395,7 +395,8 @@ var Game = (function () {
       index: i, total: tiers.length,
       name: tiers[i].name,
       cast: tiers[i].cast,
-      acc: tiers[i].acc || []
+      acc: tiers[i].acc || [],
+      story: tiers[i].story || ''
     };
   }
 

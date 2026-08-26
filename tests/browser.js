@@ -211,7 +211,9 @@ suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
     ok(await page.locator('#tapSkinRow .skin').count() === sk.tap, `음식 스킨 ${sk.tap}종 표시`);
     ok(await page.locator('#crowdSkinRow .skin').count() === sk.crowd, `손님 스킨 ${sk.crowd}종 표시`);
     ok(await page.locator('#tapLadder .rung').count() === sk.steps, `음식 단계표 ${sk.steps}칸`);
-    ok(await page.locator('#crowdLadder .rung').count() === sk.tiers, `손님 등급표 ${sk.tiers}칸`);
+    ok(await page.locator('#crowdLadder .grow-step').count() === sk.tiers, `손님 성장 ${sk.tiers}단계`);
+    ok(await page.locator('#crowdLadder .grow-step.now').count() === 1, '지금 단계가 표시됨');
+    ok((await page.textContent('#crowdLadder .grow-step.now .gs-body i')).length > 0, '단계마다 성장 서사가 있음');
     ok(await page.locator('#tapSkinRow .skin.on').count() === 1, '선택된 스킨 하나만 강조');
     const ladderNote = (await page.textContent('#tapLadder .rung-note')).trim();
     ok(ladderNote.includes('다음'), '다음 단계 안내: ' + ladderNote);
@@ -273,7 +275,8 @@ suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
       total: document.querySelectorAll('#street .walker').length,
       accs: Array.from(document.querySelectorAll('#street .acc')).map(e => e.textContent)
     }));
-    ok(rich.tier === 5 && rich.name === '재벌 손님', '최고 등급 도달: ' + rich.name);
+    const topName = await p.evaluate(()=>{ const t=Game.crowdSkin().tiers; return t[t.length-1].name; });
+    ok(rich.tier === 5 && rich.name === topName, '최고 등급 도달: ' + rich.name);
     ok(rich.total > 0 && rich.withAcc === rich.total,
        `손님 ${rich.total}명 전원이 소지품을 듦: ${rich.accs.join('')}`);
     ok(rich.street.includes('tier5'), '거리가 레드카펫으로 바뀜');
