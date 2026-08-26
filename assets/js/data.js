@@ -762,6 +762,17 @@ var Data = (function () {
     guests: ['🕺', '💃', '🧑‍🎤', '🧑‍🎄', '🎅', '🤶']
   };
 
+  /* ---------- 미슐랭 도전 (액티브 던전) ---------- */
+  // 제한 시간 안에 조리(탭)를 많이 할수록 별을 얻는다. 방치가 아니라 손 실력 도전.
+  // 별 5개(미슐랭 3스타)를 처음 채우면 영구 배율이라는 큰 보상을 준다.
+  var MICHELIN = {
+    time: 25,                         // 심사 시간 (초)
+    goals: [15, 40, 75, 115, 160],    // 별 1~5 문턱 (이번 판 조리 횟수)
+    starSec: 40,                      // 별 하나당 보상 = 초당 수익 × 이만큼(초)
+    minReward: 500,                   // 아직 수익이 없을 때의 별당 최소 보상
+    grandMult: 1.5                    // 5성 첫 달성 시 모든 수익 ×1.5 (영구)
+  };
+
   /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
   // 서버가 없는 오프라인 게임이라 실제 다른 플레이어는 없다.
   // 내 가게의 인기(초당 수익)를 기준으로, 가상의 전국 맛집들 사이에
@@ -861,7 +872,9 @@ var Data = (function () {
     { id: 'ac32', icon: '👑', name: '분식 왕조',       desc: '분식 왕조 10레벨',               prog: function (s) { return { cur: (s.fameLv.f_legend || 0), goal: 10 }; }, check: function (s) { return (s.fameLv.f_legend || 0) >= 10; } },
     { id: 'ac33', icon: '♾️', name: '천문학적',        desc: '누적 1극원 벌기',                prog: function (s) { return { cur: s.totalEarned, goal: 1e+48 }; }, fmt: 'num', check: function (s) { return s.totalEarned >= 1e48; } },
     { id: 'ac34', icon: '📋', name: '성실한 사장',     desc: '퀘스트 10개 완료',               prog: function (s) { return { cur: s.questsDone, goal: 10 }; }, check: function (s) { return s.questsDone >= 10; } },
-    { id: 'ac35', icon: '🗂️', name: '퀘스트 수집가',   desc: '퀘스트 60개 완료',               prog: function (s) { return { cur: s.questsDone, goal: 60 }; }, check: function (s) { return s.questsDone >= 60; } }
+    { id: 'ac35', icon: '🗂️', name: '퀘스트 수집가',   desc: '퀘스트 60개 완료',               prog: function (s) { return { cur: s.questsDone, goal: 60 }; }, check: function (s) { return s.questsDone >= 60; } },
+    { id: 'ac36', icon: '⭐', name: '미슐랭 입성',     desc: '미슐랭 도전에서 별 1개',         prog: function (s) { return { cur: s.bestMichelin, goal: 1 }; }, check: function (s) { return s.bestMichelin >= 1; } },
+    { id: 'ac37', icon: '🌟', name: '미슐랭 3스타',    desc: '미슐랭 도전에서 별 5개',         prog: function (s) { return { cur: s.bestMichelin, goal: 5 }; }, check: function (s) { return s.bestMichelin >= 5; } }
   ];
 
   return {
@@ -887,6 +900,7 @@ var Data = (function () {
     RANK_FOODS: RANK_FOODS,
     RANK_TITLES: RANK_TITLES,
     TAP_SOUNDS: TAP_SOUNDS,
-    PARTY: PARTY
+    PARTY: PARTY,
+    MICHELIN: MICHELIN
   };
 })();

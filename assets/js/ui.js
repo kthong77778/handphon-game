@@ -28,7 +28,10 @@ var UI = (function () {
      'muteBtn', 'notifyBtn', 'helpBtn',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
-     'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard'].forEach(function (id) {
+     'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
+     'michelinCard', 'michelinModal', 'michPlay', 'michStars', 'michBar', 'michCount',
+     'michNext', 'michTime', 'michTap', 'michTapEmoji', 'michResult', 'michResultEmoji',
+     'michResultStars', 'michResultText', 'michDone', 'michQuit'].forEach(function (id) {
       el[id] = $(id);
     });
   }
@@ -265,6 +268,129 @@ var UI = (function () {
       row.className = 'item' + (ok ? ' buyable' : '') + (maxed ? ' owned' : '');
     });
   }
+
+  /* ---------- 미슐랭 도전 ---------- */
+
+  function starStr(n) {
+    n = Math.max(0, Math.min(5, n));
+    return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
+  }
+
+  function renderMichelin() {
+    var best = Game.bestMichelin();
+    var grand = Game.michelinGrandDone();
+    var mark = best + '|' + grand;
+    if (sig.mich === mark) return;
+    sig.mich = mark;
+    el.michelinCard.innerHTML =
+      '<div class="mich-card-top">' +
+        '<div><div class="mcz-label">내 최고 등급</div>' +
+          '<div class="mcz-stars">' + starStr(best) + '</div></div>' +
+        '<button class="btn michelin-start" id="michStart">🌟 도전하기</button>' +
+      '</div>' +
+      '<div class="mcz-prize' + (grand ? ' done' : '') + '">' +
+        (grand ? '✅ 5성 달성! <b>모든 수익 ×' + Data.MICHELIN.grandMult + '</b> 영구 적용 중'
+               : '🏆 별 5개를 채우면 <b>모든 수익 ×' + Data.MICHELIN.grandMult + '</b> 를 영구히 받습니다') +
+      '</div>';
+    document.getElementById('michStart').addEventListener('click', startMichelin);
+  }
+
+  // ----- 심사 진행 -----
+  var michRun = null;   // { taps, left, timer }
+
+  function startMichelin() {
+    Sound.wake();
+    michRun = { taps: 0, left: Data.MICHELIN.time, last: State.now() };
+    el.michResult.hidden = true;
+    el.michPlay.hidden = false;
+    el.michTapEmoji.textContent = Game.tapStep().step.icon || '🍢';
+    paintMichelin();
+    el.michelinModal.hidden = false;
+    if (michRun.timer) clearInterval(michRun.timer);
+    michRun.timer = setInterval(michTick, 100);
+  }
+
+  function michTick() {
+    if (!michRun) return;
+    var now = State.now();
+    michRun.left -= (now - michRun.last) / 1000;
+    michRun.last = now;
+    if (michRun.left <= 0) { michRun.left = 0; paintMichelin(); endMichelin(); return; }
+    paintMichelin();
+  }
+
+  function paintMichelin() {
+    if (!michRun) return;
+    var stars = Game.michelinStars(michRun.taps);
+    var next = Game.michelinNextGoal(michRun.taps);
+    el.michStars.textContent = starStr(stars);
+    el.michCount.textContent = michRun.taps;
+    el.michNext.textContent = next ? '다음 별까지 ' + Math.max(0, next - michRun.taps) + '번' : '⭐ 만점!';
+    el.michTime.textContent = Math.ceil(michRun.left) + 's';
+    el.michBar.style.width = (michRun.left / Data.MICHELIN.time * 100) + '%';
+  }
+
+  function michTapPress(ev) {
+    if (!michRun || michRun.left <= 0) return;
+    ev.preventDefault();
+    var pt = (ev.touches && ev.touches[0]) || ev;
+    var res = michTapFn(ev.isTrusted !== false,
+      typeof pt.clientX === 'number' ? pt.clientX : undefined,
+      typeof pt.clientX === 'number' ? pt.clientY : undefined);
+    if (res.blocked) { showBlocked(res.blocked); return; }
+    michRun.taps++;
+    var before = el.michStars.textContent;
+    paintMichelin();
+    // 별이 하나 올라가면 소리·연출
+    if (el.michStars.textContent !== before && el.michStars.textContent.indexOf('★') >= 0) {
+      Sound.play('levelup'); buzz(20);
+    } else {
+      Sound.play('tap', Game.comboCount());
+    }
+    el.michTap.classList.add('hit');
+    setTimeout(function () { el.michTap.classList.remove('hit'); }, 70);
+  }
+
+  function endMichelin() {
+    if (michRun && michRun.timer) clearInterval(michRun.timer);
+    var taps = michRun ? michRun.taps : 0;
+    var r = Game.claimMichelin(taps);
+    michRun = null;
+    el.michPlay.hidden = true;
+    el.michResult.hidden = false;
+    el.michResultStars.textContent = starStr(r.stars);
+    el.michResultEmoji.textContent = r.stars >= 5 ? '🏆' : r.stars > 0 ? '🎉' : '😢';
+    var txt = r.stars > 0
+      ? '별 <b>' + r.stars + '개</b> · ' + Fmt.won(r.gain) + ' 획득!'
+      : '별을 하나도 못 얻었어요. 다시 도전해 보세요!';
+    if (r.grandNew) txt += '<br><span class="mich-grand">🏆 미슐랭 5성! 모든 수익 ×' +
+      Data.MICHELIN.grandMult + ' 영구 획득!</span>';
+    el.michResultText.innerHTML = txt;
+    if (r.grandNew) { Sound.play('prestige'); }
+    else if (r.stars > 0) { Sound.play('reward'); }
+    sig.mich = '';
+  }
+
+  function quitMichelin() {
+    // 그만두면 그때까지의 별로 정산한다 (딴 별은 아깝지 않게)
+    endMichelin();
+  }
+
+  function closeMichelinResult() {
+    el.michelinModal.hidden = true;
+    Game.invalidate();
+    UI.invalidate && UI.invalidate();
+    announceMichelinAchv();
+    State.save();
+    refresh(true);
+  }
+
+  function announceMichelinAchv() {
+    var got = Game.checkAchievements();
+    if (got.length) { Sound.play('achv'); toast('🏆 ' + got[0].name + ' 달성!'); }
+  }
+
+  /* ---------- 주말 파티 도감 ---------- */
 
   /* ---------- 주말 파티 도감 ---------- */
 
@@ -1027,6 +1153,7 @@ var UI = (function () {
   var thiefTimer = 0;
   var thiefBusy = false;    // 도둑이 화면에 있는 동안엔 겹쳐 내보내지 않는다
   var onThief = null;
+  var michTapFn = null;   // main.js 의 onTap (미슐랭 조리에 재사용)
 
   function armThief() { thiefTimer = Game.nextThiefGap(); }
 
@@ -1223,7 +1350,7 @@ var UI = (function () {
     if (currentTab === 'shop') updateGenList();
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
-    else if (currentTab === 'achv') { renderQuests(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
+    else if (currentTab === 'achv') { renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
@@ -1530,6 +1657,18 @@ var UI = (function () {
 
     onGolden = handlers.onGolden;
     onThief = handlers.onThief;
+    michTapFn = handlers.onTap;
+
+    // 미슐랭 심사 조리 버튼
+    if (window.PointerEvent) el.michTap.addEventListener('pointerdown', michTapPress);
+    else { el.michTap.addEventListener('touchstart', michTapPress, { passive: false });
+           el.michTap.addEventListener('mousedown', michTapPress); }
+    el.michTap.addEventListener('keydown', function (ev) {
+      if (ev.key !== ' ' && ev.key !== 'Enter') return;
+      if (ev.repeat) return; ev.preventDefault(); michTapPress(ev);
+    });
+    el.michDone.addEventListener('click', closeMichelinResult);
+    el.michQuit.addEventListener('click', quitMichelin);
 
     el.muteBtn.addEventListener('click', function () {
       Sound.setMuted(!Sound.muted());

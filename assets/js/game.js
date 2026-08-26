@@ -60,6 +60,7 @@ var Game = (function () {
     stat *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
     stat *= Math.pow(3, fameLv('f_legend'));      // 명성상점: 분식 왕조 (후반 소비처)
     stat *= 1 + Data.PARTY.dexBonus * (s.partyFoods ? s.partyFoods.length : 0);  // 파티 도감 1칸당 +1%
+    if (s.michelinGrand) stat *= Data.MICHELIN.grandMult;   // 미슐랭 5성 영구 배율
 
     var genM = {};
     Data.GENERATORS.forEach(function (g) { genM[g.id] = 1; });
@@ -675,9 +676,41 @@ var Game = (function () {
     return food;
   }
 
-  /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
+  /* ---------- 미슐랭 도전 ---------- */
 
-  /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
+  function michelinStars(taps) {
+    var g = Data.MICHELIN.goals, n = 0;
+    for (var i = 0; i < g.length; i++) if (taps >= g[i]) n = i + 1;
+    return n;
+  }
+  function michelinNextGoal(taps) {
+    var g = Data.MICHELIN.goals;
+    for (var i = 0; i < g.length; i++) if (taps < g[i]) return g[i];
+    return 0;
+  }
+  function bestMichelin() { return S().bestMichelin; }
+  function michelinGrandDone() { return S().michelinGrand === 1; }
+
+  /** 심사 종료 정산 — @returns {{stars,gain,best,grandNew}} */
+  function claimMichelin(taps) {
+    var s = S();
+    var stars = michelinStars(taps);
+    var gain = 0;
+    if (stars > 0) {
+      gain = earn(s, Math.max(Data.MICHELIN.minReward * stars,
+                              perSec(true) * Data.MICHELIN.starSec * stars));
+    }
+    if (stars > s.bestMichelin) s.bestMichelin = stars;
+    var grandNew = false;
+    if (stars >= 5 && !s.michelinGrand) {
+      s.michelinGrand = 1;
+      bump();
+      grandNew = true;
+    }
+    return { stars: stars, gain: gain, best: s.bestMichelin, grandNew: grandNew };
+  }
+
+    /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
 
   // 문자열 하나로 정해지는 값 — 이름·지역을 고정하는 데 쓴다
   function hashStr(str) {
@@ -1240,6 +1273,11 @@ var Game = (function () {
     startBoost: startBoost,
     dailyReady: dailyReady,
     partyActive: partyActive,
+    michelinStars: michelinStars,
+    michelinNextGoal: michelinNextGoal,
+    bestMichelin: bestMichelin,
+    michelinGrandDone: michelinGrandDone,
+    claimMichelin: claimMichelin,
     partyState: partyState,
     setClock: setClock,
     partyFoodsAll: partyFoodsAll,

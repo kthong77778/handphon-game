@@ -830,6 +830,59 @@ suite('전국 맛집 랭킹', async ({ page, ctx, ok, errs }) => {
     ok((await p.textContent('#rankRegion')) === r1, '같은 지역 유지: ' + r1);
 });
 
+suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
+  const p = page;
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+    await p.evaluate(()=>{ Data.GENERATORS.forEach(g=>State.get().gens[g.id]=10); State.get().money=1e6; Game.invalidate(); });
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
+
+    console.log('[1] 미슐랭 카드');
+    ok(await p.locator('#michelinCard').count() === 1, '카드 존재');
+    ok(await p.locator('#michStart').count() === 1, '도전하기 버튼');
+
+    console.log('\n[2] 심사 시작 → 조리로 별을 얻는다');
+    await p.click('#michStart'); await p.waitForTimeout(300);
+    ok(!await p.isHidden('#michelinModal'), '심사 모달이 열림');
+    ok(await p.isHidden('#michResult'), '아직 결과는 숨김');
+    // 첫 별 문턱까지 조리
+    const goal1 = await p.evaluate(()=>Data.MICHELIN.goals[0]);
+    for (let i=0;i<goal1;i++){ await p.click('#michTap'); await p.waitForTimeout(15); }
+    await p.waitForTimeout(150);
+    ok(/★/.test(await p.textContent('#michStars')), '별이 생김: ' + await p.textContent('#michStars'));
+    ok(await p.evaluate(()=>State.get().taps) >= goal1, '조리 횟수가 실제 탭으로 쌓임');
+
+    console.log('\n[3] 그만두면 그때까지 별로 정산');
+    await p.click('#michQuit'); await p.waitForTimeout(300);
+    ok(!await p.isHidden('#michResult'), '결과 화면이 뜸');
+    ok(/★/.test(await p.textContent('#michResultStars')), '결과에 별 표시');
+    await p.locator('.michelin-modal').screenshot({ path: path.join(D, 'shot-michelin.png') });
+    const money0 = await p.evaluate(()=>State.get().money);
+    await p.click('#michDone'); await p.waitForTimeout(300);
+    ok(await p.isHidden('#michelinModal'), '받기 누르면 닫힘');
+    ok(await p.evaluate(()=>State.get().bestMichelin) >= 1, '최고 기록이 남음');
+
+    console.log('\n[4] 5성 달성 → 영구 배율 + 카드 갱신');
+    // 별 5개 문턱까지 빠르게 (시간 넉넉히 두고 evaluate 로 직접 심사 정산 대신 실제 탭)
+    const before = await p.evaluate(()=>Game.globalMult());
+    await p.evaluate(()=>{ const r=Game.claimMichelin(Data.MICHELIN.goals[4]); window.__r=r; });
+    const r = await p.evaluate(()=>window.__r);
+    ok(r.stars === 5 && r.grandNew, '5성 첫 달성 그랜드');
+    ok(await p.evaluate(()=>Game.globalMult()) > before, '영구 배율이 붙어 배율이 커짐');
+    await p.evaluate(()=>{ UI.invalidate&&UI.invalidate(); UI.refresh(true); });
+    await p.waitForTimeout(200);
+    ok(/×/.test(await p.textContent('#michelinCard')) && /적용 중/.test(await p.textContent('#michelinCard')),
+       '카드가 5성 달성 상태로 바뀜');
+
+    console.log('\n[5] 새로고침해도 기록 유지');
+    await p.evaluate(()=>State.save());
+    await p.reload(); await p.waitForTimeout(800);
+    if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
+    ok(await p.evaluate(()=>State.get().bestMichelin) === 5, '최고 기록 5성 유지');
+    ok(await p.evaluate(()=>State.get().michelinGrand) === 1, '그랜드 유지');
+});
+
 suite('주말 파티 · 도감', async ({ page, ctx, ok, errs }) => {
   const p = page;
 

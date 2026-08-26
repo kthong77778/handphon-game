@@ -715,7 +715,56 @@ console.log('\n[16] 퀘스트 세이브 방어');
   ok(Game.quests().length === Data.QUEST.count, '한 번 부르면 채워짐');
 }
 
-console.log('\n[17] 세이브 백업 표시');
+console.log('\n[17] 미슐랭 도전');
+{
+  State.set({ money: 0, bestMichelin: 0, michelinGrand: 0 });
+  Data.GENERATORS.forEach(function (g) { State.get().gens[g.id] = 10; });
+  Game.invalidate();
+  var G = Data.MICHELIN.goals;
+  ok(Game.michelinStars(0) === 0, '0번은 0성');
+  ok(Game.michelinStars(G[0] - 1) === 0, '문턱 직전은 0성');
+  ok(Game.michelinStars(G[0]) === 1, '첫 문턱에서 1성');
+  ok(Game.michelinStars(G[4]) === 5, '마지막 문턱에서 5성');
+  ok(Game.michelinStars(99999) === 5, '아무리 많아도 최대 5성');
+  ok(Game.michelinNextGoal(0) === G[0], '다음 목표는 첫 문턱');
+  ok(Game.michelinNextGoal(G[4]) === 0, '5성이면 다음 목표 없음');
+
+  // 정산: 별만큼 보상, 최고 기록 갱신
+  var r1 = Game.claimMichelin(G[2]);       // 3성
+  ok(r1.stars === 3 && r1.gain > 0, '3성 정산 · 보상 지급', Fmt.won(r1.gain));
+  ok(State.get().bestMichelin === 3, '최고 기록 3성으로');
+  ok(!r1.grandNew, '아직 5성 아니라 그랜드 없음');
+
+  // 최고 기록은 낮은 결과로 안 내려간다
+  Game.claimMichelin(G[0]);                // 1성
+  ok(State.get().bestMichelin === 3, '더 낮은 결과로는 최고 기록이 안 내려감');
+
+  // 5성 첫 달성 → 영구 배율
+  var m0 = Game.globalMult();
+  var r5 = Game.claimMichelin(G[4]);
+  ok(r5.stars === 5 && r5.grandNew, '5성 첫 달성 · 그랜드 보상');
+  ok(Math.abs(Game.globalMult() / m0 - Data.MICHELIN.grandMult) < 0.001,
+     '모든 수익 ×' + Data.MICHELIN.grandMult + ' 영구 적용');
+  ok(State.get().michelinGrand === 1, '그랜드 수령 기록됨');
+
+  // 두 번째 5성엔 그랜드가 다시 안 나온다
+  ok(Game.claimMichelin(G[4]).grandNew === false, '그랜드는 한 번만');
+
+  // 0성이면 보상 없음, 기록도 그대로
+  var beforeMoney = State.get().money;
+  var r0 = Game.claimMichelin(0);
+  ok(r0.stars === 0 && r0.gain === 0, '0성은 보상 없음');
+  ok(State.get().money === beforeMoney, '돈 변화 없음');
+
+  // 세이브에 남는다
+  State.set(JSON.parse(JSON.stringify(State.get())));
+  ok(State.get().bestMichelin === 5 && State.get().michelinGrand === 1, '기록·그랜드가 세이브에 유지됨');
+  // 깨진 값 방어
+  State.set({ bestMichelin: 'x', michelinGrand: 9 });
+  ok(State.get().bestMichelin === 0, '엉뚱한 최고 기록은 0');
+}
+
+console.log('\n[18] 세이브 백업 표시');
 {
   State.set({ money: 100, lastBackup: 0 }); Game.invalidate();
   ok(State.get().lastBackup === 0, '처음엔 백업 기록 없음');

@@ -351,6 +351,52 @@ body{
 
 
 
+
+/* ===== 미슐랭 도전 ===== */
+.michelin-card{padding:14px}
+.mich-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mcz-label{font-size:11.5px;color:var(--dim)}
+.mcz-stars{font-size:22px;color:var(--gold);letter-spacing:2px;line-height:1.2}
+.btn.michelin-start{
+  flex:0 0 auto;width:auto;padding:10px 16px;margin:0;
+  background:linear-gradient(90deg,#ffcc44,#ff9f4a);color:#2a1600;font-weight:800;border:none;
+  box-shadow:0 0 14px rgba(255,159,74,.4);
+}
+.mcz-prize{
+  margin-top:12px;padding:9px 11px;border-radius:10px;font-size:12px;line-height:1.5;
+  background:var(--bg2);border:1px solid var(--line);color:var(--dim);
+}
+.mcz-prize b{color:var(--gold)}
+.mcz-prize.done{border-color:var(--good);color:var(--txt)}
+.mcz-prize.done b{color:var(--good)}
+
+/* 심사 모달 */
+.michelin-modal{text-align:center}
+.mich-title{font-size:17px;font-weight:800;color:var(--gold);margin-bottom:10px}
+.mich-stars{font-size:30px;color:var(--gold);letter-spacing:3px;line-height:1;margin-bottom:12px}
+.mich-stars.big{font-size:40px;margin:8px 0 12px}
+.mich-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;margin-bottom:8px}
+.mich-bar > i{display:block;height:100%;width:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--good),var(--gold));transition:width .1s linear}
+.mich-meta{display:flex;align-items:baseline;justify-content:space-between;
+  font-variant-numeric:tabular-nums;margin-bottom:14px}
+.mich-count{font-size:26px;font-weight:900;color:var(--txt)}
+.mich-next{font-size:12px;color:var(--dim)}
+.mich-time{font-size:15px;font-weight:800;color:var(--gold)}
+.mich-tap{
+  width:100%;padding:26px 0;border-radius:18px;border:2px solid var(--accent);
+  background:radial-gradient(circle at 50% 30%,#413273,#241d3f 75%);
+  color:var(--txt);font-family:inherit;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+  transition:transform .06s ease;margin-bottom:10px;
+}
+.mich-tap.hit{transform:scale(.95)}
+.mich-tap-emoji{font-size:40px;line-height:1}
+.mich-tap-label{font-size:15px;font-weight:800;color:var(--gold)}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--dim)}
+.mich-grand{display:inline-block;margin-top:6px;color:var(--gold);font-weight:800}
+
 /* ===== 세이브 안전 안내 ===== */
 .save-guard{padding:12px 14px}
 .sg-row{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.45;margin-bottom:7px}

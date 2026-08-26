@@ -11,7 +11,7 @@
 | `assets/js/sound.js` | WebAudio 합성음 (음원 파일을 쓰지 않는다) — 탭 소리는 플레이어가 고른다 |
 | `assets/js/data.js` | 밸런스 수치 전부 + 스킨 데이터 + 손그림 SVG(`face` `SNACKS` `ONIGIRI`) |
 | `assets/js/state.js` | 세이브 저장·불러오기·검증 |
-| `assets/js/game.js` | 수익 계산(캐시), 버프, 콤보, 매크로 방지, 환생, 명예의 전당, 일일 퀘스트, 전국 맛집 랭킹, 주말 파티 |
+| `assets/js/game.js` | 수익 계산(캐시), 버프, 콤보, 매크로 방지, 환생, 명예의 전당, 일일 퀘스트, 전국 맛집 랭킹, 주말 파티, 미슐랭 도전 |
 | `assets/js/scene.js` | 가게 앞 거리 연출 — 왼쪽 가게, 손님 왕래 (수치에는 일절 관여하지 않는다) |
 | `assets/js/ui.js` | DOM 렌더링, 입력, 황금 손님·도둑 등장 |
 | `assets/js/main.js` | 부팅, 게임 루프, 자동 저장 |
