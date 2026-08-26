@@ -59,6 +59,7 @@ var Game = (function () {
     stat *= 1 + 0.01 * achievementCount();        // 도전과제 1개당 +1%
     stat *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
     stat *= Math.pow(3, fameLv('f_legend'));      // 명성상점: 분식 왕조 (후반 소비처)
+    stat *= 1 + Data.PARTY.dexBonus * (s.partyFoods ? s.partyFoods.length : 0);  // 파티 도감 1칸당 +1%
 
     var genM = {};
     Data.GENERATORS.forEach(function (g) { genM[g.id] = 1; });
@@ -103,6 +104,7 @@ var Game = (function () {
     var m = 1;
     if (s.goldLeft > 0) m *= s.goldMult;
     if (s.boostLeft > 0) m *= Data.BOOST.mult;
+    if (partyActive()) m *= Data.PARTY.mult;     // 주말 파티 ×3 (오프라인엔 안 붙는다)
     return m;
   }
 
@@ -611,6 +613,69 @@ var Game = (function () {
     ];
   }
 
+  /* ---------- 주말 파티 이벤트 ---------- */
+
+  // 테스트에서 시계를 고정할 수 있게 해 둔다 (기본은 실제 시각)
+  var clockFn = null;
+  function nowDate() { return clockFn ? clockFn() : new Date(); }
+  function setClock(fn) { clockFn = fn; }
+
+  /** 지금 주말 파티 중인가 (금·토 17~24시, 기기 시간) */
+  function partyActive() {
+    var d = nowDate();
+    var day = d.getDay();
+    if (Data.PARTY.days.indexOf(day) < 0) return false;
+    var h = d.getHours();
+    return h >= Data.PARTY.startHour && h < Data.PARTY.endHour;
+  }
+
+  /** 파티 상태 — 진행 중이면 남은 초, 아니면 다음 파티까지 남은 초 */
+  function partyState() {
+    var d = nowDate();
+    if (partyActive()) {
+      var end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Data.PARTY.endHour, 0, 0);
+      return { active: true, mult: Data.PARTY.mult, left: Math.max(0, (end - d) / 1000) };
+    }
+    return { active: false, until: secToNextParty(d) };
+  }
+
+  /** 다음 파티 시작까지 남은 초 */
+  function secToNextParty(d) {
+    for (var add = 0; add < 8; add++) {
+      var day = (d.getDay() + add) % 7;
+      if (Data.PARTY.days.indexOf(day) >= 0) {
+        var start = new Date(d.getFullYear(), d.getMonth(), d.getDate() + add,
+                             Data.PARTY.startHour, 0, 0);
+        if (start > d) return Math.floor((start - d) / 1000);
+      }
+    }
+    return 0;
+  }
+
+  /* ---------- 파티 음식 도감 ---------- */
+
+  function partyFoodsAll() { return Data.PARTY.foods; }
+  function partyGot(id) { return S().partyFoods.indexOf(id) >= 0; }
+  function partyGotCount() { return S().partyFoods.length; }
+
+  /**
+   * 파티 중 탭할 때 새 음식을 발견하려 시도한다.
+   * @returns {{icon,name,id}|null} 새로 발견한 음식, 없으면 null
+   */
+  function tryDiscoverFood() {
+    if (!partyActive()) return null;
+    if (Math.random() >= Data.PARTY.findChance) return null;
+    var s = S();
+    var left = Data.PARTY.foods.filter(function (f) { return s.partyFoods.indexOf(f.id) < 0; });
+    if (!left.length) return null;
+    var food = left[Math.floor(Math.random() * left.length)];
+    s.partyFoods.push(food.id);
+    bump();                    // 도감 보너스가 늘었으니 수익 캐시 무효화
+    return food;
+  }
+
+  /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
+
   /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
 
   // 문자열 하나로 정해지는 값 — 이름·지역을 고정하는 데 쓴다
@@ -796,6 +861,7 @@ var Game = (function () {
   function nextGoldenGap() {
     var g = Data.GOLDEN;
     var scale = Math.pow(g.gapPerLv, fameLv('f_gold'));
+    if (partyActive()) scale *= Data.PARTY.goldenScale;   // 파티 중엔 더 자주
     return (g.minGap + Math.random() * (g.maxGap - g.minGap)) * scale;
   }
 
@@ -1172,6 +1238,13 @@ var Game = (function () {
     boostReady: boostReady,
     startBoost: startBoost,
     dailyReady: dailyReady,
+    partyActive: partyActive,
+    partyState: partyState,
+    setClock: setClock,
+    partyFoodsAll: partyFoodsAll,
+    partyGot: partyGot,
+    partyGotCount: partyGotCount,
+    tryDiscoverFood: tryDiscoverFood,
     questRoll: questRoll,
     quests: quests,
     questBump: questBump,

@@ -45,6 +45,7 @@ var State = (function () {
       autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
       region: '',        // 전국 맛집 랭킹에서 내 가게가 속한 지역 (한 번 배정되면 고정)
+      partyFoods: [],    // 주말 파티에서 모은 음식 도감 (id 배열)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
 
@@ -127,6 +128,16 @@ var State = (function () {
       }).filter(function (r) {
         return isFinite(r.earned) && isFinite(r.seconds);
       }).slice(-MAX_RUNS);
+    }
+
+    // 파티 도감 — 실제로 있는 음식 id 만, 중복 없이
+    if (Array.isArray(raw.partyFoods)) {
+      var seen = {};
+      s.partyFoods = raw.partyFoods.filter(function (id) {
+        if (seen[id]) return false;
+        seen[id] = 1;
+        return Data.PARTY.foods.some(function (f) { return f.id === id; });
+      });
     }
 
     // 지역은 실제로 있는 것일 때만 받는다 (없으면 game.js 가 처음 볼 때 배정한다)

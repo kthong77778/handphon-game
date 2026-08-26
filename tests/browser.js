@@ -827,6 +827,56 @@ suite('전국 맛집 랭킹', async ({ page, ctx, ok, errs }) => {
     ok((await p.textContent('#rankRegion')) === r1, '같은 지역 유지: ' + r1);
 });
 
+suite('주말 파티 · 도감', async ({ page, ctx, ok, errs }) => {
+  const p = page;
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+
+    console.log('[1] 평일엔 파티 배너가 없다');
+    await p.evaluate(()=>{ Game.setClock(()=>new Date(2026,7,26,12,0,0)); UI.refresh(true); }); // 수요일
+    await p.waitForTimeout(200);
+    ok(await p.isHidden('#partyBanner'), '평일 낮엔 배너 숨김');
+
+    console.log('\n[2] 금·토 저녁엔 파티 배너 + ×3');
+    await p.evaluate(()=>{ Game.setClock(()=>new Date(2026,7,28,18,0,0)); // 금 18시
+      Data.GENERATORS.forEach(g=>State.get().gens[g.id]=10); State.get().money=1e9; Game.invalidate(); UI.refresh(true); });
+    await p.waitForTimeout(200);
+    ok(!await p.isHidden('#partyBanner'), '파티 배너가 뜸');
+    ok(/×3/.test(await p.textContent('#partyBanner')), '모든 수익 ×3 표시');
+    const mult = await p.evaluate(()=>({live:Game.perSec(false), off:Game.perSec(true)}));
+    ok(Math.abs(mult.live - mult.off*3) < mult.off*0.01, '실시간 수익이 ×3 (오프라인은 제외)');
+
+    console.log('\n[3] 파티 중 조리하면 음식을 발견한다');
+    await p.evaluate(()=>{ State.get().partyFoods=[]; Game.invalidate(); });
+    // 발견 확률이 있으니 여러 번 눌러 최소 하나는 찾는다
+    for (let i=0;i<400 && await p.evaluate(()=>Game.partyGotCount())===0;i++){
+      await p.evaluate(()=>Game.tryDiscoverFood());
+    }
+    const got = await p.evaluate(()=>Game.partyGotCount());
+    ok(got > 0, `도감에 음식이 쌓임 (${got}칸)`);
+
+    console.log('\n[4] 도감 화면에 채운 칸이 보인다');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
+    ok(await p.locator('#partyDex .dex-cell').count() === await p.evaluate(()=>Data.PARTY.foods.length),
+       '도감 칸이 음식 수만큼');
+    ok(await p.locator('#partyDex .dex-cell.got').count() === got, `채운 칸 ${got}개 강조`);
+    ok(/\d+ \/ \d+/.test(await p.textContent('#partyDex .dex-head')), '진행도 표시');
+    await p.locator('#partyDex').screenshot({ path: path.join(D, 'shot-party-dex.png') });
+
+    console.log('\n[5] 도감은 세이브에 남는다');
+    await p.evaluate(()=>State.save());
+    await p.reload(); await p.waitForTimeout(800);
+    if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
+    ok(await p.evaluate(()=>Game.partyGotCount()) === got, '새로고침해도 도감 유지');
+
+    console.log('\n[6] 배너를 누르면 도감 탭으로 간다');
+    await p.evaluate(()=>{ Game.setClock(()=>new Date(2026,7,28,18,0,0)); UI.refresh(true); });
+    await p.click('#tabbar .tab[data-tab="shop"]'); await p.waitForTimeout(200);
+    await p.click('#partyBanner'); await p.waitForTimeout(300);
+    ok(await p.evaluate(()=>!document.querySelector('[data-page="achv"]').hidden), '도감이 있는 기록 탭으로 이동');
+});
+
 suite('세이브', async ({ page, ctx, ok, errs }) => {
   const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
   const errors = errs;             // 이름만 다른 같은 수집기

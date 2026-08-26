@@ -348,6 +348,52 @@ body{
   box-shadow:0 0 10px rgba(139,92,246,.65);
 }
 
+
+/* ===== 주말 파티 배너 ===== */
+.party-banner{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  width:100%;margin-top:8px;padding:8px 12px;
+  border:none;border-radius:12px;
+  font-family:inherit;color:#2a1600;font-weight:800;
+  background:linear-gradient(90deg,#ffcc44,#ff9f4a,#ff6fae);
+  background-size:200% 100%;
+  animation:partyGlow 3s linear infinite;
+  cursor:pointer;
+  box-shadow:0 0 16px rgba(255,111,174,.45);
+}
+@keyframes partyGlow{0%{background-position:0 0}100%{background-position:200% 0}}
+.party-banner .pb-tag{font-size:13px}
+.party-banner .pb-mult{font-size:12.5px;background:rgba(0,0,0,.18);border-radius:7px;padding:2px 7px}
+.party-banner .pb-time{font-size:12px;font-variant-numeric:tabular-nums;margin-left:auto}
+@media (prefers-reduced-motion: reduce){ .party-banner{animation:none} }
+
+/* 파티 손님은 은은하게 반짝인다 */
+.walker.party .body{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)) drop-shadow(0 0 8px rgba(255,111,174,.9))}
+
+/* ===== 파티 음식 도감 ===== */
+.party-dex{padding:12px}
+.dex-head{
+  display:flex;align-items:baseline;gap:10px;margin-bottom:10px;
+}
+.dex-head b{font-size:22px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+.dex-head span{font-size:12px;color:var(--dim)}
+.dex-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+}
+.dex-cell{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:10px 4px;border-radius:12px;
+  background:var(--bg2);border:1px solid var(--line);
+}
+.dex-cell.got{
+  border-color:var(--gold);
+  background:linear-gradient(180deg,rgba(255,204,68,.14),var(--bg2));
+}
+.dex-ic{font-size:26px;line-height:1}
+.dex-cell:not(.got) .dex-ic{filter:grayscale(1);opacity:.5}
+.dex-nm{font-size:10px;font-weight:700;text-align:center;line-height:1.2;color:var(--dim)}
+.dex-cell.got .dex-nm{color:var(--txt)}
+
 /* ===== 오늘의 퀘스트 ===== */
 .item.quest .item-desc{font-variant-numeric:tabular-nums}
 .qbar{

@@ -703,6 +703,35 @@ var Data = (function () {
     { id: 'boing',   icon: '🎈', name: '탱글 뽁',   desc: '끝에 튕기는 고무 같은 뽁' }
   ];
 
+  /* ---------- 주말 파티 이벤트 ---------- */
+  // 금·토 오후 5시~자정, 실제 시계 기준으로 열린다. 서버가 없으니 기기 시간을 본다.
+  var PARTY = {
+    days: [5, 6],          // 금(5) · 토(6)
+    startHour: 17,         // 17시부터
+    endHour: 24,           // 24시(자정)까지
+    mult: 3,               // 파티 중 실시간 수익 ×3 (오프라인 보상엔 안 붙는다)
+    goldenScale: 0.5,      // 황금 손님 등장 간격 ×0.5 (두 배 자주)
+    findChance: 0.03,      // 파티 중 탭 한 번당 새 음식을 발견할 확률
+    dexBonus: 0.01,        // 도감 한 칸당 모든 수익 +1% (영구)
+    // 파티에서만 나오는 음식 — 모으면 도감이 채워진다
+    foods: [
+      { id: 'pf1',  icon: '🍕', name: '파티 피자' },
+      { id: 'pf2',  icon: '🍗', name: '양념치킨' },
+      { id: 'pf3',  icon: '🌭', name: '핫도그' },
+      { id: 'pf4',  icon: '🍔', name: '수제버거' },
+      { id: 'pf5',  icon: '🌮', name: '타코' },
+      { id: 'pf6',  icon: '🍿', name: '팝콘' },
+      { id: 'pf7',  icon: '🧀', name: '치즈 플래터' },
+      { id: 'pf8',  icon: '🍩', name: '도넛 타워' },
+      { id: 'pf9',  icon: '🧁', name: '컵케이크' },
+      { id: 'pf10', icon: '🎂', name: '파티 케이크' },
+      { id: 'pf11', icon: '🍭', name: '막대사탕' },
+      { id: 'pf12', icon: '🥂', name: '샴페인' }
+    ],
+    // 파티에만 오는 손님 (전신 이모지만 — 거리 규칙 6)
+    guests: ['🕺', '💃', '🧑‍🎤', '🧑‍🎄', '🎅', '🤶']
+  };
+
   /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
   // 서버가 없는 오프라인 게임이라 실제 다른 플레이어는 없다.
   // 내 가게의 인기(초당 수익)를 기준으로, 가상의 전국 맛집들 사이에
@@ -827,6 +856,7 @@ var Data = (function () {
     RANK_AREAS: RANK_AREAS,
     RANK_FOODS: RANK_FOODS,
     RANK_TITLES: RANK_TITLES,
-    TAP_SOUNDS: TAP_SOUNDS
+    TAP_SOUNDS: TAP_SOUNDS,
+    PARTY: PARTY
   };
 })();

@@ -57,8 +57,15 @@ var Scene = (function () {
     var face = document.createElement('i');
     var body = document.createElement('span');
     var tier = Game.crowdTier();
-    body.textContent = pick(tier.cast);
-    node.classList.add('t' + (tier.index + 1));
+    var party = Game.partyActive && Game.partyActive();
+    // 파티 중엔 셋 중 하나꼴로 파티 전용 손님이 온다
+    if (party && Math.random() < 0.35) {
+      body.textContent = pick(Data.PARTY.guests);
+      node.classList.add('t' + (tier.index + 1), 'party');
+    } else {
+      body.textContent = pick(tier.cast);
+      node.classList.add('t' + (tier.index + 1));
+    }
 
     // 등급이 오르면 값나가는 것을 들고 온다
     if (tier.acc && tier.acc.length) {
@@ -159,7 +166,12 @@ var Scene = (function () {
     if (!pops || REDUCED) return;
     var d = document.createElement('div');
     d.className = 'pop';
-    d.textContent = orderIcon();
+    // 파티 중엔 파티 음식이 함께 튄다
+    if (Game.partyActive && Game.partyActive() && Math.random() < 0.4) {
+      d.textContent = pick(Data.PARTY.foods).icon;
+    } else {
+      d.textContent = orderIcon();
+    }
     // 좌우로 흩어지게
     d.style.setProperty('--dx', Math.round(rnd(-70, 70)) + 'px');
     d.style.setProperty('--rot', Math.round(rnd(-200, 200)) + 'deg');

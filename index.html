@@ -27,6 +27,7 @@
       <span class="chip" id="fameChip">✨ 명성 0</span>
       <span class="chip" id="multChip">×1.00</span>
     </div>
+    <button class="party-banner" id="partyBanner" hidden></button>
     <div class="buff-bar" id="buffBar" hidden></div>
   </header>
 
@@ -121,6 +122,10 @@
       <p class="hint">자정에 세 개가 새로 깔립니다. 셋 다 끝내면 보너스가 있습니다.</p>
       <div class="list" id="questList"></div>
 
+      <h2 class="section-title">🎉 주말 파티 도감</h2>
+      <p class="hint" id="partyHint">금·토 저녁에만 열리는 파티에서 모은 음식들. 한 칸당 모든 수익 +1%.</p>
+      <div class="card party-dex" id="partyDex"></div>
+
       <h2 class="section-title">🍜 전국 인기 맛집</h2>
       <p class="hint">내 가게가 <b id="rankRegion">전국</b>에서 얼마나 인기인지 — 벌이가 오르면 순위가 오릅니다.</p>
       <div class="card rank-card" id="rankCard">
@@ -183,7 +188,7 @@
         <button class="btn" id="importBtn">세이브 불러오기</button>
         <button class="btn danger" id="resetBtn">데이터 전체 삭제</button>
       </div>
-      <p class="hint small center">v1.14.0 · 자동 저장 10초 간격</p>
+      <p class="hint small center">v1.15.0 · 자동 저장 10초 간격</p>
     </section>
 
   </main>

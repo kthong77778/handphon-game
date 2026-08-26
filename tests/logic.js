@@ -588,7 +588,53 @@ console.log('\n[11] 일일 퀘스트');
   ok(State.get().questsDone === 3, '완료 수는 평생 누적으로 남음');
 }
 
-console.log('\n[13] 탭 소리 선택');
+console.log('\n[13] 주말 파티 이벤트');
+{
+  // 금요일(getDay 5) 18시 → 파티, 수요일 낮 → 아님
+  Game.setClock(function () { return new Date(2026, 7, 28, 18, 0, 0); });
+  ok(new Date(2026, 7, 28).getDay() === 5, '2026-08-28 은 금요일');
+  ok(Game.partyActive() === true, '금 18시엔 파티 중');
+  var ps = Game.partyState();
+  ok(ps.active && ps.mult === 3, '파티 배율 ×3');
+  ok(ps.left > 0 && ps.left <= 6 * 3600 + 1, '자정까지 남은 시간', Math.round(ps.left) + 's');
+
+  Game.setClock(function () { return new Date(2026, 7, 26, 12, 0, 0); }); // 수요일
+  ok(Game.partyActive() === false, '평일 낮엔 파티 아님');
+  ok(Game.partyState().until > 0, '다음 파티까지 카운트다운');
+
+  Game.setClock(function () { return new Date(2026, 7, 28, 16, 59, 0); }); // 금 16:59
+  ok(Game.partyActive() === false, '시작 1분 전엔 아직 아님');
+  Game.setClock(function () { return new Date(2026, 7, 28, 23, 59, 0); }); // 금 23:59
+  ok(Game.partyActive() === true, '자정 직전까진 파티');
+  Game.setClock(function () { return new Date(2026, 7, 29, 0, 0, 0); });   // 토 00:00
+  ok(Game.partyActive() === false, '자정 넘으면 끝');
+
+  // 파티 배율은 실시간 수익에만, 오프라인(무버프)엔 안 붙는다
+  Game.setClock(function () { return new Date(2026, 7, 28, 18, 0, 0); });
+  State.set({ money: 0 }); Data.GENERATORS.forEach(function (g) { State.get().gens[g.id] = 10; });
+  Game.invalidate();
+  var live = Game.perSec(false), off = Game.perSec(true);
+  ok(Math.abs(live - off * 3) < off * 0.001, '파티 중 실시간 수익 = 무버프 ×3');
+
+  // 도감: 발견 → 영구 보너스, 세이브에 남음
+  State.set({ partyFoods: [] }); Game.invalidate();
+  var m0 = Game.globalMult() / 3;   // 파티 배율 빼고 본 고정 배율
+  var tries = 0, got = 0;
+  while (Game.partyGotCount() < 12 && tries < 100000) { if (Game.tryDiscoverFood()) got++; tries++; }
+  ok(Game.partyGotCount() === 12, '탭으로 도감 12칸 다 채움');
+  var m1 = Game.globalMult() / 3;
+  ok(Math.abs(m1 - m0 * 1.12) < m0 * 0.001, '도감 12칸이면 고정 배율 +12%');
+
+  // 파티가 아니면 발견되지 않는다
+  Game.setClock(function () { return new Date(2026, 7, 26, 12, 0, 0); });
+  State.set({ partyFoods: [] }); Game.invalidate();
+  var none = true; for (var i = 0; i < 500; i++) if (Game.tryDiscoverFood()) none = false;
+  ok(none, '파티가 아니면 음식이 안 나옴');
+
+  Game.setClock(null);   // 시계 원상복구
+}
+
+console.log('\n[14] 탭 소리 선택');
 {
   State.set({ money: 0 }); Game.invalidate();
   ok(State.get().tapSound === 'classic', '기본 조리음은 classic');
@@ -602,7 +648,7 @@ console.log('\n[13] 탭 소리 선택');
      '소리 목록에 id·이름·설명이 모두 있음');
 }
 
-console.log('\n[14] 전국 맛집 랭킹');
+console.log('\n[15] 전국 맛집 랭킹');
 {
   State.set({ startedAt: 1699999999999, bestPerSec: 0 }); Game.invalidate();
   const reg = Game.region();
@@ -644,7 +690,7 @@ console.log('\n[14] 전국 맛집 랭킹');
   ok(Data.REGIONS.some(r => r.id === Game.region().id), '한 번 보면 지역이 배정됨');
 }
 
-console.log('\n[15] 퀘스트 세이브 방어');
+console.log('\n[16] 퀘스트 세이브 방어');
 {
   // 배열 길이가 어긋나면 통째로 버려야 한다 — 반쯤 남으면 진행도가 엉뚱한 데 붙는다
   State.set({ questDate: '2030-05-05', questIds: ['q_tap'], questGoals: [1, 2, 3],

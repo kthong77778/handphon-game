@@ -16,7 +16,7 @@ var UI = (function () {
      'pFameNow', 'pFameGain', 'pMultNext', 'prestigeBtn', 'prestigeReq',
      'dotUpgrade', 'dotPrestige', 'dotAchv', 'buyAmt', 'toast',
      'offlineModal', 'offlineText', 'offlineOk',
-     'buffBar', 'combo', 'comboX', 'comboN', 'comboFill',
+     'buffBar', 'partyBanner', 'partyHint', 'partyDex', 'combo', 'comboX', 'comboN', 'comboFill',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
@@ -264,6 +264,45 @@ var UI = (function () {
       costEl.className = 'item-cost ' + (maxed ? '' : (ok ? 'ok' : 'no'));
       row.className = 'item' + (ok ? ' buyable' : '') + (maxed ? ' owned' : '');
     });
+  }
+
+  /* ---------- 주말 파티 도감 ---------- */
+
+  function renderPartyDex() {
+    var got = Game.partyGotCount();
+    var all = Game.partyFoodsAll();
+    var ps = Game.partyState();
+    var mark = got + '|' + (ps.active ? 'on' : 'off');
+    if (sig.partydex === mark) { updateDexHint(ps, got, all.length); return; }
+    sig.partydex = mark;
+
+    el.partyDex.innerHTML =
+      '<div class="dex-head">' +
+        '<b>' + got + ' / ' + all.length + '</b>' +
+        '<span>모으면 모든 수익 +' + Math.round(got * Data.PARTY.dexBonus * 100) + '%</span>' +
+      '</div>' +
+      '<div class="dex-grid">' +
+        all.map(function (f) {
+          var mine = Game.partyGot(f.id);
+          return '<div class="dex-cell' + (mine ? ' got' : '') + '" title="' +
+            (mine ? f.name : '???') + '">' +
+            '<span class="dex-ic">' + (mine ? f.icon : '❔') + '</span>' +
+            '<span class="dex-nm">' + (mine ? f.name : '???') + '</span></div>';
+        }).join('') +
+      '</div>';
+    updateDexHint(ps, got, all.length);
+  }
+
+  function updateDexHint(ps, got, total) {
+    if (ps.active) {
+      el.partyHint.innerHTML = '🎉 <b>지금 파티 중!</b> 조리하면 새 음식을 발견합니다. (남은 ' +
+        fmtClock(ps.left) + ')';
+    } else if (got >= total) {
+      el.partyHint.textContent = '도감을 다 채웠습니다! 파티가 열리면 또 놀러 오세요.';
+    } else {
+      el.partyHint.innerHTML = '금·토 저녁 5시~자정에 파티가 열립니다. 다음 파티까지 <b>' +
+        fmtClock(ps.until) + '</b>.';
+    }
   }
 
   /* ---------- 전국 맛집 랭킹 ---------- */
@@ -578,8 +617,36 @@ var UI = (function () {
     el.dotAchv.hidden = !Game.questClaimable();
 
     updateBuffBar();
+    updatePartyBanner();
     updateCombo();
     updateBoostBtn();
+  }
+
+  /* ---------- 주말 파티 배너 ---------- */
+
+  var partySig = '';
+
+  function fmtClock(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s2 = sec % 60;
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    return (h > 0 ? h + ':' + pad(m) + ':' + pad(s2) : m + ':' + pad(s2));
+  }
+
+  function updatePartyBanner() {
+    var ps = Game.partyState();
+    if (!ps.active) {
+      if (!el.partyBanner.hidden) { el.partyBanner.hidden = true; partySig = ''; }
+      return;
+    }
+    el.partyBanner.hidden = false;
+    var mark = Math.ceil(ps.left);
+    if (mark === partySig) return;
+    partySig = mark;
+    el.partyBanner.innerHTML =
+      '<span class="pb-tag">🎉 주말 파티</span>' +
+      '<span class="pb-mult">모든 수익 ×' + Data.PARTY.mult + '</span>' +
+      '<span class="pb-time">⏳ ' + fmtClock(ps.left) + '</span>';
   }
 
   /* ---------- 버프 표시줄 ---------- */
@@ -1075,7 +1142,7 @@ var UI = (function () {
     if (currentTab === 'shop') updateGenList();
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
-    else if (currentTab === 'achv') { renderQuests(); renderRanking(); renderHallOfFame(); }
+    else if (currentTab === 'achv') { renderQuests(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
@@ -1315,6 +1382,15 @@ var UI = (function () {
       Scene.popFood();
       Sound.play('tap', Game.comboCount());
       buzz(6);
+
+      // 파티 중이면 새 음식을 발견할 수 있다
+      var found = Game.tryDiscoverFood();
+      if (found) {
+        Sound.play('reward');
+        toast('🎉 파티 음식 발견! ' + found.icon + ' ' + found.name);
+        floatText(x, y - 26, found.icon);
+        sig.partydex = '';
+      }
       updateHud();
     };
     // pointerdown 하나로 터치/마우스를 모두 처리 (중복 입력 방지)
@@ -1337,6 +1413,9 @@ var UI = (function () {
     Array.prototype.forEach.call(document.querySelectorAll('#tabbar .tab'), function (b) {
       b.addEventListener('click', function () { showTab(b.dataset.tab); });
     });
+
+    // 파티 배너를 누르면 도감으로 데려간다
+    el.partyBanner.addEventListener('click', function () { showTab('achv'); });
 
     // 구매 수량
     Array.prototype.forEach.call(el.buyAmt.children, function (b) {
