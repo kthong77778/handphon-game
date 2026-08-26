@@ -41,6 +41,7 @@ var State = (function () {
 
       mute: 0,           // 소리 끄기 (0/1)
       tapSound: 'classic', // 조리음 종류 (Data.TAP_SOUNDS 의 id)
+      notifyOffline: 0,  // 오프라인 보상 가득 참 알림 (0/1)
       sawTour: 0,        // 첫 실행 안내를 봤는가 (0/1)
       autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
@@ -89,7 +90,7 @@ var State = (function () {
                    'runTime', 'bestRunEarned', 'bestPerSec', 'bestTap',
                    'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
-                   'questAllTaken', 'questsDone'];
+                   'questAllTaken', 'questsDone', 'notifyOffline'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
       if (isFinite(v) && v >= 0) s[k] = v;

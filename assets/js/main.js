@@ -235,6 +235,44 @@
     UI.showTour(0, settleReturn);
   }
 
+  /* ---------- 오프라인 보상 알림 ---------- */
+  // 완전히 닫힌 앱엔 서버 없이 알림을 못 보낸다. 그래서 앱이 백그라운드로
+  // 물러난 '그때' 오프라인 인정 시간이 지나면 울리도록 예약해 둔다.
+  // 탭이 살아 있는 동안만 유효하다 — 완전히 종료되면 울리지 않는다.
+  var notifyTimer = null;
+
+  function clearOfflineNotify() {
+    if (notifyTimer) { clearTimeout(notifyTimer); notifyTimer = null; }
+  }
+
+  function scheduleOfflineNotify() {
+    clearOfflineNotify();
+    if (State.get().notifyOffline !== 1) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    var ms = Game.offlineCapSeconds() * 1000;
+    if (!(ms > 0)) return;
+    notifyTimer = setTimeout(fireOfflineNotify, ms);
+  }
+
+  function fireOfflineNotify() {
+    var title = '🍢 분식집 키우기';
+    var opts = {
+      body: '오프라인 보상이 가득 찼어요! 들러서 받아가세요.',
+      tag: 'bunsik-offline', renotify: true
+    };
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready
+          .then(function (reg) { reg.showNotification(title, opts); })
+          .catch(function () { try { new Notification(title, opts); } catch (e) {} });
+      } else {
+        new Notification(title, opts);
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- 시작 ---------- */
+
   /* ---------- 시작 ---------- */
   function boot() {
     State.load();
@@ -250,7 +288,9 @@
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) {
         State.save();
+        scheduleOfflineNotify();     // 자리를 비운 순간부터 인정 시간을 잰다
       } else {
+        clearOfflineNotify();        // 돌아왔으니 예약을 지운다
         lastFrame = 0;   // 복귀 시 dt 폭주 방지
         Game.resetCombo();
         settleReturn();

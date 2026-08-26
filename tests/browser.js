@@ -1221,6 +1221,31 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     await p.click('#tapSoundRow .skin[data-sound="boing"]'); await p.waitForTimeout(150);
     ok(await p.evaluate(()=>State.get().tapSound) === 'boing', '밀어서 드러난 마지막 소리도 선택됨');
 
+    console.log('\n[4-3] 오프라인 알림 설정');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(200);
+    // 러너 컨텍스트가 알림 권한을 미리 허용해 둔다
+    ok(/오프라인 알림 켜기/.test(await p.textContent('#notifyBtn')), '처음엔 알림 꺼짐');
+    await p.click('#notifyBtn'); await p.waitForTimeout(300);
+    ok(await p.evaluate(()=>State.get().notifyOffline) === 1, '누르면 켜지고 세이브에 남음');
+    ok(/켜짐/.test(await p.textContent('#notifyBtn')), '버튼 문구가 켜짐으로');
+    await p.reload(); await p.waitForTimeout(700);
+    if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
+    ok(await p.evaluate(()=>State.get().notifyOffline) === 1, '새로고침해도 유지');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(200);
+    await p.click('#notifyBtn'); await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>State.get().notifyOffline) === 0, '다시 누르면 꺼짐');
+    // 오프라인 보상이 꽉 찼으면 복귀 모달에서 강조된다
+    await p.evaluate(()=>UI.showOffline({seconds:40000, capped:14400, gain:5e8}, function(){}));
+    await p.waitForTimeout(150);
+    ok(await p.locator('#offlineText .offline-full').count() === 1, '가득 찼으면 강조 배너');
+    ok(/가득 찼/.test(await p.textContent('#offlineText')), '가득 참 문구');
+    await p.click('#offlineOk'); await p.waitForTimeout(150);
+    // 꽉 안 찼으면 강조 없음
+    await p.evaluate(()=>UI.showOffline({seconds:600, capped:600, gain:1000}, function(){}));
+    await p.waitForTimeout(150);
+    ok(await p.locator('#offlineText .offline-full').count() === 0, '덜 찼으면 강조 없음');
+    await p.click('#offlineOk'); await p.waitForTimeout(150);
+
     console.log('\n[5] 안내 다시 보기');
     await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
     await p.click('#helpBtn'); await p.waitForTimeout(250);
@@ -1276,6 +1301,8 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
       deviceScaleFactor: 2, isMobile: true, hasTouch: true,
       baseURL: `http://127.0.0.1:${port}`
     });
+    // 오프라인 알림 검사를 위해 알림 권한을 미리 허용해 둔다
+    try { await ctx.grantPermissions(['notifications'], { origin: `http://127.0.0.1:${port}` }); } catch (e) {}
     if (!s.opts.tour) {
       // addInitScript 는 새로고침마다 돈다. 조건 없이 쓰면 세이브를 덮어써서
       // '새로고침 후에도 유지' 같은 검사가 통째로 깨진다.

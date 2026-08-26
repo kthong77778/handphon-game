@@ -25,7 +25,7 @@ var UI = (function () {
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
-     'muteBtn', 'helpBtn',
+     'muteBtn', 'notifyBtn', 'helpBtn',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
@@ -557,6 +557,22 @@ var UI = (function () {
 
   function updateMuteBtn() {
     el.muteBtn.textContent = Sound.muted() ? '🔇 소리 꺼짐' : '🔊 소리 켜짐';
+  }
+
+  function updateNotifyBtn() {
+    var on = State.get().notifyOffline === 1;
+    var supported = ('Notification' in window);
+    if (!supported) {
+      el.notifyBtn.textContent = '🔔 이 기기는 알림을 지원하지 않아요';
+      el.notifyBtn.disabled = true;
+      return;
+    }
+    var denied = (window.Notification && Notification.permission === 'denied');
+    if (denied) {
+      el.notifyBtn.textContent = '🔕 알림이 브라우저에서 차단됨';
+    } else {
+      el.notifyBtn.textContent = on ? '🔔 오프라인 알림 켜짐' : '🔔 오프라인 알림 켜기';
+    }
   }
 
   /* ---------- 통계 ---------- */
@@ -1143,7 +1159,7 @@ var UI = (function () {
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderQuests(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
-    else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); }
+    else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 
@@ -1337,8 +1353,15 @@ var UI = (function () {
 
   function showOffline(reward, onOk) {
     var lost = reward.seconds - reward.capped;
-    var txt = '자리를 비운 ' + Fmt.time(reward.seconds) + ' 동안<br>' +
-              '<b>' + Fmt.won(reward.gain) + '</b>을 벌었습니다.';
+    var capped = lost > 1;               // 인정 시간을 꽉 채우고도 남았다
+    var txt = '';
+    if (capped) {
+      // 돌아왔을 때 '가득 찼었다'를 눈에 띄게 알린다
+      txt += '<div class="offline-full">🔔 오프라인 보상이 <b>가득 찼었어요!</b><br>' +
+             '<span>더 자주 들르면 한 푼도 안 놓쳐요</span></div>';
+    }
+    txt += '자리를 비운 ' + Fmt.time(reward.seconds) + ' 동안<br>' +
+           '<b>' + Fmt.won(reward.gain) + '</b>을 벌었습니다.';
     if (lost > 60) {
       txt += '<br><span style="font-size:12px">(최대 ' + Fmt.time(reward.capped) +
              '까지만 인정 — 명성 상점에서 늘릴 수 있어요)</span>';
@@ -1448,6 +1471,31 @@ var UI = (function () {
       updateMuteBtn();
       State.save();
       if (!Sound.muted()) Sound.play('buy');
+    });
+    el.notifyBtn.addEventListener('click', function () {
+      var s = State.get();
+      if (!('Notification' in window)) { toast('이 기기는 알림을 지원하지 않아요'); return; }
+      if (s.notifyOffline === 1) {                 // 끄기
+        s.notifyOffline = 0; State.save(); updateNotifyBtn();
+        toast('오프라인 알림을 껐습니다'); return;
+      }
+      // 켜기 — 권한을 물어본다 (버튼 클릭이라 제스처 안에서 호출된다)
+      if (Notification.permission === 'granted') {
+        s.notifyOffline = 1; State.save(); updateNotifyBtn();
+        toast('오프라인 보상이 가득 차면 알려드릴게요');
+      } else if (Notification.permission === 'denied') {
+        toast('브라우저 설정에서 알림을 허용해 주세요');
+      } else {
+        Notification.requestPermission().then(function (perm) {
+          if (perm === 'granted') {
+            s.notifyOffline = 1; State.save();
+            toast('오프라인 보상이 가득 차면 알려드릴게요');
+          } else {
+            toast('알림 권한이 없어 켜지 못했습니다');
+          }
+          updateNotifyBtn();
+        });
+      }
     });
     el.helpBtn.addEventListener('click', function () { showTour(0); });
 
