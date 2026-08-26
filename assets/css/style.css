@@ -788,13 +788,28 @@ body{
 .skin-head b{font-size:14px}
 .skin-now{font-size:12px;color:var(--gold);font-weight:700}
 
+.skin-wrap{position:relative}
 .skin-row{
   display:flex;gap:8px;
   overflow-x:auto;
   padding-bottom:2px;
-  scrollbar-width:none;
+  scrollbar-width:none;                 /* 슬라이드바는 숨긴다 */
+  scroll-snap-type:x proximity;
+  cursor:grab;                          /* 마우스로도 잡아끌 수 있다 */
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x;
 }
+.skin-row:active{cursor:grabbing}
 .skin-row::-webkit-scrollbar{display:none}
+.skin-row > .skin{scroll-snap-align:start}
+/* 오른쪽에 더 있다는 힌트 — 살짝 어두워지는 가장자리 */
+.skin-wrap::after{
+  content:'';position:absolute;top:0;right:0;bottom:6px;
+  width:34px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--bg2));
+  opacity:.9;border-radius:0 13px 13px 0;
+}
+.skin-wrap.at-end::after{opacity:0;transition:opacity .2s}
 .skin{
   /* 다섯 번째가 살짝 걸치게 해서, 옆으로 넘길 수 있다는 걸 보이게 한다 */
   flex:0 0 auto;width:70px;

@@ -1125,6 +1125,33 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
     ok(await p.evaluate(()=>State.get().tapSound) === 'deep', '새로고침해도 고른 소리 유지');
 
+    console.log('\n[4-2] 소리 목록 잡아끌어 밀기 (스크롤바 없이 전부 닿기)');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
+    const row = await p.evaluate(()=>{
+      const r=document.querySelector('#tapSoundRow');
+      const bar=getComputedStyle(r).scrollbarWidth;
+      return { canScroll: r.scrollWidth > r.clientWidth + 2, bar: bar };
+    });
+    ok(row.canScroll, '한 화면에 안 들어가 가로로 넘침');
+    ok(row.bar === 'none', '슬라이드바는 보이지 않음');
+    // 마우스로 잡아끌어 밀 수 있다 (터치 없이도 뒤쪽 카드에 닿는다)
+    await p.evaluate(()=>{ const r=document.querySelector('#tapSoundRow');
+      const v=document.querySelector('#view'); v.scrollTop = r.getBoundingClientRect().top + v.scrollTop - 240; });
+    await p.waitForTimeout(200);
+    const box = await p.locator('#tapSoundRow').boundingBox();
+    const cy = box.y + box.height/2;
+    await p.mouse.move(300, cy); await p.mouse.down();
+    for (let x=300; x>=70; x-=23) { await p.mouse.move(x, cy); await p.waitForTimeout(12); }
+    await p.mouse.up(); await p.waitForTimeout(250);
+    const scrolled = await p.evaluate(()=>document.querySelector('#tapSoundRow').scrollLeft);
+    ok(scrolled > 60, `마우스로 밀어 스크롤됨 (${Math.round(scrolled)}px)`);
+    ok(await p.evaluate(()=>State.get().tapSound) === 'deep', '미는 동작은 선택을 바꾸지 않음');
+    // 밀어서 드러난 마지막 카드를 실제로 고를 수 있다
+    await p.evaluate(()=>{ const r=document.querySelector('#tapSoundRow'); r.scrollLeft = r.scrollWidth; });
+    await p.waitForTimeout(150);
+    await p.click('#tapSoundRow .skin[data-sound="boing"]'); await p.waitForTimeout(150);
+    ok(await p.evaluate(()=>State.get().tapSound) === 'boing', '밀어서 드러난 마지막 소리도 선택됨');
+
     console.log('\n[5] 안내 다시 보기');
     await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
     await p.click('#helpBtn'); await p.waitForTimeout(250);

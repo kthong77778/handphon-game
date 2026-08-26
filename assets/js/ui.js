@@ -1357,6 +1357,56 @@ var UI = (function () {
     });
   }
 
+  /* ---------- 가로 목록을 잡아끌어 밀기 ---------- */
+  // 스크롤바는 숨겨 두고, 손가락·마우스 둘 다 잡아끌어 밀 수 있게 한다.
+  // 터치는 브라우저 기본 스크롤이 이미 되니 마우스/펜만 직접 처리한다.
+  function enableDragScroll(row) {
+    if (!row || row._drag) return;
+    row._drag = true;
+    var wrap = row.parentNode;
+
+    // 끝까지 밀면 오른쪽 페이드 힌트를 끈다
+    function syncEnd() {
+      if (!wrap || !wrap.classList.contains('skin-wrap')) return;
+      var atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+      wrap.classList.toggle('at-end', atEnd);
+    }
+    row.addEventListener('scroll', syncEnd, { passive: true });
+    setTimeout(syncEnd, 0);
+
+    var down = false, moved = false, captured = false, startX = 0, startLeft = 0, pid = null;
+
+    row.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') return;      // 터치는 기본 스크롤에 맡긴다
+      down = true; moved = false; captured = false;
+      startX = e.clientX; startLeft = row.scrollLeft; pid = e.pointerId;
+      // 여기서 곧바로 캡처하면 click 이 카드가 아니라 목록으로 가서 선택이 안 된다.
+      // 실제로 밀기 시작(임계값 초과)한 뒤에만 캡처한다.
+    });
+    row.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      var dx = e.clientX - startX;
+      if (!moved && Math.abs(dx) > 5) {
+        moved = true;
+        try { row.setPointerCapture(pid); captured = true; } catch (x) {}
+      }
+      if (moved) row.scrollLeft = startLeft - dx;
+    });
+    function end() {
+      down = false;
+      try { if (captured && pid !== null) row.releasePointerCapture(pid); } catch (x) {}
+      captured = false; pid = null;
+      // 밀고 난 직후의 click 은 카드 선택으로 새지 않게 잠깐 막는다
+      if (moved) setTimeout(function () { moved = false; }, 0);
+    }
+    row.addEventListener('pointerup', end);
+    row.addEventListener('pointercancel', end);
+    // 드래그였으면 카드 click 을 삼킨다 (선택 방지)
+    row.addEventListener('click', function (e) {
+      if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+  }
+
   function init(handlers) {
     cache();
     buildSteam();
@@ -1364,6 +1414,7 @@ var UI = (function () {
     buildGenList();
     bind(handlers);
     bindSheet();
+    [el.tapSoundRow, el.tapSkinRow, el.crowdSkinRow].forEach(enableDragScroll);
     bindTour();
     setSheet(sheetUp(), false);
     Sound.arm();
