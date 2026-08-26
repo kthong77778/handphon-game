@@ -237,6 +237,24 @@
     UI.toast('💾 세이브 백업한 지 오래됐어요 — 설정에서 코드를 복사해 두세요');
   }
 
+  /** 홈 화면 앱으로 처음 켰는데 세이브가 비었으면, 저장공간 분리를 안내한다 */
+  var STANDALONE_HINT_KEY = 'bunsik_seen_standalone_hint';
+  function isStandalone() {
+    try {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+             navigator.standalone === true;
+    } catch (e) { return false; }
+  }
+  function maybeStandaloneHint(hadSave) {
+    if (hadSave) return;              // 세이브가 있으면 문제 없음
+    if (!isStandalone()) return;      // 홈 화면 앱일 때만
+    var seen;
+    try { seen = localStorage.getItem(STANDALONE_HINT_KEY); } catch (e) {}
+    if (seen) return;
+    try { localStorage.setItem(STANDALONE_HINT_KEY, '1'); } catch (e) {}
+    UI.toast('🏠 홈 화면 앱은 사파리와 저장이 분리돼요. 사파리에서 놀던 세이브가 있으면 설정 → 세이브 불러오기로 옮겨오세요');
+  }
+
   /* ---------- 첫 실행 안내 ---------- */
   function maybeTour() {
     var s = State.get();
@@ -291,7 +309,7 @@
 
   /* ---------- 시작 ---------- */
   function boot() {
-    State.load();
+    var hadSave = State.load();
     State.requestPersist();    // 브라우저에 저장소 보호를 한 번 요청 (자동 삭제 방지)
     Game.invalidate();
     Game.questRoll();          // 오늘 퀘스트가 없으면 여기서 깔린다
@@ -300,6 +318,7 @@
     else maybeTour();          // 처음이면 정산 모달과 겹치지 않게 안내부터
     UI.refresh(true);
     setTimeout(maybeBackupReminder, 4000);   // 첫 정산·모달이 지나간 뒤 살짝
+    setTimeout(function () { maybeStandaloneHint(hadSave); }, 4500);
     requestAnimationFrame(loop);
 
     // 앱이 가려질 때 저장 (모바일에서 탭이 그냥 죽는 경우 대비)

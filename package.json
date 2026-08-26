@@ -1,6 +1,6 @@
 {
   "name": "handphon-game",
-  "version": "1.18.1",
+  "version": "1.18.2",
   "private": true,
   "description": "분식집 키우기 — 방치형 모바일 웹게임 (빌드 없는 정적 사이트, playwright 는 테스트 전용)",
   "scripts": {
