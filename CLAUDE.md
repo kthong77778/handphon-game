@@ -8,7 +8,7 @@
 | 파일 | 맡는 것 |
 |---|---|
 | `assets/js/format.js` | 숫자·시간 표기 (만·억·조·경·해, `∞`) |
-| `assets/js/sound.js` | WebAudio 합성음 (음원 파일을 쓰지 않는다) |
+| `assets/js/sound.js` | WebAudio 합성음 (음원 파일을 쓰지 않는다) — 탭 소리는 플레이어가 고른다 |
 | `assets/js/data.js` | 밸런스 수치 전부 + 스킨 데이터 + 손그림 SVG(`face` `SNACKS` `ONIGIRI`) |
 | `assets/js/state.js` | 세이브 저장·불러오기·검증 |
 | `assets/js/game.js` | 수익 계산(캐시), 버프, 콤보, 매크로 방지, 환생, 명예의 전당, 일일 퀘스트, 전국 맛집 랭킹 |

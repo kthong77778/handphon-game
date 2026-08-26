@@ -1103,7 +1103,30 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
       .forEach(n=>Sound.play(n, 10)));
     ok(true, '13종 소리 재생에 예외 없음');
 
+    console.log('\n[4-1] 탭 소리 고르기');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
+    const wantSounds = await p.evaluate(()=>Data.TAP_SOUNDS.length);
+    ok(await p.locator('#tapSoundRow .skin').count() === wantSounds,
+       `소리 카드 ${wantSounds}개`);
+    ok(await p.locator('#tapSoundRow .skin.on').count() === 1, '지금 소리 한 개 표시');
+    ok(await p.evaluate(()=>document.querySelector('#tapSoundRow .skin.on').dataset.sound) === 'classic',
+       '처음엔 기본음이 선택됨');
+    // 다른 소리를 고르면 세이브에 남고, 재생에 예외가 없어야 한다
+    await p.evaluate(()=>{ let e; window.addEventListener('error', x=>e=x); window.__e=()=>e; });
+    await p.click('#tapSoundRow .skin[data-sound="deep"]'); await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>State.get().tapSound) === 'deep', '고른 소리가 적용됨');
+    ok(await p.evaluate(()=>document.querySelector('#tapSoundRow .skin[data-sound="deep"]').classList.contains('on')),
+       '고른 카드에 표시가 감');
+    // 각 소리를 실제로 미리듣기 해도 터지지 않아야 한다
+    await p.evaluate(()=>{ Sound.setMuted(false); Sound.wake();
+      Data.TAP_SOUNDS.forEach(t=>Sound.previewTap(t.id, 5)); });
+    ok(await p.evaluate(()=>!window.__e()), '모든 소리 미리듣기에 예외 없음');
+    await p.reload(); await p.waitForTimeout(700);
+    if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
+    ok(await p.evaluate(()=>State.get().tapSound) === 'deep', '새로고침해도 고른 소리 유지');
+
     console.log('\n[5] 안내 다시 보기');
+    await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(250);
     await p.click('#helpBtn'); await p.waitForTimeout(250);
     ok(!await p.isHidden('#tourModal'), '설정에서 다시 볼 수 있음');
     await p.click('#tourSkip'); await p.waitForTimeout(200);

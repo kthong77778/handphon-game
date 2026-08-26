@@ -588,7 +588,21 @@ console.log('\n[11] 일일 퀘스트');
   ok(State.get().questsDone === 3, '완료 수는 평생 누적으로 남음');
 }
 
-console.log('\n[13] 전국 맛집 랭킹');
+console.log('\n[13] 탭 소리 선택');
+{
+  State.set({ money: 0 }); Game.invalidate();
+  ok(State.get().tapSound === 'classic', '기본 조리음은 classic');
+  State.set({ tapSound: 'deep' });
+  ok(State.get().tapSound === 'deep', '고른 소리가 세이브에 남음');
+  State.set({ tapSound: '없는소리' });
+  ok(State.get().tapSound === 'classic', '없는 소리 id 는 기본으로 되돌림');
+  State.set({ v: 1, money: 10 });
+  ok(State.get().tapSound === 'classic', '구버전 세이브도 기본 소리로 시작');
+  ok(Data.TAP_SOUNDS.every(function (t) { return t.id && t.name && t.desc; }),
+     '소리 목록에 id·이름·설명이 모두 있음');
+}
+
+console.log('\n[14] 전국 맛집 랭킹');
 {
   State.set({ startedAt: 1699999999999, bestPerSec: 0 }); Game.invalidate();
   const reg = Game.region();
@@ -630,7 +644,7 @@ console.log('\n[13] 전국 맛집 랭킹');
   ok(Data.REGIONS.some(r => r.id === Game.region().id), '한 번 보면 지역이 배정됨');
 }
 
-console.log('\n[14] 퀘스트 세이브 방어');
+console.log('\n[15] 퀘스트 세이브 방어');
 {
   // 배열 길이가 어긋나면 통째로 버려야 한다 — 반쯤 남으면 진행도가 엉뚱한 데 붙는다
   State.set({ questDate: '2030-05-05', questIds: ['q_tap'], questGoals: [1, 2, 3],

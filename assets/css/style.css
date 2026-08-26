@@ -830,6 +830,16 @@ body{
   box-shadow:0 0 8px rgba(255,204,68,.6);
 }
 
+
+/* 탭 소리 카드는 설명이 있어 조금 넓게 */
+#tapSoundRow .skin{width:96px;padding:10px 6px}
+#tapSoundRow .skin .skin-nm{font-size:11.5px}
+#tapSoundRow .skin .skin-sub{
+  font-size:9.5px;line-height:1.3;text-align:center;
+  color:var(--dim);
+}
+#tapSoundRow .skin.on .skin-sub{color:var(--txt)}
+
 /* 단계표 */
 .ladder{
   display:flex;align-items:center;gap:5px;flex-wrap:wrap;

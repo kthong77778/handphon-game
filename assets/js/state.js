@@ -40,6 +40,7 @@ var State = (function () {
       bestCombo: 0,      // 최고 콤보
 
       mute: 0,           // 소리 끄기 (0/1)
+      tapSound: 'classic', // 조리음 종류 (Data.TAP_SOUNDS 의 id)
       sawTour: 0,        // 첫 실행 안내를 봤는가 (0/1)
       autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
@@ -132,6 +133,13 @@ var State = (function () {
     if (typeof raw.region === 'string') {
       for (var ri = 0; ri < Data.REGIONS.length; ri++) {
         if (Data.REGIONS[ri].id === raw.region) { s.region = raw.region; break; }
+      }
+    }
+
+    // 탭 소리도 실제로 있는 것일 때만 받는다
+    if (typeof raw.tapSound === 'string') {
+      for (var si = 0; si < Data.TAP_SOUNDS.length; si++) {
+        if (Data.TAP_SOUNDS[si].id === raw.tapSound) { s.tapSound = raw.tapSound; break; }
       }
     }
 

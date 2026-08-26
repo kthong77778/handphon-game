@@ -646,6 +646,17 @@ var Data = (function () {
 
   /* ---------- 도전과제 ---------- */
   // 하나 달성할 때마다 전체 수익 +1%
+  /* ---------- 탭 소리 (합성은 sound.js) ---------- */
+  // 플레이어가 취향대로 고르는 조리음. classic 이 기본.
+  var TAP_SOUNDS = [
+    { id: 'classic', icon: '🔔', name: '기본음',    desc: '맑게 올라가는 전자음' },
+    { id: 'tight',   icon: '👌', name: '짧은 뽁',   desc: '딱 끊기는 뽁, 연타에 잘 붙는다' },
+    { id: 'juicy',   icon: '💧', name: '촉촉한 뽁', desc: '젤리 터지는 물기 있는 소리' },
+    { id: 'deep',    icon: '🫧', name: '깊은 뽁',   desc: '묵직하고 통 큰 저음' },
+    { id: 'bubble',  icon: '🧼', name: '뽁뽁이',    desc: '에어캡 터지듯 톡 쏘게' },
+    { id: 'boing',   icon: '🎈', name: '탱글 뽁',   desc: '끝에 튕기는 고무 같은 뽁' }
+  ];
+
   /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
   // 서버가 없는 오프라인 게임이라 실제 다른 플레이어는 없다.
   // 내 가게의 인기(초당 수익)를 기준으로, 가상의 전국 맛집들 사이에
@@ -769,6 +780,7 @@ var Data = (function () {
     REGIONS: REGIONS,
     RANK_AREAS: RANK_AREAS,
     RANK_FOODS: RANK_FOODS,
-    RANK_TITLES: RANK_TITLES
+    RANK_TITLES: RANK_TITLES,
+    TAP_SOUNDS: TAP_SOUNDS
   };
 })();

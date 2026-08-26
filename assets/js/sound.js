@@ -75,15 +75,93 @@ var Sound = (function () {
     } catch (e) {}
   }
 
+  /**
+   * '뽁' 하고 터지는 소리 한 방. 음이 뚝 떨어지는 사인 + (선택) 터지는 잡음.
+   * @param {object} o 파라미터  @param {number} step 연타 단계 (음이 조금씩 오른다)
+   */
+  function pop(o, step) {
+    if (!on()) return;
+    try {
+      var t0 = ctx.currentTime;
+      var bend = 1 + Math.min(step || 0, 24) * 0.045;
+      var f0 = o.f0 * bend, f1 = o.f1 * bend;
+      var dur = o.dur;
+
+      var osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = o.type || 'sine';
+      osc.frequency.setValueAtTime(f0, t0);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t0 + dur * (o.bendTime || 0.7));
+      if (o.tail) osc.frequency.exponentialRampToValueAtTime(Math.max(1, f1 * o.tail), t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(o.vol, t0 + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g); g.connect(master);
+      osc.start(t0); osc.stop(t0 + dur + 0.02);
+
+      // 두께용 저음 한 겹
+      if (o.sub) {
+        var so = ctx.createOscillator(), sg = ctx.createGain();
+        so.type = 'sine';
+        so.frequency.setValueAtTime(f0 * 0.5, t0);
+        so.frequency.exponentialRampToValueAtTime(Math.max(1, f1 * 0.5), t0 + dur);
+        sg.gain.setValueAtTime(0.0001, t0);
+        sg.gain.exponentialRampToValueAtTime(o.vol * 0.6, t0 + 0.005);
+        sg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        so.connect(sg); sg.connect(master);
+        so.start(t0); so.stop(t0 + dur + 0.02);
+      }
+
+      // 터지는 순간의 '촉/딱' 잡음
+      if (o.noise) {
+        var len = Math.max(1, Math.floor(ctx.sampleRate * o.noise.dur));
+        var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+        var d = buf.getChannelData(0);
+        for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+        var src = ctx.createBufferSource(); src.buffer = buf;
+        var bf = ctx.createBiquadFilter();
+        bf.type = o.noise.type || 'lowpass';
+        bf.frequency.value = o.noise.hz; bf.Q.value = o.noise.q || 0.7;
+        var ng = ctx.createGain(); ng.gain.value = o.noise.vol;
+        src.connect(bf); bf.connect(ng); ng.connect(master);
+        src.start(t0);
+      }
+    } catch (e) {}
+  }
+
+  // 고를 수 있는 탭 소리 — 'classic' 은 기존 전자음, 나머지는 '왁뿌' 뽁 계열
+  var TAP_VARIANTS = {
+    tight:  { f0: 560, f1: 120, dur: 0.08, vol: 0.6,  noise: { dur: 0.012, hz: 2600, vol: 0.18, type: 'bandpass', q: 0.9 } },
+    juicy:  { f0: 440, f1: 95,  dur: 0.12, vol: 0.55, sub: true, noise: { dur: 0.05, hz: 1200, vol: 0.16, type: 'lowpass' } },
+    deep:   { f0: 300, f1: 70,  dur: 0.15, vol: 0.6,  type: 'triangle', sub: true, noise: { dur: 0.03, hz: 600, vol: 0.12, type: 'lowpass' } },
+    bubble: { f0: 720, f1: 180, dur: 0.06, vol: 0.55, noise: { dur: 0.008, hz: 4200, vol: 0.22, type: 'highpass', q: 0.6 } },
+    boing:  { f0: 280, f1: 120, dur: 0.14, vol: 0.58, tail: 1.6, bendTime: 0.5, sub: true }
+  };
+
+  // 기존 전자음 (기본값)
+  function tapClassic(combo) {
+    var step = Math.min(combo || 0, 24);
+    beep({ freq: 320 + step * 14, to: 420 + step * 18, dur: 0.06, vol: 0.5, type: 'square' });
+    noise(0.05, 0.16, 2600);
+  }
+
+  /** 지금 고른 탭 소리를 낸다 */
+  function tapSound(combo) {
+    var id = State.get().tapSound;
+    if (id && TAP_VARIANTS[id]) pop(TAP_VARIANTS[id], combo || 0);
+    else tapClassic(combo);
+  }
+
+  /** 설정 화면에서 미리 들려줄 때 (연타 흉내로 음을 살짝 올려 준다) */
+  function previewTap(id, combo) {
+    if (id && TAP_VARIANTS[id]) pop(TAP_VARIANTS[id], combo || 0);
+    else tapClassic(combo || 0);
+  }
+
   /* ---------- 게임이 부르는 소리들 ---------- */
 
   var SOUNDS = {
-    // 조리 — 콤보가 오를수록 음이 높아진다
-    tap: function (combo) {
-      var step = Math.min(combo || 0, 24);
-      beep({ freq: 320 + step * 14, to: 420 + step * 18, dur: 0.06, vol: 0.5, type: 'square' });
-      noise(0.05, 0.16, 2600);
-    },
+    // 조리 — 플레이어가 고른 소리로. 콤보가 오를수록 음이 높아진다.
+    tap: function (combo) { tapSound(combo); },
     buy:     function () { beep({ freq: 480, to: 720, dur: 0.1, vol: .7 }); },
     upgrade: function () { beep({ freq: 520, to: 780, dur: .1, vol: .7 });
                            beep({ freq: 780, to: 1040, dur: .12, vol: .6, delay: .08 }); },
@@ -132,5 +210,5 @@ var Sound = (function () {
     document.addEventListener('keydown', once);
   }
 
-  return { arm: arm, play: play, muted: muted, setMuted: setMuted, wake: wake };
+  return { arm: arm, play: play, previewTap: previewTap, muted: muted, setMuted: setMuted, wake: wake };
 })();

@@ -21,7 +21,7 @@ var UI = (function () {
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
-     'tapSkinRow', 'tapSkinNow', 'tapLadder',
+     'tapSkinRow', 'tapSkinNow', 'tapLadder', 'tapSoundRow', 'tapSoundNow',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
@@ -669,6 +669,53 @@ var UI = (function () {
     }
   }
 
+  /* ---------- 탭 소리 고르기 ---------- */
+
+  var soundCombo = 0, soundTimer = null;
+
+  function renderTapSound() {
+    var cur = State.get().tapSound || 'classic';
+    var rowEl = el.tapSoundRow;
+
+    if (!rowEl.children.length) {
+      Data.TAP_SOUNDS.forEach(function (t) {
+        var b = document.createElement('button');
+        b.className = 'skin';
+        b.dataset.sound = t.id;
+        b.innerHTML = '<span class="skin-ic"></span><span class="skin-nm"></span>' +
+                      '<span class="skin-sub"></span>';
+        b.querySelector('.skin-ic').textContent = t.icon;
+        b.querySelector('.skin-nm').textContent = t.name;
+        b.querySelector('.skin-sub').textContent = t.desc;
+        b.addEventListener('click', function () {
+          var s = State.get();
+          var changed = s.tapSound !== t.id;
+          s.tapSound = t.id;
+          // 누를 때마다 연타 흉내로 음을 살짝 올려 실제 느낌을 들려준다
+          soundCombo = Math.min(soundCombo + 1, 20);
+          clearTimeout(soundTimer);
+          soundTimer = setTimeout(function () { soundCombo = 0; }, 900);
+          Sound.wake();
+          Sound.previewTap(t.id, soundCombo);
+          buzz(8);
+          if (changed) { State.save(); toast(t.name + ' 적용!'); }
+          markTapSound();
+        });
+        rowEl.appendChild(b);
+      });
+    }
+    markTapSound();
+
+    function markTapSound() {
+      var now = State.get().tapSound || 'classic';
+      Array.prototype.forEach.call(rowEl.children, function (b) {
+        b.classList.toggle('on', b.dataset.sound === now);
+      });
+      var meta = Data.TAP_SOUNDS.filter(function (t) { return t.id === now; })[0];
+      el.tapSoundNow.textContent = meta ? meta.name : '';
+    }
+  }
+
   function renderSkins() {
     var s = State.get();
     var sig = s.tapSkin + '/' + s.crowdSkin + '/' +
@@ -998,7 +1045,7 @@ var UI = (function () {
     else if (currentTab === 'upgrade') renderUpgrades();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderQuests(); renderRanking(); renderHallOfFame(); renderAchievements(); }
-    else if (currentTab === 'settings') { renderStats(); renderSkins(); updateMuteBtn(); }
+    else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 
