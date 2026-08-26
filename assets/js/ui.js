@@ -440,22 +440,53 @@ var UI = (function () {
 
   /* ---------- 도전과제 ---------- */
 
+  var achvRows = {};   // 잠긴 항목의 진행도 막대를 매번 갱신하려고 참조를 들고 있는다
+
+  function achvNum(v, fmt) {
+    if (fmt === 'time') return Fmt.time(Math.floor(v));
+    if (fmt === 'num') return Fmt.num(v);
+    return Fmt.comma(Math.floor(v));
+  }
+
   function renderAchievements() {
     var s = State.get();
     var done = Object.keys(s.achievements).length;
-    if (sig.achv === done) return;
-    sig.achv = done;
 
-    el.achvList.innerHTML = '';
-    Data.ACHIEVEMENTS.forEach(function (a) {
-      var got = !!s.achievements[a.id];
-      var row = makeItem(got ? a.icon : '🔒', { static: true });
-      var p = parts(row);
-      p.nm.textContent = a.name;
-      p.desc.textContent = a.desc;
-      p.cost.innerHTML = got ? '<span class="achv-check">✔</span>' : '<small>+1%</small>';
-      row.className = 'item ' + (got ? 'achv-done' : 'achv-locked');
-      el.achvList.appendChild(row);
+    // 달성 개수가 바뀌면 목록을 새로 짓는다 (달성/미달성 모양이 다르므로)
+    if (sig.achv !== done) {
+      sig.achv = done;
+      el.achvList.innerHTML = '';
+      achvRows = {};
+      Data.ACHIEVEMENTS.forEach(function (a) {
+        var got = !!s.achievements[a.id];
+        var row = makeItem(got ? a.icon : '🔒', { static: true });
+        var p = parts(row);
+        p.nm.textContent = a.name;
+        p.desc.textContent = a.desc;
+        if (got) {
+          p.cost.innerHTML = '<span class="achv-check">✔</span>';
+          row.className = 'item achv-done';
+        } else {
+          // 잠긴 항목은 진행도(1,538 / 10,000)와 막대를 보여준다
+          var bar = document.createElement('div');
+          bar.className = 'qbar';
+          bar.innerHTML = '<i></i>';
+          p.desc.appendChild(bar);
+          p.cost.innerHTML = '<span class="achv-prog"></span>';
+          row.className = 'item achv-locked';
+          achvRows[a.id] = { def: a, bar: bar.firstChild, txt: p.cost.firstChild };
+        }
+        el.achvList.appendChild(row);
+      });
+    }
+
+    // 잠긴 항목의 진행도는 값이 바뀌니 매번 갱신한다
+    Object.keys(achvRows).forEach(function (id) {
+      var r = achvRows[id];
+      var pr = r.def.prog(s);
+      var cur = Math.min(pr.cur, pr.goal);
+      r.bar.style.width = Math.round(Math.min(1, pr.cur / pr.goal) * 100) + '%';
+      r.txt.textContent = achvNum(cur, r.def.fmt) + ' / ' + achvNum(pr.goal, r.def.fmt);
     });
   }
 
@@ -1042,9 +1073,9 @@ var UI = (function () {
   function refresh(force) {
     updateHud();
     if (currentTab === 'shop') updateGenList();
-    else if (currentTab === 'upgrade') renderUpgrades();
+    else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
-    else if (currentTab === 'achv') { renderQuests(); renderRanking(); renderHallOfFame(); renderAchievements(); }
+    else if (currentTab === 'achv') { renderQuests(); renderRanking(); renderHallOfFame(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }

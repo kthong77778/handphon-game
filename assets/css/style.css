@@ -427,6 +427,12 @@ body{
   padding:2px 0;
 }
 
+.achv-prog{
+  font-size:11.5px;font-weight:700;color:var(--dim);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.item.achv-locked .item-desc .qbar{max-width:220px}
+
 /* 도전과제: 잠긴 항목은 내용 가림 */
 .item.achv-locked .item-icon{filter:grayscale(1)}
 .item.achv-done{border-color:rgba(255,204,68,.5)}

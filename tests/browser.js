@@ -185,7 +185,7 @@ suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
     for (const [tab, sel, label] of [
       ['upgrade', '#upgradeList', '업그레이드'],
       ['prestige', '#fameShopList', '환생/명성상점'],
-      ['achv', '#achvList', '도전과제'],
+      ['achv', '#questList', '기록(퀘스트·랭킹)'],
       ['settings', '#statsBox', '설정/통계']
     ]) {
       await page.click(`#tabbar .tab[data-tab="${tab}"]`);
@@ -200,7 +200,8 @@ suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
     const counts = await page.evaluate(() => ({
       fame: Data.FAME_SHOP.length, achv: Data.ACHIEVEMENTS.length }));
     ok(await page.locator('#fameShopList > *').count() === counts.fame, `명성 상점 ${counts.fame}종`);
-    ok(await page.locator('#achvList > *').count() === counts.achv, `도전과제 ${counts.achv}종`);
+    await page.click('#tabbar .tab[data-tab="upgrade"]'); await page.waitForTimeout(250);
+    ok(await page.locator('#achvList > *').count() === counts.achv, `도전과제 ${counts.achv}종 (업그레이드 탭)`);
 
     console.log('\n[스킨 & 등급]');
     await page.click('#tabbar .tab[data-tab="settings"]'); await page.waitForTimeout(300);
@@ -785,9 +786,9 @@ suite('전국 맛집 랭킹', async ({ page, ctx, ok, errs }) => {
     await p.click('#dailyOk');
     await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
 
-    console.log('[1] 랭킹 카드가 업적과 한 화면에 있다');
+    console.log('[1] 기록 탭에 랭킹 카드');
     ok(await p.locator('#rankCard').count() === 1, '랭킹 카드 존재');
-    ok(await p.locator('#achvList .item').count() > 0, '도전과제도 같은 탭에 있음');
+    ok(await p.locator('[data-page="achv"] #achvList').count() === 0, '도전과제는 기록 탭에 없음(업그레이드로 이동)');
     ok(await p.locator('#rankHeads .rank-head').count() === 2, '전국·지역 두 칸');
     ok(await p.locator('#rankBoard .rb-row').count() >= 4, '리더보드 여러 줄');
     ok(await p.locator('#rankBoard .rb-row.me').count() === 1, '내 가게가 한 줄 강조됨');
@@ -1081,9 +1082,27 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     await p.evaluate(()=>{ const b=[...document.querySelectorAll('#genList .item')].find(e=>!e.hidden); b.focus(); });
     await p.keyboard.press('Enter'); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>State.get().gens.g1||0) > g0, '키보드로 설비 구매됨');
-    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(300);
+    await p.click('#tabbar .tab[data-tab="upgrade"]'); await p.waitForTimeout(300);
     const achv = await p.evaluate(()=>[...document.querySelectorAll('#achvList .item')].map(e=>e.tagName));
-    ok(achv.every(t=>t==='DIV'), '도전과제는 누를 수 없으니 div');
+    ok(achv.length > 0 && achv.every(t=>t==='DIV'), '도전과제는 누를 수 없으니 div (업그레이드 탭)');
+    // 잠긴 도전과제는 진행도(현재/목표)와 막대를 보여준다
+    await p.evaluate(()=>{ const s=State.get(); s.taps=1538; s.achievements={}; UI.invalidate&&UI.invalidate(); UI.refresh(true); });
+    await p.waitForTimeout(200);
+    const prog = await p.evaluate(()=>{
+      const rows=[...document.querySelectorAll('#achvList .item.achv-locked')];
+      const tap = rows.find(r=>/조리하기/.test(r.textContent));
+      const pr = tap && tap.querySelector('.achv-prog');
+      const bar = tap && tap.querySelector('.qbar > i');
+      return { text: pr && pr.textContent, width: bar && bar.style.width,
+               anyProg: document.querySelectorAll('#achvList .achv-prog').length,
+               anyBar: document.querySelectorAll('#achvList .item.achv-locked .qbar').length };
+    });
+    ok(/\d+ \/ \d+/.test(prog.text || ''), '잠긴 항목에 현재/목표 표시: ' + prog.text);
+    ok(prog.width && prog.width !== '0%' && prog.width !== '100%', '진행도 막대가 부분만 참: ' + prog.width);
+    ok(prog.anyProg > 0 && prog.anyBar === prog.anyProg, '모든 잠긴 항목에 막대와 숫자');
+    // 달성한 항목엔 진행도가 아니라 체크
+    ok(await p.locator('#achvList .item.achv-done .achv-check').count() > 0, '달성 항목엔 체크 표시');
+
 
     console.log('\n[4] 소리');
     ok(await p.evaluate(()=>typeof Sound!=='undefined'), 'Sound 모듈 로드');
