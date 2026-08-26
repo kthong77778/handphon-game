@@ -778,6 +778,54 @@ suite('퀘스트', async ({ page, ctx, ok, errs }) => {
     ok(await p.evaluate(() => State.get().questsDone) >= 3, '완료 수도 남음');
 });
 
+suite('전국 맛집 랭킹', async ({ page, ctx, ok, errs }) => {
+  const p = page;
+
+    await p.goto('/index.html'); await p.waitForTimeout(700);
+    await p.click('#dailyOk');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
+
+    console.log('[1] 랭킹 카드가 업적과 한 화면에 있다');
+    ok(await p.locator('#rankCard').count() === 1, '랭킹 카드 존재');
+    ok(await p.locator('#achvList .item').count() > 0, '도전과제도 같은 탭에 있음');
+    ok(await p.locator('#rankHeads .rank-head').count() === 2, '전국·지역 두 칸');
+    ok(await p.locator('#rankBoard .rb-row').count() >= 4, '리더보드 여러 줄');
+    ok(await p.locator('#rankBoard .rb-row.me').count() === 1, '내 가게가 한 줄 강조됨');
+    ok((await p.locator('#rankBoard .rb-row.me .rb-name b').textContent()) === '내 가게',
+       '내 가게 배지');
+
+    console.log('\n[2] 지역 이름이 실제 지역이다');
+    const region = await p.textContent('#rankRegion');
+    const known = await p.evaluate((n) => Data.REGIONS.some(r => r.name === n), region);
+    ok(known, '지역: ' + region);
+    ok(!/undefined/.test(await p.textContent('#rankBoard')), '맛집 이름에 undefined 없음');
+    await p.locator('#rankCard').screenshot({ path: path.join(D, 'shot-rank.png') });
+
+    console.log('\n[3] 벌이가 오르면 순위가 오른다');
+    const before = await p.evaluate(() => Game.nationRank().rank);
+    await p.evaluate(() => {
+      const s = State.get();
+      Data.GENERATORS.forEach(g => s.gens[g.id] = 120);
+      s.bestPerSec = 1e13;
+      Game.invalidate(); UI.refresh(true);
+    });
+    await p.waitForTimeout(300);
+    const after = await p.evaluate(() => Game.nationRank().rank);
+    ok(after < before, `순위 상승 ${before} → ${after}`);
+    ok(await p.locator('#rankBoard .rb-row.me').count() === 1, '오른 뒤에도 내 줄이 보임');
+    const rank1 = await p.evaluate(() => Game.regionRank().rank);
+    ok(rank1 >= 1, '지역 순위도 갱신됨: ' + rank1 + '위');
+
+    console.log('\n[4] 지역은 새로고침해도 그대로');
+    const r1 = await p.textContent('#rankRegion');
+    await p.evaluate(() => State.save());
+    await p.reload(); await p.waitForTimeout(800);
+    if (await p.isVisible('#dailyOk')) await p.click('#dailyOk');
+    if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
+    ok((await p.textContent('#rankRegion')) === r1, '같은 지역 유지: ' + r1);
+});
+
 suite('세이브', async ({ page, ctx, ok, errs }) => {
   const p = page;                  // 스위트마다 page/p 를 섞어 쓴다
   const errors = errs;             // 이름만 다른 같은 수집기

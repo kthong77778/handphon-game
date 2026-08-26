@@ -377,6 +377,56 @@ body{
 .item.quest-taken{opacity:.55}
 .item.quest-taken .qbar > i{background:rgba(255,255,255,.3)}
 
+
+/* ===== 전국 맛집 랭킹 ===== */
+.rank-card{padding:0;overflow:hidden}
+.rank-heads{
+  display:flex;
+  border-bottom:1px solid var(--line);
+}
+.rank-head{
+  flex:1;padding:12px 10px;text-align:center;
+}
+.rank-head + .rank-head{border-left:1px solid var(--line)}
+.rh-top{font-size:12px;color:var(--dim);font-weight:700}
+.rh-rank{margin:3px 0 1px;font-variant-numeric:tabular-nums}
+.rh-rank b{font-size:26px;font-weight:900;color:var(--gold)}
+.rh-rank span{font-size:13px;color:var(--dim);margin-left:2px}
+.rh-sub{font-size:10.5px;color:var(--dim)}
+
+.rank-board{padding:6px 8px 8px}
+.rb-row{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 8px;border-radius:10px;
+  font-variant-numeric:tabular-nums;
+}
+.rb-row + .rb-row{margin-top:2px}
+.rb-rank{
+  flex:0 0 30px;text-align:center;
+  font-size:15px;font-weight:800;color:var(--dim);
+}
+.rb-row.top .rb-rank{font-size:19px}
+.rb-name{flex:1;font-size:13.5px;font-weight:600;color:var(--txt);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rb-name b{
+  font-size:10.5px;font-weight:800;color:#04231a;
+  background:var(--good);border-radius:6px;
+  padding:1px 6px;margin-left:5px;vertical-align:1px;
+}
+.rb-pop{flex:0 0 auto;font-size:11.5px;color:var(--dim)}
+.rb-row.me{
+  background:linear-gradient(90deg,rgba(255,204,68,.18),rgba(255,204,68,.05));
+  border:1px solid rgba(255,204,68,.5);
+  box-shadow:0 0 12px rgba(255,204,68,.25);
+}
+.rb-row.me .rb-name{color:var(--gold);font-weight:800}
+.rb-row.me .rb-rank{color:var(--gold)}
+.rb-gap{
+  text-align:center;color:var(--dim);
+  font-size:16px;letter-spacing:2px;
+  padding:2px 0;
+}
+
 /* 도전과제: 잠긴 항목은 내용 가림 */
 .item.achv-locked .item-icon{filter:grayscale(1)}
 .item.achv-done{border-color:rgba(255,204,68,.5)}

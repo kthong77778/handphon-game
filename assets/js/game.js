@@ -611,6 +611,119 @@ var Game = (function () {
     ];
   }
 
+  /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
+
+  // 문자열 하나로 정해지는 값 — 이름·지역을 고정하는 데 쓴다
+  function hashStr(str) {
+    var h = 2166136261;
+    str = String(str);
+    for (var i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return h;
+  }
+
+  /** 내 가게가 속한 지역 — 한 번 배정되면 세이브에 남아 바뀌지 않는다 */
+  function region() {
+    var s = S();
+    var found = null, i;
+    for (i = 0; i < Data.REGIONS.length; i++) {
+      if (Data.REGIONS[i].id === s.region) found = Data.REGIONS[i];
+    }
+    if (found) return found;
+    // 아직 없으면 시작 시각으로 정한다 (가중치 반영)
+    var pool = [];
+    Data.REGIONS.forEach(function (r) {
+      for (var k = 0; k < r.weight; k++) pool.push(r);
+    });
+    var pick = pool[hashStr('region#' + s.startedAt) % pool.length];
+    s.region = pick.id;
+    return pick;
+  }
+
+  /** 내 가게의 인기 점수 — 최고 순간 초당 수익, 지금 벌이가 더 크면 그것 */
+  function popScore() {
+    return Math.max(bestScore(), perSec(true));
+    function bestScore() { return S().bestPerSec || 0; }
+  }
+
+  /** 점수를 전국 순위로. 벌이가 오를수록 순위가 앞당겨진다 (1위에 가까워짐). */
+  function nationRank() {
+    var N = Data.RANK.nationTotal;
+    var lv = Math.log(popScore() + 1) / Math.LN10;          // 0 ~ 15+
+    var t = Math.min(1, lv / Data.RANK.maxScore);           // 0 ~ 1
+    var rank = Math.round(N * Math.pow(1 - t, 3));           // 뒤에서부터 앞으로
+    rank = Math.max(1, Math.min(N, rank));
+    var pct = Math.max(0.1, Math.round(rank / N * 1000) / 10); // 상위 %
+    return { rank: rank, total: N, pct: pct };
+  }
+
+  /** 지역 순위 — 전국 순위를 지역 몫으로 좁힌다 */
+  function regionRank() {
+    var r = region();
+    var total = 0;
+    var mine = 0;
+    Data.REGIONS.forEach(function (x) { total += x.weight; if (x.id === r.id) mine = x.weight; });
+    var share = mine / total;
+    var nat = nationRank();
+    var regTotal = Math.max(1, Math.round(Data.RANK.nationTotal * share));
+    var rank = Math.max(1, Math.min(regTotal, Math.round(nat.rank * share)));
+    return { rank: rank, total: regTotal, region: r };
+  }
+
+  /** 순위 하나의 인기 점수 (위일수록 큼) */
+  function rankPop(rank) {
+    return Math.max(1, Math.round(9990000 / Math.pow(rank, 0.82)));
+  }
+
+  /** (지역, 순위) 로 정해지는 가상 맛집 이름 */
+  function rankName(regionId, rank) {
+    var h = hashStr(regionId + '#' + rank);
+    var a = Data.RANK_AREAS[h % Data.RANK_AREAS.length];
+    var f = Data.RANK_FOODS[(h >>> 5) % Data.RANK_FOODS.length];
+    var t = Data.RANK_TITLES[(h >>> 11) % Data.RANK_TITLES.length];
+    return a + ' ' + f + t;
+  }
+
+  /**
+   * 내 지역 리더보드 — 상위 3곳 + (필요하면 …) + 내 앞뒤.
+   * @returns {Array<{rank,name,pop,me,gap}>}
+   */
+  function rankBoard() {
+    var rr = regionRank();
+    var R = rr.rank, total = rr.total, rid = rr.region.id;
+    var rows = [];
+    var want = [];
+    var i;
+    // 상위 3곳
+    for (i = 1; i <= Math.min(3, total); i++) want.push(i);
+    // 내 앞뒤 (겹치면 위에서 걸러진다)
+    for (i = R - 1; i <= R + 1; i++) if (i >= 1 && i <= total) want.push(i);
+    // 중복 제거하고 정렬
+    want = want.filter(function (v, k) { return want.indexOf(v) === k; })
+               .sort(function (a, b) { return a - b; });
+
+    var prev = 0;
+    want.forEach(function (rank) {
+      if (rank - prev > 1) rows.push({ gap: true });          // … 표시
+      rows.push({
+        rank: rank,
+        name: rank === R ? myShopName() : rankName(rid, rank),
+        pop: rankPop(rank),
+        me: rank === R
+      });
+      prev = rank;
+    });
+    return rows;
+  }
+
+  /** 내 가게 이름 — 스킨 간판을 딴다 */
+  function myShopName() {
+    var sign = tapSkin().sign || '분식';
+    return '우리 ' + sign + '집';
+  }
+
   /* ---------- 오프라인 ---------- */
   function offlineCapSeconds() {
     return (4 + 2 * fameLv('f_offtime')) * 3600;
@@ -1018,6 +1131,11 @@ var Game = (function () {
     managerBuys: managerBuys,
     runManager: runManager,
     topRuns: topRuns,
+    region: region,
+    nationRank: nationRank,
+    regionRank: regionRank,
+    rankBoard: rankBoard,
+    myShopName: myShopName,
     projectedRank: projectedRank,
     records: records,
     offlineCapSeconds: offlineCapSeconds,

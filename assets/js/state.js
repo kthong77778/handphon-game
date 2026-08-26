@@ -43,6 +43,7 @@ var State = (function () {
       sawTour: 0,        // 첫 실행 안내를 봤는가 (0/1)
       autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
+      region: '',        // 전국 맛집 랭킹에서 내 가게가 속한 지역 (한 번 배정되면 고정)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
 
@@ -125,6 +126,13 @@ var State = (function () {
       }).filter(function (r) {
         return isFinite(r.earned) && isFinite(r.seconds);
       }).slice(-MAX_RUNS);
+    }
+
+    // 지역은 실제로 있는 것일 때만 받는다 (없으면 game.js 가 처음 볼 때 배정한다)
+    if (typeof raw.region === 'string') {
+      for (var ri = 0; ri < Data.REGIONS.length; ri++) {
+        if (Data.REGIONS[ri].id === raw.region) { s.region = raw.region; break; }
+      }
     }
 
     // 스킨은 실제로 있는 id 일 때만 받는다 (없는 걸 넣으면 화면이 비어버린다)

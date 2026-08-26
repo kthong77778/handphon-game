@@ -588,7 +588,49 @@ console.log('\n[11] 일일 퀘스트');
   ok(State.get().questsDone === 3, '완료 수는 평생 누적으로 남음');
 }
 
-console.log('\n[12] 퀘스트 세이브 방어');
+console.log('\n[13] 전국 맛집 랭킹');
+{
+  State.set({ startedAt: 1699999999999, bestPerSec: 0 }); Game.invalidate();
+  const reg = Game.region();
+  ok(Data.REGIONS.some(r => r.id === reg.id), '지역이 배정됨: ' + reg.name);
+  ok(State.get().region === reg.id, '배정된 지역이 세이브에 남음');
+  const reg2 = Game.region();
+  ok(reg2.id === reg.id, '다시 불러도 같은 지역 (고정)');
+
+  const nat0 = Game.nationRank();
+  ok(nat0.rank === nat0.total, '벌이가 없으면 전국 꼴찌', nat0.rank + '/' + nat0.total);
+
+  State.get().bestPerSec = 1e12; Game.invalidate();
+  const nat1 = Game.nationRank();
+  ok(nat1.rank < nat0.rank, '벌이가 오르면 순위가 앞당겨짐', nat0.rank + ' → ' + nat1.rank);
+  ok(nat1.pct < 100 && nat1.pct > 0, '상위 % 가 정상 범위', nat1.pct + '%');
+
+  State.get().bestPerSec = 1e15; Game.invalidate();
+  ok(Game.nationRank().rank <= 5, '벌이가 아주 크면 전국 최상위권', Game.nationRank().rank);
+
+  // 리더보드 — 이름이 (지역·순위)로 고정
+  State.get().bestPerSec = 5e7; Game.invalidate();
+  const board = Game.rankBoard();
+  ok(board.length >= 4, '리더보드에 여러 줄', board.length);
+  const me = board.filter(r => r.me);
+  ok(me.length === 1, '내 가게가 한 줄만 표시됨');
+  ok(me[0].rank === Game.regionRank().rank, '내 줄의 순위가 지역 순위와 같음');
+  ok(board.filter(r => !r.gap && !r.me).every(r => r.name && !/undefined/.test(r.name)),
+     '가상 맛집 이름이 모두 정상');
+  const n1 = Game.rankBoard().filter(r => !r.gap).map(r => r.name).join(',');
+  const n2 = Game.rankBoard().filter(r => !r.gap).map(r => r.name).join(',');
+  ok(n1 === n2, '같은 순위면 이름이 그대로 (새로고침해도 안 바뀜)');
+  // 인기 점수는 위일수록 크다
+  const pops = board.filter(r => !r.gap).map(r => ({ rank: r.rank, pop: r.pop }));
+  ok(pops.every((r, i) => i === 0 || pops[i - 1].pop >= r.pop), '위 순위일수록 인기 점수가 큼');
+
+  // 구버전 세이브에는 region 이 없다 — 처음 볼 때 배정된다
+  State.set({ v: 1, money: 100, startedAt: 1700000000001 }); 
+  ok(State.get().region === '', '구버전 세이브엔 지역이 비어 있음');
+  ok(Data.REGIONS.some(r => r.id === Game.region().id), '한 번 보면 지역이 배정됨');
+}
+
+console.log('\n[14] 퀘스트 세이브 방어');
 {
   // 배열 길이가 어긋나면 통째로 버려야 한다 — 반쯤 남으면 진행도가 엉뚱한 데 붙는다
   State.set({ questDate: '2030-05-05', questIds: ['q_tap'], questGoals: [1, 2, 3],

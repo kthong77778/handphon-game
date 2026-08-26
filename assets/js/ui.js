@@ -20,6 +20,7 @@ var UI = (function () {
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
+     'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
      'tapSkinRow', 'tapSkinNow', 'tapLadder',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
@@ -262,6 +263,56 @@ var UI = (function () {
       costEl.innerHTML = maxed ? 'MAX' : ('✨' + Fmt.num(cost));
       costEl.className = 'item-cost ' + (maxed ? '' : (ok ? 'ok' : 'no'));
       row.className = 'item' + (ok ? ' buyable' : '') + (maxed ? ' owned' : '');
+    });
+  }
+
+  /* ---------- 전국 맛집 랭킹 ---------- */
+
+  function renderRanking() {
+    var nat = Game.nationRank();
+    var reg = Game.regionRank();
+    var mark = reg.region.id + '|' + reg.rank + '|' + nat.rank;
+    if (sig.rank === mark) return;
+    sig.rank = mark;
+
+    el.rankRegion.textContent = reg.region.name;
+
+    // 위쪽 요약 — 전국 / 지역 순위
+    el.rankHeads.innerHTML =
+      head('전국', '🇰🇷', nat.rank, nat.total, '상위 ' + nat.pct + '%') +
+      head(reg.region.name, '📍', reg.rank, reg.total, reg.region.name + ' 안에서');
+
+    function head(label, ic, rank, total, sub) {
+      return '<div class="rank-head">' +
+        '<div class="rh-top">' + ic + ' ' + label + '</div>' +
+        '<div class="rh-rank"><b>' + Fmt.comma(rank) + '</b><span>위</span></div>' +
+        '<div class="rh-sub">' + sub + ' · ' + Fmt.comma(total) + '곳</div>' +
+        '</div>';
+    }
+
+    // 리더보드
+    el.rankBoard.innerHTML = '';
+    Game.rankBoard().forEach(function (r) {
+      var row = document.createElement('div');
+      if (r.gap) {
+        row.className = 'rb-gap';
+        row.textContent = '⋯';
+        el.rankBoard.appendChild(row);
+        return;
+      }
+      row.className = 'rb-row' + (r.me ? ' me' : '') + (r.rank <= 3 ? ' top' : '');
+      var medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : '';
+      row.innerHTML =
+        '<span class="rb-rank">' + (medal || r.rank) + '</span>' +
+        '<span class="rb-name">' + escape(r.name) + (r.me ? ' <b>내 가게</b>' : '') + '</span>' +
+        '<span class="rb-pop">🔥 ' + Fmt.comma(r.pop) + '</span>';
+      el.rankBoard.appendChild(row);
+    });
+  }
+
+  function escape(t) {
+    return String(t).replace(/[&<>]/g, function (c) {
+      return c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;';
     });
   }
 
@@ -946,7 +997,7 @@ var UI = (function () {
     if (currentTab === 'shop') updateGenList();
     else if (currentTab === 'upgrade') renderUpgrades();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
-    else if (currentTab === 'achv') { renderQuests(); renderHallOfFame(); renderAchievements(); }
+    else if (currentTab === 'achv') { renderQuests(); renderRanking(); renderHallOfFame(); renderAchievements(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); updateMuteBtn(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }

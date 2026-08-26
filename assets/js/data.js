@@ -646,6 +646,43 @@ var Data = (function () {
 
   /* ---------- 도전과제 ---------- */
   // 하나 달성할 때마다 전체 수익 +1%
+  /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
+  // 서버가 없는 오프라인 게임이라 실제 다른 플레이어는 없다.
+  // 내 가게의 인기(초당 수익)를 기준으로, 가상의 전국 맛집들 사이에
+  // 내 순위를 지역별로 매겨 보여준다. 이름은 (지역·순위)로 정해져서
+  // 새로고침해도 바뀌지 않는다.
+  var RANK = {
+    nationTotal: 12000,   // 전국 맛집 수 (연출용 고정값)
+    maxScore: 15          // log10(초당수익) 상한 — 이쯤이면 전국 1위
+  };
+
+  // 지역 — weight 가 클수록 배정될 확률이 높다 (인구 느낌)
+  var REGIONS = [
+    { id: 'seoul',   name: '서울',   weight: 5 },
+    { id: 'gyeonggi',name: '경기',   weight: 5 },
+    { id: 'busan',   name: '부산',   weight: 3 },
+    { id: 'incheon', name: '인천',   weight: 2 },
+    { id: 'daegu',   name: '대구',   weight: 2 },
+    { id: 'daejeon', name: '대전',   weight: 2 },
+    { id: 'gwangju', name: '광주',   weight: 2 },
+    { id: 'ulsan',   name: '울산',   weight: 1 },
+    { id: 'gangwon', name: '강원',   weight: 1 },
+    { id: 'chungcheong', name: '충청', weight: 2 },
+    { id: 'jeolla',  name: '전라',   weight: 2 },
+    { id: 'gyeongsang', name: '경상', weight: 2 },
+    { id: 'jeju',    name: '제주',   weight: 1 }
+  ];
+
+  // 가상 맛집 이름 재료 — 동네 + 메뉴 + 칭호
+  var RANK_AREAS = ['종로', '홍대', '강남', '명동', '해운대', '서면', '동성로',
+    '노량진', '신촌', '이태원', '을지로', '부평', '수원역', '정자동', '청담',
+    '성수', '망원', '연남', '광안리', '남포동', '유성', '둔산', '봉명', '삼산',
+    '전대', '구월동', '수유리', '왕십리', '사직동', '경리단', '샤로수길', '먹자골목'];
+  var RANK_FOODS = ['떡볶이', '김밥', '순대', '튀김', '라면', '어묵', '붕어빵',
+    '호떡', '만두', '핫도그', '분식', '오뎅', '꼬치', '토스트', '도넛'];
+  var RANK_TITLES = ['천국', '명가', '왕', '나라', '대장', '성지', '본점',
+    '1번지', '골목', '맛집', '반점', '노포', '달인', '집'];
+
   /* ---------- 일일 퀘스트 ---------- */
   // 도전과제가 '평생 한 번' 이라면 퀘스트는 '오늘 하루' 다.
   // 매일 자정에 세 개가 새로 깔린다. 어떤 세 개인지는 날짜로 정해져서
@@ -727,6 +764,11 @@ var Data = (function () {
     BOOST: BOOST,
     DAILY: DAILY,
     QUEST: QUEST,
-    QUESTS: QUESTS
+    QUESTS: QUESTS,
+    RANK: RANK,
+    REGIONS: REGIONS,
+    RANK_AREAS: RANK_AREAS,
+    RANK_FOODS: RANK_FOODS,
+    RANK_TITLES: RANK_TITLES
   };
 })();
