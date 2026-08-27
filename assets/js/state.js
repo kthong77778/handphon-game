@@ -7,6 +7,27 @@ var State = (function () {
 
   function now() { return Date.now(); }
 
+  /* 지금 Data 에 실제로 존재하는 id 만 인정한다.
+     밸런스를 고치다 항목을 지우면 옛 세이브에 그 id 가 남는데,
+     특히 achievements 는 개수가 그대로 전체 배율(+1%)에 들어가므로
+     사라진 도전과제가 유령 배율을 계속 주게 된다. */
+  function idSet(list) {
+    var m = {};
+    list.forEach(function (x) { m[x.id] = true; });
+    return m;
+  }
+
+  var VALID = {
+    gens: idSet(Data.GENERATORS),
+    upgrades: idSet(Data.UPGRADES),
+    fameLv: idSet(Data.FAME_SHOP),
+    achievements: idSet(Data.ACHIEVEMENTS)
+  };
+
+  // 명성상점 레벨 상한 (max 를 낮췄을 때 초과분이 남지 않게)
+  var FAME_MAX = {};
+  Data.FAME_SHOP.forEach(function (f) { FAME_MAX[f.id] = f.max; });
+
   function fresh() {
     return {
       v: VERSION,
@@ -82,12 +103,15 @@ var State = (function () {
     mapKeys.forEach(function (k) {
       if (raw[k] && typeof raw[k] === 'object') {
         Object.keys(raw[k]).forEach(function (id) {
+          if (!VALID[k][id]) return;          // 지워졌거나 이름이 바뀐 항목은 버린다
           var v = raw[k][id];
           if (k === 'upgrades' || k === 'achievements') {
             if (v) s[k][id] = true;
           } else {
             var n = Math.floor(Number(v));
-            if (isFinite(n) && n > 0) s[k][id] = n;
+            if (!isFinite(n) || n <= 0) return;
+            if (k === 'fameLv') n = Math.min(n, FAME_MAX[id]);
+            s[k][id] = n;
           }
         });
       }

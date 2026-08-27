@@ -21,7 +21,8 @@ var UI = (function () {
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'tapSkinRow', 'tapSkinNow', 'tapLadder',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
-     'saveBtn', 'exportBtn', 'importBtn', 'resetBtn'].forEach(function (id) {
+     'saveBtn', 'exportBtn', 'importBtn', 'resetBtn',
+     'dbgHour', 'dbgDay', 'dbgMoney', 'dbgFame'].forEach(function (id) {
       el[id] = $(id);
     });
   }
@@ -924,6 +925,13 @@ var UI = (function () {
 
     onGolden = handlers.onGolden;
     onThief = handlers.onThief;
+
+    // 테스트 도구 (테스트 빌드 전용 — 정식 버전에서는 index.html 에서 통째로 뺀다)
+    [['dbgHour', 'hour'], ['dbgDay', 'day'],
+     ['dbgMoney', 'money'], ['dbgFame', 'fame']].forEach(function (pair) {
+      var node = el[pair[0]];
+      if (node) node.addEventListener('click', function () { handlers.onDebug(pair[1]); });
+    });
 
     el.prestigeBtn.addEventListener('click', handlers.onPrestige);
     el.saveBtn.addEventListener('click', handlers.onSave);

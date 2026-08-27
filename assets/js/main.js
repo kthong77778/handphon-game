@@ -53,6 +53,37 @@
       UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
     },
 
+    /* 테스트 도구 — 지인 테스트 빌드 전용.
+       방치형은 후반 구간에 도달하는 데 며칠이 걸려서, 그대로 두면
+       설비 7~10 · 조리 7·8단계 · VIP/재벌 손님 같은 콘텐츠의 피드백을
+       아예 받을 수 없다. 세이브를 초기화했을 때 복귀 부담을 줄이는 역할도 한다. */
+    onDebug: function (kind) {
+      var s = State.get();
+      var msg;
+
+      if (kind === 'hour' || kind === 'day') {
+        var sec = kind === 'hour' ? 3600 : 86400;
+        // 오프라인 정산과 같은 방식. playTime · runTime 도 같이 흘러간다
+        var before = s.money;
+        Game.tick(sec);
+        msg = '⏩ ' + Fmt.time(sec) + ' 경과 · +' + Fmt.won(s.money - before);
+      } else if (kind === 'money') {
+        // 수익이 0인 초반에도 쓸 수 있게 바닥을 깔아둔다
+        s.money = Math.max(s.money * 1000, 10000);
+        msg = '💰 ' + Fmt.won(s.money);
+      } else {
+        s.fame += 10;
+        Game.invalidate();          // 명성은 전체 배율에 들어간다
+        msg = '✨ 명성 ' + Fmt.num(s.fame);
+      }
+
+      announceAchievements();
+      State.save();
+      UI.invalidate();
+      UI.refresh(true);
+      UI.toast(msg);
+    },
+
     onSave: function () {
       UI.toast(State.save() ? '저장했습니다' : '저장에 실패했습니다');
     },
@@ -198,11 +229,6 @@
 
     // 더블탭 확대 방지
     document.addEventListener('dblclick', function (e) { e.preventDefault(); }, { passive: false });
-
-    // 오프라인 실행용 서비스워커
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
-    }
   }
 
   if (document.readyState === 'loading') {
