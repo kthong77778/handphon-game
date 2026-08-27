@@ -1,0 +1,10 @@
+{
+  "name": "@handphon/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@handphon/config": "*",
+    "@handphon/sim": "*"
+  }
+}

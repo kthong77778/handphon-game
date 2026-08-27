@@ -11,3 +11,8 @@ desktop.ini
 # 로그 / 임시
 *.log
 node_modules/
+
+# 빌드 산출물
+dist/
+*.tsbuildinfo
+coverage/
