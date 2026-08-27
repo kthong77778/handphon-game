@@ -46,6 +46,7 @@ var State = (function () {
       bestMichelin: 0,   // 미슐랭 도전 최고 별 (0~5, 통산)
       michelinGrand: 0,  // 5성 영구 보상을 받았는가 (0/1)
       michBestTaps: 0,   // 한 판 최고 조리 횟수 (통산, 랭킹용)
+      michTier: 0,       // 미슐랭 도전 단계 (0부터 · 5성 깰 때마다 +1, 다음이 더 어려워짐)
       michSeason: '',    // 지금 시즌 id (YYYY-MM)
       michSeasonStars: 0,// 이번 시즌 최고 별
       michSeasonTaps: 0, // 이번 시즌 최고 조리 횟수
@@ -99,7 +100,7 @@ var State = (function () {
                    'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup',
-                   'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps'];
+                   'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
       if (isFinite(v) && v >= 0) s[k] = v;

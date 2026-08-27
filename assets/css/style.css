@@ -399,7 +399,10 @@ body{
 
 
 /* 미슐랭 시즌·랭킹·공유 */
-.mich-season{font-size:12.5px;font-weight:800;color:var(--accent);margin-bottom:8px}
+".mich-season{font-size:12.5px;font-weight:800;color:var(--accent);margin-bottom:4px}
+.mich-tier{color:var(--gold)}
+.mich-goal{font-size:11px;color:var(--dim);margin-bottom:8px}
+.mich-tierup{display:inline-block;margin-top:6px;color:#ff9f4a;font-weight:800}
 .mcz-sub{font-size:11px;color:var(--dim);margin-top:4px;font-variant-numeric:tabular-nums}
 .mich-btns{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
 .btn.michelin-share{

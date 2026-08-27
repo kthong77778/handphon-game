@@ -845,6 +845,8 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     ok(/시즌/.test(await p.textContent('.mich-season')), '시즌 이름 표시: ' + await p.textContent('.mich-season'));
     ok(await p.locator('#michelinCard .mb-row').count() >= 3, '랭킹 보드 여러 줄');
     ok(/전국/.test(await p.textContent('#michelinCard .mcz-sub')), '전국 순위 표시');
+    ok(/단계/.test(await p.textContent('.mich-season')), '단계 표시');
+    ok(/조리 \d+번/.test(await p.textContent('.mich-goal')), '별5 목표 조리 횟수 표시');
 
     console.log('\n[2] 심사 시작 → 조리로 별을 얻는다');
     await p.click('#michStart'); await p.waitForTimeout(300);
@@ -873,6 +875,8 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     await p.evaluate(()=>{ const r=Game.claimMichelin(Data.MICHELIN.goals[4]); window.__r=r; });
     const r = await p.evaluate(()=>window.__r);
     ok(r.stars === 5 && r.grandNew, '5성 첫 달성 그랜드');
+    ok(r.tierUp === 1 && await p.evaluate(()=>State.get().michTier) === 1, '5성 → 다음 단계로');
+    ok(await p.evaluate(()=>Game.michGoals()[4]) > 160, '다음 도전은 160번보다 많아짐');
     ok(await p.evaluate(()=>Game.globalMult()) > before, '영구 배율이 붙어 배율이 커짐');
     await p.evaluate(()=>{ UI.invalidate&&UI.invalidate(); UI.refresh(true); });
     await p.waitForTimeout(200);

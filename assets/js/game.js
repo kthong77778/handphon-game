@@ -678,13 +678,24 @@ var Game = (function () {
 
   /* ---------- 미슐랭 도전 ---------- */
 
+  function michTier() { return S().michTier || 0; }
+  /** 지금 단계의 별 1~5 목표 (단계가 오를수록 커진다) */
+  function michGoals() {
+    var f = Math.pow(Data.MICHELIN.tierGrowth, michTier());
+    return Data.MICHELIN.goals.map(function (g) { return Math.round(g * f); });
+  }
+  /** 지금 단계의 심사 시간 (초) */
+  function michTimeSec() {
+    return Data.MICHELIN.time + Data.MICHELIN.timePerTier * michTier();
+  }
+
   function michelinStars(taps) {
-    var g = Data.MICHELIN.goals, n = 0;
+    var g = michGoals(), n = 0;
     for (var i = 0; i < g.length; i++) if (taps >= g[i]) n = i + 1;
     return n;
   }
   function michelinNextGoal(taps) {
-    var g = Data.MICHELIN.goals;
+    var g = michGoals();
     for (var i = 0; i < g.length; i++) if (taps < g[i]) return g[i];
     return 0;
   }
@@ -776,8 +787,17 @@ var Game = (function () {
     if (taps > s.michSeasonTaps) s.michSeasonTaps = taps;
     var grandNew = false;
     if (stars >= 5 && !s.michelinGrand) { s.michelinGrand = 1; bump(); grandNew = true; }
+    // 5성을 채우면 다음 단계로 — 다음 도전은 목표가 더 높아진다
+    var tierUp = 0;
+    if (stars >= 5) {
+      s.michTier = (s.michTier || 0) + 1;
+      tierUp = s.michTier;
+      // 단계 돌파 보너스 (올라간 단계에 비례)
+      gain += earn(s, Math.max(Data.MICHELIN.minReward * 10,
+                               perSec(true) * Data.MICHELIN.starSec * 5 * tierUp));
+    }
     return { stars: stars, gain: gain, best: s.bestMichelin, grandNew: grandNew,
-             seasonBest: seasonBest, rank: michRank(taps) };
+             seasonBest: seasonBest, rank: michRank(taps), tierUp: tierUp, tier: s.michTier };
   }
 
     /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
@@ -1350,6 +1370,9 @@ var Game = (function () {
     claimMichelin: claimMichelin,
     michSeason: michSeason,
     michSeasonRoll: michSeasonRoll,
+    michTier: michTier,
+    michGoals: michGoals,
+    michTimeSec: michTimeSec,
     michRank: michRank,
     michBoard: michBoard,
     partyState: partyState,

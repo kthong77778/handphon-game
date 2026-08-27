@@ -303,7 +303,10 @@ var UI = (function () {
     }
 
     el.michelinCard.innerHTML =
-      '<div class="mich-season">🗓️ ' + escape(season.name) + ' 시즌</div>' +
+      '<div class="mich-season">🗓️ ' + escape(season.name) + ' 시즌 · ' +
+        '<b class="mich-tier">' + (Game.michTier() + 1) + '단계</b></div>' +
+      '<div class="mich-goal">별 5개 목표: 제한 ' + Game.michTimeSec() + '초 안에 조리 ' +
+        Fmt.comma(Game.michGoals()[4]) + '번</div>' +
       '<div class="mich-card-top">' +
         '<div><div class="mcz-label">이번 시즌 등급</div>' +
           '<div class="mcz-stars">' + starStr(s.michSeasonStars) + '</div>' +
@@ -360,7 +363,7 @@ var UI = (function () {
 
   function startMichelin() {
     Sound.wake();
-    michRun = { taps: 0, left: Data.MICHELIN.time, last: State.now() };
+    michRun = { taps: 0, left: Game.michTimeSec(), total: Game.michTimeSec(), last: State.now() };
     el.michResult.hidden = true;
     el.michPlay.hidden = false;
     el.michTapEmoji.textContent = Game.tapStep().step.icon || '🍢';
@@ -387,7 +390,7 @@ var UI = (function () {
     el.michCount.textContent = michRun.taps;
     el.michNext.textContent = next ? '다음 별까지 ' + Math.max(0, next - michRun.taps) + '번' : '⭐ 만점!';
     el.michTime.textContent = Math.ceil(michRun.left) + 's';
-    el.michBar.style.width = (michRun.left / Data.MICHELIN.time * 100) + '%';
+    el.michBar.style.width = (michRun.left / michRun.total * 100) + '%';
   }
 
   function michTapPress(ev) {
@@ -425,6 +428,8 @@ var UI = (function () {
       : '별을 하나도 못 얻었어요. 다시 도전해 보세요!';
     if (r.grandNew) txt += '<br><span class="mich-grand">🏆 미슐랭 5성! 모든 수익 ×' +
       Data.MICHELIN.grandMult + ' 영구 획득!</span>';
+    if (r.tierUp) txt += '<br><span class="mich-tierup">🔥 ' + r.tierUp +
+      '단계 돌파! 다음 도전은 조리 ' + Fmt.comma(Game.michGoals()[4]) + '번으로 더 어려워집니다</span>';
     el.michResultText.innerHTML = txt;
     if (r.grandNew) { Sound.play('prestige'); }
     else if (r.stars > 0) { Sound.play('reward'); }

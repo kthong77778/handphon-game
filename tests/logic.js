@@ -750,6 +750,28 @@ console.log('\n[17] 미슐랭 도전');
   // 두 번째 5성엔 그랜드가 다시 안 나온다
   ok(Game.claimMichelin(G[4]).grandNew === false, '그랜드는 한 번만');
 
+  // ----- 단계(티어): 5성 깰 때마다 다음 도전이 더 어려워진다 -----
+  State.set({ money: 0, michTier: 0, michelinGrand: 0, bestMichelin: 0 });
+  Data.GENERATORS.forEach(function (g) { State.get().gens[g.id] = 10; });
+  Game.invalidate();
+  var g1 = Game.michGoals();
+  ok(g1.join(',') === Data.MICHELIN.goals.join(','), '1단계 목표는 기본값');
+  ok(Game.michTimeSec() === Data.MICHELIN.time, '1단계 시간은 기본값');
+  var r1t = Game.claimMichelin(g1[4]);   // 1단계 5성
+  ok(r1t.tierUp === 1 && State.get().michTier === 1, '5성 → 2단계로');
+  var g2 = Game.michGoals();
+  ok(g2[4] > g1[4], '2단계 별5 목표가 더 큼 (' + g1[4] + ' → ' + g2[4] + ')');
+  ok(Game.michTimeSec() > Data.MICHELIN.time, '2단계 시간이 조금 늘어남');
+  ok(Game.michelinStars(g1[4]) < 5, '이전 5성 횟수로는 2단계에서 5성 안 됨');
+  Game.claimMichelin(g2[4]);              // 2단계 5성
+  ok(State.get().michTier === 2, '또 5성 → 3단계');
+  ok(Game.michGoals()[4] > g2[4], '3단계는 더 큼');
+  // 5성 못 채우면 단계는 그대로
+  var t = State.get().michTier;
+  Game.claimMichelin(0);
+  ok(State.get().michTier === t, '별을 못 채우면 단계 유지');
+  ok(Game.michTier() === State.get().michTier, 'michTier() 가 세이브와 일치');
+
   // 0성이면 보상 없음, 기록도 그대로
   var beforeMoney = State.get().money;
   var r0 = Game.claimMichelin(0);
