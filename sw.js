@@ -1,5 +1,5 @@
 /* 오프라인에서도 실행되도록 앱 셸을 캐시한다 */
-var CACHE = 'bunsik-idle-v23';
+var CACHE = 'bunsik-idle-v24';
 
 var ASSETS = [
   './',

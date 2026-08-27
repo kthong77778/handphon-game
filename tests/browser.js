@@ -919,7 +919,18 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(200);
     await p.click('#michShare'); await p.waitForTimeout(200);
     const shared = await p.evaluate(()=>window.__shared);
-    ok(shared && /미슐랭/.test(shared.text) && /별/.test(shared.text), '자랑 문구 생성: ' + (shared && shared.text || '').replace(/\n/g,' '));
+    ok(shared && /미슐랭/.test(shared.text) && /별/.test(shared.text), '기기 공유 시트로 보냄(다른 앱): ' + (shared && shared.text || '').replace(/\n/g,' '));
+
+    // 공유가 막힌(샌드박스) 경우엔 복사로 넘어간다
+    await p.evaluate(()=>{
+      window.__copied = null;
+      Object.defineProperty(navigator, 'share', { configurable:true, value: undefined });
+      Object.defineProperty(navigator, 'clipboard', { configurable:true,
+        value: { writeText: (t)=>{ window.__copied = t; return Promise.resolve(); } } });
+    });
+    await p.click('#michShare'); await p.waitForTimeout(200);
+    const copied = await p.evaluate(()=>window.__copied);
+    ok(copied && /미슐랭/.test(copied), '공유 불가 시 문구를 복사로 대체');
 });
 
 suite('주말 파티 · 도감', async ({ page, ctx, ok, errs }) => {

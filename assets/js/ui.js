@@ -339,12 +339,35 @@ var UI = (function () {
       season.name + ' 시즌 ' + starStr(stars) + ' (별 ' + stars + '개)\n' +
       '전국 셰프 ' + Fmt.comma(rank) + '위! 너도 도전해봐 👉';
     var full = text + (url ? ' ' + url : '');
-    // 공유 API 가 되면 그걸로, 안 되면 복사 + 코드창으로 (샌드박스 대비)
-    if (navigator.share) {
-      navigator.share({ title: '분식집 키우기 미슐랭 도전', text: text, url: url })
-        .then(function () {}, function () {});
+    var data = { title: '분식집 키우기 · 미슐랭 도전', text: text };
+    if (url) data.url = url;
+
+    // 1순위: 기기 공유 시트 (카톡·인스타·문자 등 다른 앱으로 바로 보내기).
+    // 아티팩트 같은 샌드박스나 미지원 브라우저면 복사로 넘어간다.
+    var canShare = false;
+    try {
+      canShare = !!navigator.share && (!navigator.canShare || navigator.canShare(data));
+    } catch (e) { canShare = false; }
+
+    if (canShare) {
+      var p;
+      try { p = navigator.share(data); } catch (e) { copyOrShow(full); return; }
+      if (p && p.then) {
+        p.then(function () {
+          toast('공유했어요! 자랑 고마워요 🙌');
+        }, function (err) {
+          // 사용자가 공유창을 닫은 것(AbortError)은 조용히 넘기고,
+          // 권한이 막힌 경우(NotAllowedError 등)만 복사로 대체한다
+          if (err && (err.name === 'AbortError' || err.name === 'CanceledError')) return;
+          copyOrShow(full);
+        });
+      }
       return;
     }
+    copyOrShow(full);
+  }
+
+  function copyOrShow(full) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(full).then(function () {
         toast('자랑 문구를 복사했어요! 붙여넣어 홍보하세요');
@@ -355,7 +378,7 @@ var UI = (function () {
   }
   function showShareText(full) {
     textDialog({ emoji: '📣', title: '기록 자랑하기',
-      desc: '이 문구를 복사해 친구에게 자랑하세요!', value: full, readonly: true });
+      desc: '이 문구를 복사해 친구에게 붙여넣어 자랑하세요!', value: full, readonly: true });
   }
 
   // ----- 심사 진행 -----
