@@ -838,9 +838,13 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     await p.evaluate(()=>{ Data.GENERATORS.forEach(g=>State.get().gens[g.id]=10); State.get().money=1e6; Game.invalidate(); });
     await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
 
-    console.log('[1] 미슐랭 카드');
+    console.log('[1] 미슐랭 카드 · 시즌 · 랭킹');
     ok(await p.locator('#michelinCard').count() === 1, '카드 존재');
     ok(await p.locator('#michStart').count() === 1, '도전하기 버튼');
+    ok(await p.locator('#michShare').count() === 1, '자랑(공유) 버튼');
+    ok(/시즌/.test(await p.textContent('.mich-season')), '시즌 이름 표시: ' + await p.textContent('.mich-season'));
+    ok(await p.locator('#michelinCard .mb-row').count() >= 3, '랭킹 보드 여러 줄');
+    ok(/전국/.test(await p.textContent('#michelinCard .mcz-sub')), '전국 순위 표시');
 
     console.log('\n[2] 심사 시작 → 조리로 별을 얻는다');
     await p.click('#michStart'); await p.waitForTimeout(300);
@@ -881,6 +885,37 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     if (await p.isVisible('#offlineOk')) await p.click('#offlineOk');
     ok(await p.evaluate(()=>State.get().bestMichelin) === 5, '최고 기록 5성 유지');
     ok(await p.evaluate(()=>State.get().michelinGrand) === 1, '그랜드 유지');
+
+    console.log('\n[6] 시즌이 바뀌면 이번 시즌 등급이 리셋된다');
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(300);
+    // 시즌 기록을 만들고, 시계를 다음 달로 옮긴 뒤 롤
+    await p.evaluate(()=>{ Game.claimMichelin(Data.MICHELIN.goals[1]); });   // 2성
+    ok(await p.evaluate(()=>State.get().michSeasonStars) >= 2, '이번 시즌 별이 쌓임');
+    // 과거 달로 되돌린 뒤 롤하면 새 시즌으로 넘어가고 지난 기록이 히스토리에 쌓인다
+    const rolled = await p.evaluate(()=>{
+      const s = State.get();
+      s.michSeason = '2000-01';        // 아주 과거로 → 지금 달과 다름
+      s.michSeasonStars = 3; s.michSeasonTaps = 70;
+      const before = s.michHist.length;
+      const changed = Game.michSeasonRoll();
+      return { changed, grew: State.get().michHist.length > before,
+               reset: State.get().michSeasonStars === 0 };
+    });
+    ok(rolled.changed && rolled.grew, '달이 바뀌면 지난 시즌이 히스토리에 쌓임');
+    ok(rolled.reset, '새 시즌엔 이번 시즌 등급이 0으로');
+
+    console.log('\n[7] 자랑하기 문구 생성 (공유/복사)');
+    // navigator.share 를 스파이로 갈아끼워 자랑 문구가 만들어지는지 본다
+    await p.evaluate(()=>{
+      window.__shared = null;
+      Object.defineProperty(navigator, 'share', {
+        configurable: true, value: (o) => { window.__shared = o; return Promise.resolve(); }
+      });
+    });
+    await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(200);
+    await p.click('#michShare'); await p.waitForTimeout(200);
+    const shared = await p.evaluate(()=>window.__shared);
+    ok(shared && /미슐랭/.test(shared.text) && /별/.test(shared.text), '자랑 문구 생성: ' + (shared && shared.text || '').replace(/\n/g,' '));
 });
 
 suite('주말 파티 · 도감', async ({ page, ctx, ok, errs }) => {

@@ -397,6 +397,30 @@ body{
 .btn.ghost{background:none;border:1px solid var(--line);color:var(--dim)}
 .mich-grand{display:inline-block;margin-top:6px;color:var(--gold);font-weight:800}
 
+
+/* 미슐랭 시즌·랭킹·공유 */
+.mich-season{font-size:12.5px;font-weight:800;color:var(--accent);margin-bottom:8px}
+.mcz-sub{font-size:11px;color:var(--dim);margin-top:4px;font-variant-numeric:tabular-nums}
+.mich-btns{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+.btn.michelin-share{
+  width:auto;padding:8px 14px;margin:0;
+  background:var(--bg2);border:1px solid var(--accent);color:var(--accent);font-weight:800;
+}
+.mich-board{
+  margin-top:12px;padding:8px 6px;border-radius:12px;
+  background:var(--bg2);border:1px solid var(--line);
+}
+.mb-row{display:flex;align-items:center;gap:9px;padding:5px 8px;border-radius:8px;font-variant-numeric:tabular-nums}
+.mb-rank{flex:0 0 42px;font-size:13px;font-weight:800;color:var(--dim);text-align:center}
+.mb-name{flex:1;font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-name b{font-size:10.5px;font-weight:800;color:#04231a;background:var(--good);border-radius:6px;padding:1px 6px;margin-left:5px}
+.mb-row.me{background:linear-gradient(90deg,rgba(255,204,68,.18),transparent);border:1px solid rgba(255,204,68,.5)}
+.mb-row.me .mb-name{color:var(--gold);font-weight:800}
+.mb-row.me .mb-rank{color:var(--gold)}
+.mb-gap{text-align:center;color:var(--dim);font-size:14px;letter-spacing:2px;padding:1px 0}
+.mich-hist{margin-top:10px;font-size:11.5px;color:var(--dim);text-align:center}
+#michShareResult{margin-top:8px}
+
 /* ===== 세이브 안전 안내 ===== */
 .save-guard{padding:12px 14px}
 .sg-row{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.45;margin-bottom:7px}

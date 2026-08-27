@@ -43,8 +43,13 @@ var State = (function () {
       tapSound: 'classic', // 조리음 종류 (Data.TAP_SOUNDS 의 id)
       notifyOffline: 0,  // 오프라인 보상 가득 참 알림 (0/1)
       lastBackup: 0,     // 마지막으로 세이브 코드를 내보낸 시각 (백업 알림용)
-      bestMichelin: 0,   // 미슐랭 도전 최고 별 (0~5)
+      bestMichelin: 0,   // 미슐랭 도전 최고 별 (0~5, 통산)
       michelinGrand: 0,  // 5성 영구 보상을 받았는가 (0/1)
+      michBestTaps: 0,   // 한 판 최고 조리 횟수 (통산, 랭킹용)
+      michSeason: '',    // 지금 시즌 id (YYYY-MM)
+      michSeasonStars: 0,// 이번 시즌 최고 별
+      michSeasonTaps: 0, // 이번 시즌 최고 조리 횟수
+      michHist: [],      // 지난 시즌 기록 [{s, stars, taps}]
       sawTour: 0,        // 첫 실행 안내를 봤는가 (0/1)
       autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
@@ -94,7 +99,7 @@ var State = (function () {
                    'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup',
-                   'bestMichelin', 'michelinGrand'];
+                   'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps'];
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
       if (isFinite(v) && v >= 0) s[k] = v;
@@ -133,6 +138,19 @@ var State = (function () {
       }).filter(function (r) {
         return isFinite(r.earned) && isFinite(r.seconds);
       }).slice(-MAX_RUNS);
+    }
+
+    // 미슐랭 시즌 기록
+    if (typeof raw.michSeason === 'string' && /^\d{4}-\d{2}$/.test(raw.michSeason)) {
+      s.michSeason = raw.michSeason;
+    }
+    if (Array.isArray(raw.michHist)) {
+      s.michHist = raw.michHist.filter(function (h) {
+        return h && typeof h === 'object' && /^\d{4}-\d{2}$/.test(h.s);
+      }).map(function (h) {
+        return { s: h.s, stars: Math.max(0, Math.min(5, Math.floor(Number(h.stars) || 0))),
+                 taps: Math.max(0, Math.floor(Number(h.taps) || 0)) };
+      }).slice(-Data.MICHELIN.histKeep);
     }
 
     // 파티 도감 — 실제로 있는 음식 id 만, 중복 없이

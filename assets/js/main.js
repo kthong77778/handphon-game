@@ -313,6 +313,7 @@
     State.requestPersist();    // 브라우저에 저장소 보호를 한 번 요청 (자동 삭제 방지)
     Game.invalidate();
     Game.questRoll();          // 오늘 퀘스트가 없으면 여기서 깔린다
+    Game.michSeasonRoll();     // 달이 바뀌었으면 새 시즌으로
     UI.init(handlers);
     if (State.get().sawTour) settleReturn();
     else maybeTour();          // 처음이면 정산 모달과 겹치지 않게 안내부터

@@ -691,9 +691,78 @@ var Game = (function () {
   function bestMichelin() { return S().bestMichelin; }
   function michelinGrandDone() { return S().michelinGrand === 1; }
 
-  /** 심사 종료 정산 — @returns {{stars,gain,best,grandNew}} */
+  /* ----- 시즌 ----- */
+
+  function seasonId() {
+    var d = nowDate();
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1);
+  }
+  function seasonName(id) {
+    var m = parseInt(String(id).split('-')[1], 10) - 1;
+    var nm = Data.MICHELIN.seasons[(m + 12) % 12] || '';
+    return (m + 1) + '월 · ' + nm;
+  }
+  function michSeason() { return { id: seasonId(), name: seasonName(seasonId()) }; }
+
+  /** 달이 바뀌었으면 지난 시즌 기록을 보관하고 이번 시즌을 새로 연다 */
+  function michSeasonRoll() {
+    var s = S();
+    var now = seasonId();
+    if (s.michSeason === now) return false;
+    // 이전 시즌에 기록이 있으면 히스토리에 남긴다
+    if (s.michSeason && (s.michSeasonStars > 0 || s.michSeasonTaps > 0)) {
+      s.michHist.push({ s: s.michSeason, stars: s.michSeasonStars, taps: s.michSeasonTaps });
+      if (s.michHist.length > Data.MICHELIN.histKeep) s.michHist = s.michHist.slice(-Data.MICHELIN.histKeep);
+    }
+    s.michSeason = now;
+    s.michSeasonStars = 0;
+    s.michSeasonTaps = 0;
+    return true;
+  }
+
+  /* ----- 랭킹 (연출용) ----- */
+
+  /** 한 판 조리 횟수로 전국 셰프 순위 */
+  function michRank(taps) {
+    var N = Data.MICHELIN.rankTotal;
+    var t = Math.min(1, Math.max(0, taps) / Data.MICHELIN.tapCap);
+    var rank = Math.max(1, Math.min(N, Math.round(N * Math.pow(1 - t, 2))));
+    var pct = Math.max(0.1, Math.round(rank / N * 1000) / 10);
+    return { rank: rank, total: N, pct: pct };
+  }
+  /** (시즌·순위) 로 정해지는 가상 셰프 이름 */
+  function michChefName(rank) {
+    var h = hashStr(seasonId() + '#chef#' + rank);
+    var a = Data.RANK_AREAS[h % Data.RANK_AREAS.length];
+    var sur = Data.MICHELIN.chefSurnames[(h >>> 5) % Data.MICHELIN.chefSurnames.length];
+    var t = Data.MICHELIN.chefTitles[(h >>> 11) % Data.MICHELIN.chefTitles.length];
+    return a + ' ' + sur + ' ' + t;
+  }
+  /** 내 앞뒤 셰프를 곁들인 미니 리더보드 (연출) */
+  function michBoard() {
+    var s = S();
+    var myTaps = s.michSeasonTaps;
+    var my = michRank(myTaps).rank;
+    var rows = [], want = [], i;
+    for (i = 1; i <= 3; i++) want.push(i);
+    for (i = my - 1; i <= my + 1; i++) if (i >= 1) want.push(i);
+    want = want.filter(function (v, k) { return want.indexOf(v) === k; })
+               .sort(function (a, b) { return a - b; });
+    var prev = 0;
+    want.forEach(function (rank) {
+      if (rank - prev > 1) rows.push({ gap: true });
+      rows.push({ rank: rank, me: (rank === my && myTaps > 0),
+        name: (rank === my && myTaps > 0) ? '나' : michChefName(rank) });
+      prev = rank;
+    });
+    return rows;
+  }
+
+  /** 심사 종료 정산 — @returns {{stars,gain,best,grandNew,seasonBest,rank}} */
   function claimMichelin(taps) {
     var s = S();
+    michSeasonRoll();
     var stars = michelinStars(taps);
     var gain = 0;
     if (stars > 0) {
@@ -701,13 +770,14 @@ var Game = (function () {
                               perSec(true) * Data.MICHELIN.starSec * stars));
     }
     if (stars > s.bestMichelin) s.bestMichelin = stars;
+    if (taps > s.michBestTaps) s.michBestTaps = taps;
+    var seasonBest = false;
+    if (stars > s.michSeasonStars) { s.michSeasonStars = stars; seasonBest = true; }
+    if (taps > s.michSeasonTaps) s.michSeasonTaps = taps;
     var grandNew = false;
-    if (stars >= 5 && !s.michelinGrand) {
-      s.michelinGrand = 1;
-      bump();
-      grandNew = true;
-    }
-    return { stars: stars, gain: gain, best: s.bestMichelin, grandNew: grandNew };
+    if (stars >= 5 && !s.michelinGrand) { s.michelinGrand = 1; bump(); grandNew = true; }
+    return { stars: stars, gain: gain, best: s.bestMichelin, grandNew: grandNew,
+             seasonBest: seasonBest, rank: michRank(taps) };
   }
 
     /* ---------- 전국 맛집 랭킹 (연출용) ---------- */
@@ -1278,6 +1348,10 @@ var Game = (function () {
     bestMichelin: bestMichelin,
     michelinGrandDone: michelinGrandDone,
     claimMichelin: claimMichelin,
+    michSeason: michSeason,
+    michSeasonRoll: michSeasonRoll,
+    michRank: michRank,
+    michBoard: michBoard,
     partyState: partyState,
     setClock: setClock,
     partyFoodsAll: partyFoodsAll,

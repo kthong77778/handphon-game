@@ -31,7 +31,7 @@ var UI = (function () {
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
      'michelinCard', 'michelinModal', 'michPlay', 'michStars', 'michBar', 'michCount',
      'michNext', 'michTime', 'michTap', 'michTapEmoji', 'michResult', 'michResultEmoji',
-     'michResultStars', 'michResultText', 'michDone', 'michQuit'].forEach(function (id) {
+     'michResultStars', 'michResultText', 'michDone', 'michQuit', 'michShareResult'].forEach(function (id) {
       el[id] = $(id);
     });
   }
@@ -277,22 +277,82 @@ var UI = (function () {
   }
 
   function renderMichelin() {
-    var best = Game.bestMichelin();
+    Game.michSeasonRoll();
+    var s = State.get();
+    var season = Game.michSeason();
     var grand = Game.michelinGrandDone();
-    var mark = best + '|' + grand;
+    var rank = Game.michRank(s.michSeasonTaps);
+    var mark = season.id + '|' + s.michSeasonStars + '|' + s.michSeasonTaps + '|' +
+               s.bestMichelin + '|' + grand;
     if (sig.mich === mark) return;
     sig.mich = mark;
+
+    var board = Game.michBoard().map(function (r) {
+      if (r.gap) return '<div class="mb-gap">⋯</div>';
+      var medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : r.rank + '위';
+      return '<div class="mb-row' + (r.me ? ' me' : '') + '">' +
+        '<span class="mb-rank">' + medal + '</span>' +
+        '<span class="mb-name">' + escape(r.name) + (r.me ? ' <b>나</b>' : '') + '</span></div>';
+    }).join('');
+
+    var hist = '';
+    if (s.michHist && s.michHist.length) {
+      var last = s.michHist[s.michHist.length - 1];
+      var lm = parseInt(last.s.split('-')[1], 10);
+      hist = '<div class="mich-hist">지난 시즌(' + lm + '월) ' + starStr(last.stars) + '</div>';
+    }
+
     el.michelinCard.innerHTML =
+      '<div class="mich-season">🗓️ ' + escape(season.name) + ' 시즌</div>' +
       '<div class="mich-card-top">' +
-        '<div><div class="mcz-label">내 최고 등급</div>' +
-          '<div class="mcz-stars">' + starStr(best) + '</div></div>' +
-        '<button class="btn michelin-start" id="michStart">🌟 도전하기</button>' +
+        '<div><div class="mcz-label">이번 시즌 등급</div>' +
+          '<div class="mcz-stars">' + starStr(s.michSeasonStars) + '</div>' +
+          '<div class="mcz-sub">🍴 전국 ' + Fmt.comma(rank.rank) + '위 · 상위 ' + rank.pct + '%' +
+            ' · 통산 ' + starStr(s.bestMichelin) + '</div></div>' +
+        '<div class="mich-btns">' +
+          '<button class="btn michelin-start" id="michStart">🌟 도전</button>' +
+          '<button class="btn michelin-share" id="michShare">📣 자랑</button>' +
+        '</div>' +
       '</div>' +
+      '<div class="mich-board">' + board + '</div>' +
+      hist +
       '<div class="mcz-prize' + (grand ? ' done' : '') + '">' +
         (grand ? '✅ 5성 달성! <b>모든 수익 ×' + Data.MICHELIN.grandMult + '</b> 영구 적용 중'
                : '🏆 별 5개를 채우면 <b>모든 수익 ×' + Data.MICHELIN.grandMult + '</b> 를 영구히 받습니다') +
       '</div>';
     document.getElementById('michStart').addEventListener('click', startMichelin);
+    document.getElementById('michShare').addEventListener('click', function () { shareMichelin(); });
+  }
+
+  /* ----- 기록 자랑하기 (홍보) ----- */
+  function shareMichelin() {
+    var s = State.get();
+    var season = Game.michSeason();
+    var stars = s.michSeasonStars;
+    var rank = Game.michRank(s.michSeasonTaps).rank;
+    var url = '';
+    try { url = location.href; } catch (e) {}
+    var text = '🌟 분식집 키우기 · 미슐랭 도전\n' +
+      season.name + ' 시즌 ' + starStr(stars) + ' (별 ' + stars + '개)\n' +
+      '전국 셰프 ' + Fmt.comma(rank) + '위! 너도 도전해봐 👉';
+    var full = text + (url ? ' ' + url : '');
+    // 공유 API 가 되면 그걸로, 안 되면 복사 + 코드창으로 (샌드박스 대비)
+    if (navigator.share) {
+      navigator.share({ title: '분식집 키우기 미슐랭 도전', text: text, url: url })
+        .then(function () {}, function () {});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(full).then(function () {
+        toast('자랑 문구를 복사했어요! 붙여넣어 홍보하세요');
+      }, function () { showShareText(full); });
+    } else {
+      showShareText(full);
+    }
+  }
+  function showShareText(full) {
+    textDialog({ emoji: '📣', title: '기록 자랑하기',
+      desc: '이 문구를 복사해 친구에게 자랑하세요!', value: full, readonly: true });
   }
 
   // ----- 심사 진행 -----
@@ -1668,6 +1728,7 @@ var UI = (function () {
       if (ev.repeat) return; ev.preventDefault(); michTapPress(ev);
     });
     el.michDone.addEventListener('click', closeMichelinResult);
+    el.michShareResult.addEventListener('click', function () { shareMichelin(); });
     el.michQuit.addEventListener('click', quitMichelin);
 
     el.muteBtn.addEventListener('click', function () {

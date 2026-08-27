@@ -762,6 +762,40 @@ console.log('\n[17] 미슐랭 도전');
   // 깨진 값 방어
   State.set({ bestMichelin: 'x', michelinGrand: 9 });
   ok(State.get().bestMichelin === 0, '엉뚱한 최고 기록은 0');
+
+  // ----- 시즌 -----
+  Game.setClock(function () { return new Date(2026, 7, 15, 12, 0, 0); }); // 8월
+  State.set({ money: 0 }); Data.GENERATORS.forEach(function (g) { State.get().gens[g.id] = 10; });
+  Game.invalidate(); Game.michSeasonRoll();
+  ok(Game.michSeason().id === '2026-08', '시즌 id 는 연-월');
+  ok(/8월/.test(Game.michSeason().name), '시즌 이름에 월 표시: ' + Game.michSeason().name);
+  Game.claimMichelin(Data.MICHELIN.goals[2]);   // 3성
+  ok(State.get().michSeasonStars === 3, '이번 시즌 최고 별 갱신');
+  ok(State.get().michSeasonTaps === Data.MICHELIN.goals[2], '이번 시즌 최고 조리 횟수 기록');
+
+  // 달이 바뀌면 시즌 리셋 + 히스토리, 통산은 유지
+  Game.setClock(function () { return new Date(2026, 8, 3, 12, 0, 0); }); // 9월
+  ok(Game.michSeasonRoll() === true, '달이 바뀌면 새 시즌');
+  ok(State.get().michSeasonStars === 0, '새 시즌엔 시즌 별이 0');
+  ok(State.get().michHist.length === 1 && State.get().michHist[0].s === '2026-08',
+     '지난 시즌이 히스토리에 남음');
+  ok(State.get().bestMichelin === 3, '통산 최고 별은 유지됨(시즌 넘어가도)');
+  ok(Game.michSeasonRoll() === false, '같은 달이면 그대로');
+
+  // ----- 랭킹 -----
+  var lo = Game.michRank(0), hi = Game.michRank(9999);
+  ok(lo.rank === lo.total, '조리 0번은 꼴찌');
+  ok(hi.rank === 1, '아주 많이 하면 전국 1위');
+  ok(Game.michRank(120).rank < Game.michRank(30).rank, '더 많이 조리하면 순위가 앞당겨짐');
+  var board = Game.michBoard();
+  ok(board.length >= 3, '랭킹 보드에 여러 줄');
+  ok(board.filter(function (r) { return r.name && !/undefined/.test(r.name); }).length ===
+     board.filter(function (r) { return !r.gap; }).length, '셰프 이름이 모두 정상');
+  // 같은 시즌·순위면 이름 고정
+  ok(Game.michBoard().map(function(r){return r.name;}).join(',') ===
+     Game.michBoard().map(function(r){return r.name;}).join(','), '같은 시즌이면 이름 그대로');
+
+  Game.setClock(null);
 }
 
 console.log('\n[18] 세이브 백업 표시');
