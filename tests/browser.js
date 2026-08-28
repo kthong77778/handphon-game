@@ -201,7 +201,11 @@ suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
       fame: Data.FAME_SHOP.length, achv: Data.ACHIEVEMENTS.length }));
     ok(await page.locator('#fameShopList > *').count() === counts.fame, `명성 상점 ${counts.fame}종`);
     await page.click('#tabbar .tab[data-tab="upgrade"]'); await page.waitForTimeout(250);
-    ok(await page.locator('#achvList > *').count() === counts.achv, `도전과제 ${counts.achv}종 (업그레이드 탭)`);
+    // 미달성은 진행도 행, 달성은 폴더 안 아이콘 칩 — 합쳐서 전체 개수
+    const achvShown = await page.evaluate(() =>
+      document.querySelectorAll('#achvList .item.achv-locked').length +
+      document.querySelectorAll('#achvList .achv-folder .achv-chip').length);
+    ok(achvShown === counts.achv, `도전과제 ${counts.achv}종 (행+폴더칩, 업그레이드 탭)`);
 
     console.log('\n[스킨 & 등급]');
     await page.click('#tabbar .tab[data-tab="settings"]'); await page.waitForTimeout(300);
@@ -1256,8 +1260,15 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     ok(/\d+ \/ \d+/.test(prog.text || ''), '잠긴 항목에 현재/목표 표시: ' + prog.text);
     ok(prog.width && prog.width !== '0%' && prog.width !== '100%', '진행도 막대가 부분만 참: ' + prog.width);
     ok(prog.anyProg > 0 && prog.anyBar === prog.anyProg, '모든 잠긴 항목에 막대와 숫자');
-    // 달성한 항목엔 진행도가 아니라 체크
-    ok(await p.locator('#achvList .item.achv-done .achv-check').count() > 0, '달성 항목엔 체크 표시');
+    // 달성한 항목은 폴더에 아이콘 칩으로 모인다
+    await p.evaluate(()=>{ const s=State.get(); s.achievements={ac1:true}; UI.refresh(true); });
+    await p.waitForTimeout(150);
+    ok(await p.locator('#achvList .achv-folder .achv-chip').count() > 0, '달성 항목은 폴더 안 아이콘 칩으로');
+    // 칩을 누르면 어떤 도전과제인지 팝업으로 뜬다
+    await p.locator('#achvList .achv-folder .achv-chip').first().click();
+    await p.waitForTimeout(150);
+    ok(!await p.isHidden('#askModal'), '칩을 누르면 상세 팝업이 뜸');
+    await p.click('#askOk'); await p.waitForTimeout(150);
 
 
     console.log('\n[4] 소리');

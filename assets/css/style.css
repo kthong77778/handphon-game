@@ -594,6 +594,51 @@ body{
 .item.achv-done .item-icon{background:rgba(255,204,68,.14)}
 .achv-check{font-size:18px;flex:0 0 auto;color:var(--gold)}
 
+/* 달성한 도전과제 폴더 — 아이콘을 모아두고, 누르면 무엇인지 뜬다 */
+.achv-folder{
+  background:var(--card);border:1px solid rgba(255,204,68,.4);
+  border-radius:16px;padding:12px 12px 14px;
+}
+.achv-folder-head{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;font-weight:700;color:var(--dim);margin-bottom:10px;
+}
+.achv-folder-head b{color:var(--gold);font-variant-numeric:tabular-nums}
+.achv-grid{
+  display:grid;gap:8px;
+  grid-template-columns:repeat(auto-fill,minmax(46px,1fr));
+}
+.achv-chip{
+  aspect-ratio:1/1;border-radius:12px;
+  background:rgba(255,204,68,.12);border:1px solid rgba(255,204,68,.35);
+  font-size:22px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .06s,background .12s;
+}
+.achv-chip:active{transform:scale(.9)}
+.achv-chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.achv-earned{display:inline-block;margin-top:6px;font-size:12px;font-weight:800;color:var(--good)}
+
+/* 설비·업그레이드·명성상점: 가격을 작은 '구매 버튼'처럼 */
+#genList .item-cost, #upgradeList .item-cost, #fameShopList .item-cost{
+  padding:8px 12px;border-radius:11px;min-width:66px;
+  background:var(--card2);border:1px solid var(--line);
+  color:var(--dim);box-shadow:0 2px 0 rgba(0,0,0,.25);
+}
+#genList .item.buyable .item-cost, #upgradeList .item.buyable .item-cost,
+#fameShopList .item.buyable .item-cost{
+  background:linear-gradient(180deg,#7ee29a,#54c26a);
+  border-color:transparent;color:#0e1a10;box-shadow:0 3px 0 #2f8544;
+}
+#genList .item.buyable .item-cost small, #upgradeList .item.buyable .item-cost small,
+#fameShopList .item.buyable .item-cost small{color:rgba(14,26,16,.7)}
+#genList .item-cost.no, #upgradeList .item-cost.no, #fameShopList .item-cost.no{
+  color:var(--dim);opacity:.85;
+}
+#genList .item.locked .item-cost, #upgradeList .item.locked .item-cost{
+  background:var(--card);box-shadow:none;opacity:.7;
+}
+
 /* 명성 상점 레벨 표시 */
 .fame-lv{font-size:11px;color:var(--dim);font-weight:700}
 

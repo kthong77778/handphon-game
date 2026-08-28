@@ -735,32 +735,52 @@ var UI = (function () {
     var s = State.get();
     var done = Object.keys(s.achievements).length;
 
-    // 달성 개수가 바뀌면 목록을 새로 짓는다 (달성/미달성 모양이 다르므로)
+    // 달성 개수가 바뀌면 목록을 새로 짓는다 (미달성=행, 달성=폴더로 모음)
     if (sig.achv !== done) {
       sig.achv = done;
       el.achvList.innerHTML = '';
       achvRows = {};
+      var earned = [];
       Data.ACHIEVEMENTS.forEach(function (a) {
-        var got = !!s.achievements[a.id];
-        var row = makeItem(got ? a.icon : '🔒', { static: true });
+        if (s.achievements[a.id]) { earned.push(a); return; }
+        // 미달성: 진행도(1,538 / 10,000)와 막대를 보여준다
+        var row = makeItem('🔒', { static: true });
         var p = parts(row);
         p.nm.textContent = a.name;
         p.desc.textContent = a.desc;
-        if (got) {
-          p.cost.innerHTML = '<span class="achv-check">✔</span>';
-          row.className = 'item achv-done';
-        } else {
-          // 잠긴 항목은 진행도(1,538 / 10,000)와 막대를 보여준다
-          var bar = document.createElement('div');
-          bar.className = 'qbar';
-          bar.innerHTML = '<i></i>';
-          p.desc.appendChild(bar);
-          p.cost.innerHTML = '<span class="achv-prog"></span>';
-          row.className = 'item achv-locked';
-          achvRows[a.id] = { def: a, bar: bar.firstChild, txt: p.cost.firstChild };
-        }
+        var bar = document.createElement('div');
+        bar.className = 'qbar';
+        bar.innerHTML = '<i></i>';
+        p.desc.appendChild(bar);
+        p.cost.innerHTML = '<span class="achv-prog"></span>';
+        row.className = 'item achv-locked';
+        achvRows[a.id] = { def: a, bar: bar.firstChild, txt: p.cost.firstChild };
         el.achvList.appendChild(row);
       });
+
+      // 달성한 도전과제는 폴더에 모은다 — 아이콘을 누르면 무엇인지 뜬다
+      if (earned.length) {
+        var folder = document.createElement('div');
+        folder.className = 'achv-folder';
+        folder.innerHTML = '<div class="achv-folder-head"><span>🗂 달성한 도전과제</span>' +
+          '<b>' + earned.length + ' / ' + Data.ACHIEVEMENTS.length + '</b></div>' +
+          '<div class="achv-grid"></div>';
+        var grid = folder.querySelector('.achv-grid');
+        earned.forEach(function (a) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'achv-chip';
+          chip.textContent = a.icon;
+          chip.setAttribute('aria-label', a.name + ' · 달성 완료');
+          chip.addEventListener('click', function () {
+            ask({ emoji: a.icon, title: a.name,
+                  text: a.desc + '<br><span class="achv-earned">✔ 달성 완료 · 모든 수익 +1%</span>',
+                  ok: '닫기', oneButton: true }, function () {});
+          });
+          grid.appendChild(chip);
+        });
+        el.achvList.appendChild(folder);
+      }
     }
 
     // 잠긴 항목의 진행도는 값이 바뀌니 매번 갱신한다
@@ -1491,6 +1511,7 @@ var UI = (function () {
     el.askText.innerHTML = o.text;
     el.askOk.textContent = o.ok || '확인';
     el.askCancel.textContent = o.cancel || '취소';
+    el.askCancel.hidden = !!o.oneButton;   // 정보용 팝업은 '확인' 하나만
     el.askOk.className = 'btn big' + (o.danger ? ' danger' : '');
     el.askModal.hidden = false;
 
