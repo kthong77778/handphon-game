@@ -71,6 +71,20 @@ body{
   color:#c4b5fd;font-weight:600;
 }
 
+/* 사장 레벨 + XP (누적 매출로 성장, 표시용) */
+.boss{margin-top:9px;display:flex;flex-direction:column;gap:4px;align-items:center}
+.boss-lv{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.3px}
+.boss-xp{
+  width:154px;height:5px;border-radius:3px;
+  background:rgba(255,255,255,.09);overflow:hidden;
+}
+.boss-xp i{
+  display:block;height:100%;width:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transform-origin:left center;transform:scaleX(0);
+  transition:transform .3s ease;
+}
+
 /* ===== 본문 ===== */
 #view{
   flex:1 1 auto;
@@ -629,6 +643,36 @@ body{
 .combo.hot .combo-x{color:var(--gold);text-shadow:0 0 16px rgba(255,204,68,.7)}
 
 /* ===== 손님 몰이 버튼 ===== */
+/* 추천 설비 바 — 지금 가장 이득인 설비를 원터치 구매 */
+.reco-bar{
+  display:flex;align-items:center;gap:11px;width:100%;
+  margin-bottom:8px;
+  padding:10px 12px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(74,222,128,.15),var(--card) 60%);
+  border:1px solid rgba(74,222,128,.5);
+  color:var(--txt);font-family:inherit;text-align:left;
+  cursor:pointer;
+  transition:transform .06s,filter .12s,opacity .12s;
+}
+.reco-bar:active{transform:scale(.985)}
+.reco-bar.saving{
+  background:var(--card);border-color:var(--line);opacity:.72;
+}
+.reco-ic{
+  flex:0 0 40px;width:40px;height:40px;border-radius:11px;
+  background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.reco-body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+.reco-tag{font-size:11px;font-weight:800;color:var(--good);letter-spacing:.3px}
+.reco-bar.saving .reco-tag{color:var(--dim)}
+.reco-name{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reco-desc{font-size:11px;color:var(--dim)}
+.reco-cost{
+  flex:0 0 auto;font-size:14px;font-weight:800;color:var(--good);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.reco-bar.saving .reco-cost{color:var(--dim)}
+
 .boost-btn{
   display:flex;align-items:center;gap:11px;width:100%;
   margin-bottom:4px;

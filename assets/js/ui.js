@@ -17,6 +17,7 @@ var UI = (function () {
      'dotUpgrade', 'dotPrestige', 'dotAchv', 'buyAmt', 'toast',
      'offlineModal', 'offlineText', 'offlineOk',
      'buffBar', 'partyBanner', 'partyHint', 'partyDex', 'combo', 'comboX', 'comboN', 'comboFill',
+     'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
@@ -172,6 +173,34 @@ var UI = (function () {
     if (Game.buyGen(id, amt)) {
       Sound.play('buy');
       buzz(8);
+      refresh(true);
+    } else {
+      toast('돈이 부족합니다');
+    }
+  }
+
+  /* ---------- 추천 설비 바 ----------
+     "다음에 뭘 사지?"를 없앤다 — 지금 가장 이득인 설비 하나를 원터치로 산다. */
+  function updateReco() {
+    var b = Game.bestGen();
+    if (!b) { el.recoBar.hidden = true; return; }
+    el.recoBar.hidden = false;
+    el.recoIcon.textContent = b.icon;
+    el.recoName.textContent = b.name;
+    el.recoDesc.textContent = '초당 +' + Fmt.num(b.gain);
+    el.recoCost.textContent = Fmt.num(b.cost);
+    el.recoBar.classList.toggle('ready', b.affordable);
+    el.recoBar.classList.toggle('saving', !b.affordable);
+  }
+
+  function onBuyBest() {
+    var b = Game.bestGen();
+    if (!b) return;
+    if (!b.affordable) { toast(b.name + ' 까지 조금 더 모아요'); return; }
+    if (Game.buyBest()) {
+      Sound.play('buy');
+      buzz(8);
+      toast('✔ ' + b.name + ' 구매!');
       refresh(true);
     } else {
       toast('돈이 부족합니다');
@@ -890,6 +919,8 @@ var UI = (function () {
     el.rate.textContent = '초당 ' + Fmt.rate(Game.perSec()) + ' 원';
     el.fameChip.textContent = '✨ 명성 ' + Fmt.num(s.fame);
     el.multChip.textContent = Fmt.mult(Game.globalMult());
+    el.bossChip.textContent = '사장 Lv.' + Game.bossLevel() + ' · ' + Game.bossTitle();
+    el.bossXpFill.style.transform = 'scaleX(' + Game.bossXpRatio().toFixed(3) + ')';
     updateTapLook();
 
     var rest = Game.macroRestLeft();
@@ -1435,7 +1466,7 @@ var UI = (function () {
 
   function refresh(force) {
     updateHud();
-    if (currentTab === 'shop') updateGenList();
+    if (currentTab === 'shop') { updateGenList(); updateReco(); }
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
@@ -1730,6 +1761,8 @@ var UI = (function () {
         updateGenList();
       });
     });
+
+    el.recoBar.addEventListener('click', onBuyBest);
 
     el.boostBtn.addEventListener('click', function () {
       var st = State.get();

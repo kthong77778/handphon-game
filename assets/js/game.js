@@ -577,6 +577,66 @@ var Game = (function () {
     return result;
   }
 
+  /* ---------- 추천 설비 ----------
+     "지금 사면 초당 수익이 가장 많이 오르는 것" 하나를 고른다.
+     가성비(가격÷수익)로 고르면 늘 제일 싼 알바생만 나와서 큰돈을 쥐고도
+     추천이 시시해진다 — 자동구매(runManager)와 같은 '절대 수익 증가' 기준을 쓴다.
+     살 수 있는 게 하나도 없으면, 다음으로 모을 목표(제일 싼 설비)를 알려준다. */
+  function bestGen() {
+    var s = S(), c = calc(), money = s.money;
+    var best = null, bestGain = 0, target = null, targetCost = Infinity;
+    for (var k = 0; k < Data.GENERATORS.length; k++) {
+      var g = Data.GENERATORS[k];
+      if (!genUnlocked(g.id)) continue;
+      var cost = genCost(g.id, 1);
+      var gain = g.rate * (c.genM[g.id] || 1) * c.stat;   // 1개 살 때 오르는 초당 수익
+      if (cost < targetCost) { targetCost = cost; target = g; }
+      if (money >= cost && gain > bestGain) { bestGain = gain; best = g; }
+    }
+    if (best) {
+      return { id: best.id, icon: best.icon, name: best.name,
+               cost: genCost(best.id, 1), gain: bestGain, affordable: true };
+    }
+    if (target) {
+      return { id: target.id, icon: target.icon, name: target.name, cost: targetCost,
+               gain: target.rate * (c.genM[target.id] || 1) * c.stat, affordable: false };
+    }
+    return null;   // 열린 설비가 하나도 없다 (이론상 없음)
+  }
+
+  /** 추천 설비를 1개 산다. 살 수 없으면 false. */
+  function buyBest() {
+    var b = bestGen();
+    if (!b || !b.affordable) return false;
+    return buyGen(b.id, 1);
+  }
+
+  /* ---------- 사장 레벨 ----------
+     누적 매출(totalEarned)로 오르는 '사장 레벨'. 수익 배율에는 영향을 주지 않는다 —
+     성장감을 보여주는 표시용이라 밸런스·세이브를 건드리지 않는다.
+     레벨당 약 3.16배(10^0.5)씩 누적 매출이 필요하다. */
+  var BOSS_BASE = 1000;   // Lv.1 시작선(누적 매출)
+  var BOSS_STEP = 0.5;    // 레벨 간격(로그10)
+
+  function bossProgress() {
+    var t = S().totalEarned;
+    if (!(t > 0)) return { level: 0, ratio: 0 };
+    if (!isFinite(t)) return { level: 99, ratio: 1 };   // 천장(Infinity)에서 무한 레벨 방지
+    if (t < BOSS_BASE) return { level: 0, ratio: t / BOSS_BASE };
+    var x = Math.log(t / BOSS_BASE) / Math.LN10 / BOSS_STEP;
+    return { level: Math.floor(x) + 1, ratio: x - Math.floor(x) };
+  }
+  function bossLevel() { return bossProgress().level; }
+  function bossXpRatio() { var r = bossProgress().ratio; return r < 0 ? 0 : (r > 1 ? 1 : r); }
+  function bossTitle() {
+    var L = bossLevel();
+    if (L >= 20) return '분식 대부';
+    if (L >= 15) return '전국구 사장';
+    if (L >= 10) return '지역 명장';
+    if (L >= 5)  return '소문난 사장';
+    return '동네 사장';
+  }
+
   /* ---------- 명예의 전당 ---------- */
 
   /** 역대 회차를 명성 순으로. 동점이면 빨리 끝낸 회차가 위로. */
@@ -1348,6 +1408,11 @@ var Game = (function () {
     comboRatio: comboRatio,
     comboMult: comboMult,
     resetCombo: resetCombo,
+    bestGen: bestGen,
+    buyBest: buyBest,
+    bossLevel: bossLevel,
+    bossXpRatio: bossXpRatio,
+    bossTitle: bossTitle,
     nextGoldenGap: nextGoldenGap,
     rollGolden: rollGolden,
     claimGolden: claimGolden,

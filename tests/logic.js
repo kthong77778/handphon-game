@@ -841,5 +841,64 @@ console.log('\n[18] 세이브 백업 표시');
   ok(State.get().lastBackup === 0, '엉뚱한 lastBackup 은 0 으로');
 }
 
+/* ===== 추천 설비 ===== */
+console.log('\n[19] 추천 설비');
+(function () {
+  // 돈이 없으면: 살 수 없는 상태로라도 '다음 목표'를 알려준다
+  State.set({ money: 0 }); Game.invalidate();
+  var b0 = Game.bestGen();
+  ok(b0 && b0.affordable === false, '돈 없을 때는 목표만 (affordable=false)');
+  ok(b0 && b0.id === Data.GENERATORS[0].id, '가장 싼 설비를 목표로');
+
+  // 여러 설비가 열리고 돈이 넉넉하면: 살 수 있는 것 중 하나를 추천
+  State.set({ money: 1e12 });
+  var s = State.get();
+  s.gens = { g1: 1, g2: 1, g3: 1 };   // g4 까지 해금
+  Game.invalidate();
+  var b = Game.bestGen();
+  ok(b && b.affordable === true, '돈 넉넉하면 살 수 있는 추천 (affordable=true)');
+  ok(b && b.gain > 0, '추천 설비의 초당 증가분이 0보다 큼');
+  ok(Game.genUnlocked(b.id), '추천 설비는 해금된 것');
+
+  // buyBest 가 실제로 초당 수익을 올린다
+  var before = Game.perSec(true);
+  var bought = Game.buyBest();
+  ok(bought === true, 'buyBest 가 구매 성공');
+  ok(Game.perSec(true) > before, '추천 구매 후 초당 수익 증가');
+
+  // 돈이 없으면 buyBest 는 사지 않는다
+  State.set({ money: 0 }); Game.invalidate();
+  ok(Game.buyBest() === false, '돈 없으면 buyBest 는 false');
+})();
+
+/* ===== 사장 레벨 ===== */
+console.log('\n[20] 사장 레벨');
+(function () {
+  State.set({ totalEarned: 0 }); Game.invalidate();
+  ok(Game.bossLevel() === 0, '누적 0 이면 Lv.0');
+  var r0 = Game.bossXpRatio();
+  ok(r0 >= 0 && r0 <= 1, 'XP 비율은 0~1');
+
+  State.set({ totalEarned: 1000 }); Game.invalidate();
+  ok(Game.bossLevel() === 1, '누적 1000(BASE) 이면 Lv.1');
+
+  State.set({ totalEarned: 1e9 }); Game.invalidate();
+  var hi = Game.bossLevel();
+  ok(hi > 1, '누적이 크면 레벨이 오름: Lv.' + hi);
+  ok(['동네 사장', '소문난 사장', '지역 명장', '전국구 사장', '분식 대부'].indexOf(Game.bossTitle()) >= 0,
+     '칭호가 정상: ' + Game.bossTitle());
+
+  // 단조 증가
+  State.set({ totalEarned: 1000 }); Game.invalidate(); var lo = Game.bossLevel();
+  State.set({ totalEarned: 1e6 }); Game.invalidate();
+  ok(Game.bossLevel() >= lo, '누적이 늘면 레벨이 줄지 않음');
+
+  // Infinity(천장) 에서도 무한 레벨이 되지 않는다 (rule 10)
+  State.set({}); var s = State.get(); s.totalEarned = Infinity; Game.invalidate();
+  var big = Game.bossLevel();
+  ok(isFinite(big), 'Infinity 누적에서도 유한한 레벨: ' + big);
+  ok(Game.bossXpRatio() <= 1, 'Infinity 에서도 XP 비율 ≤ 1');
+})();
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);
