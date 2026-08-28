@@ -81,6 +81,8 @@ var State = (function () {
       partyFoods: [],    // 주말 파티에서 모은 음식 도감 (id 배열)
       ings: {},          // 🍳 주방 재료 창고 (재료id -> 개수)
       kfoods: {},        // 🍳 주방 음식 도감 (음식id -> 만든 횟수, 1 이상이면 도감 등록)
+      truckCount: 0,     // 오늘 온 재료 트럭 수 — 올수록 다음 트럭 간격이 30초씩 늘고, 자정에 0으로 리셋
+      truckDay: '',      // truckCount 가 속한 날짜 (YYYY-MM-DD)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
 
@@ -125,7 +127,8 @@ var State = (function () {
                    'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup',
-                   'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier'];
+                   'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
+                   'truckCount'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
     // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
     var CAPV = Number.MAX_VALUE;
@@ -196,6 +199,9 @@ var State = (function () {
         return Data.PARTY.foods.some(function (f) { return f.id === id; });
       });
     }
+
+    // 재료 트럭 카운트가 속한 날짜 (형식이 맞을 때만)
+    if (typeof raw.truckDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.truckDay)) s.truckDay = raw.truckDay;
 
     // 지역은 실제로 있는 것일 때만 받는다 (없으면 game.js 가 처음 볼 때 배정한다)
     if (typeof raw.region === 'string') {

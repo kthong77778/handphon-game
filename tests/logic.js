@@ -1025,6 +1025,17 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   for (var t = 0; t < 1500; t++) { Game.tick(1); var h = Game.truckState().here; if (h && !was) spawns.push(t); was = h; }
   var gaps = []; for (var j = 1; j < spawns.length; j++) gaps.push(spawns[j] - spawns[j - 1]);
   ok(gaps.length >= 2 && gaps[gaps.length - 1] > gaps[0], '받을수록 트럭 간격이 늘어남: ' + gaps.join('·') + '초');
+
+  // 자정(날짜 변경)에 오늘치 트럭 카운트가 0으로 리셋
+  Game.setClock(function () { return new Date(2026, 0, 10, 12, 0, 0); });
+  Game.resetTruck();
+  for (var m = 0; m < 300; m++) { Game.tick(1); }
+  var cntA = Game.truckState().count;
+  ok(cntA > 0, '같은 날엔 오늘치 트럭 카운트가 쌓임: ' + cntA);
+  Game.setClock(function () { return new Date(2026, 0, 11, 0, 30, 0); }); // 다음 날
+  Game.tick(1);
+  ok(Game.truckState().count === 0, '자정 넘어가면 오늘치 카운트가 0으로 리셋');
+  Game.setClock(null);
 })();
 
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);

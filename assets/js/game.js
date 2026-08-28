@@ -686,16 +686,20 @@ var Game = (function () {
     return { food: f, first: first, gain: gain };
   }
 
-  /* ---- 재료 트럭 (전부 세션 내 변수 — 세이브하지 않는다) ----
-     받을수록 다음 간격이 30초씩 늘어난다: 30·60·90·… 세션(접속)마다 다시 30초부터.
-     영구 누적으로 하면 오래된 세이브에서 간격이 수십 분까지 늘어 트럭이 사실상 사라진다. */
+  /* ---- 재료 트럭 ----
+     받을수록 다음 간격이 30초씩 늘어난다: 30·60·90·… 오늘 온 횟수(s.truckCount)는
+     세이브하되 자정(날짜 변경)에 0으로 리셋한다. 남은 시간(truckLeft)만 세션 변수다. */
   var truckHere = 0;    // 트럭이 머무는 남은 시간(0=없음)
-  var truckCount = 0;   // 이번 세션에 온 트럭 수
+  var truckLeft = Data.KITCHEN.truckEvery;   // 다음 트럭까지 남은 시간(초)
 
-  /** 지금 기준 다음 트럭까지의 간격(초). 30 × (온 횟수+1) */
-  function truckGap() { return Data.KITCHEN.truckEvery * (truckCount + 1); }
+  /** 날짜가 바뀌었으면 오늘치 트럭 카운트를 리셋한다 */
+  function truckDayRoll() {
+    var s = S(), t = today();
+    if (s.truckDay !== t) { s.truckDay = t; s.truckCount = 0; }
+  }
 
-  var truckLeft = Data.KITCHEN.truckEvery;   // 첫 트럭까지 남은 시간(초)
+  /** 지금 기준 다음 트럭까지의 간격(초). 30 × (오늘 온 횟수+1) */
+  function truckGap() { truckDayRoll(); return Data.KITCHEN.truckEvery * ((S().truckCount || 0) + 1); }
 
   function dropIngredients(n) {
     var s = S(), all = Data.KITCHEN.ings, got = [];
@@ -709,6 +713,7 @@ var Game = (function () {
 
   /** 매 틱 트럭 타이머. 트럭이 그냥 지나가면 missDrop 만큼 자동 수거(방치 배려) */
   function tickTruck(dt) {
+    truckDayRoll();   // 자정을 넘겼으면 오늘치 카운트를 리셋
     if (truckHere > 0) {
       truckHere -= dt;
       if (truckHere <= 0) { truckHere = 0; dropIngredients(Data.KITCHEN.missDrop); }
@@ -717,7 +722,8 @@ var Game = (function () {
     truckLeft -= dt;
     if (truckLeft <= 0) {
       truckHere = Data.KITCHEN.truckLife;
-      truckCount++;              // 한 대 왔으니, 다음 간격이 30초 더 길어진다
+      truckDayRoll();
+      var s = S(); s.truckCount = (s.truckCount || 0) + 1;   // 한 대 왔으니 오늘치 +1 → 다음 간격 30초 증가
       truckLeft += truckGap();
     }
   }
@@ -729,10 +735,10 @@ var Game = (function () {
     return dropIngredients(Data.KITCHEN.tapDrop);
   }
 
-  function truckState() { return { here: truckHere > 0, hereLeft: truckHere, nextIn: truckLeft, count: truckCount }; }
+  function truckState() { return { here: truckHere > 0, hereLeft: truckHere, nextIn: truckLeft, count: S().truckCount || 0 }; }
 
-  /** 트럭 타이머를 처음 상태로 (새 세션과 같게). 테스트에서 쓰며, 실제 부팅 때 불러도 안전하다. */
-  function resetTruck() { truckHere = 0; truckCount = 0; truckLeft = Data.KITCHEN.truckEvery; }
+  /** 트럭 타이머를 처음 상태로. 테스트에서 오늘치 카운트까지 초기화한다(실제 부팅에 불러도 안전). */
+  function resetTruck() { truckHere = 0; truckLeft = Data.KITCHEN.truckEvery; var s = S(); s.truckCount = 0; s.truckDay = today(); }
 
   /* ---------- 명예의 전당 ---------- */
 
@@ -1283,7 +1289,7 @@ var Game = (function () {
 
   /** 로컬 기준 오늘 날짜 (YYYY-MM-DD) */
   function today() {
-    var d = new Date();
+    var d = nowDate();
     function pad(n) { return (n < 10 ? '0' : '') + n; }
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   }
