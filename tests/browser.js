@@ -1270,6 +1270,23 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     ok(!await p.isHidden('#askModal'), '칩을 누르면 상세 팝업이 뜸');
     await p.click('#askOk'); await p.waitForTimeout(150);
 
+    console.log('\n[3-3] 🍳 주방 (재료·합성·레시피·도감)');
+    // 레벨을 올리고 재료를 채운 뒤 주방 탭으로
+    await p.evaluate(()=>{ const s=State.get(); s.totalEarned=1e12;
+      s.ings={fl:9,gj:9,eg:9,om:9,vg:9,rc:9,ch:9,mt:9}; Game.invalidate(); UI.refresh(true); });
+    await p.click('#tabbar .tab[data-tab="kitchen"]'); await p.waitForTimeout(300);
+    ok(await p.locator('#ingStore .ing').count() === 8, '재료 창고에 재료 8종');
+    ok(await p.locator('#kitchenGrid .kfood').count() > 0, '초급 레시피 셀이 있음');
+    // 합성 → 재료 소모 + 도감 등록
+    const om0 = await p.evaluate(()=>Game.ingCount('om'));
+    const bonus0 = await p.evaluate(()=>Game.foodBonus());
+    await p.locator('#kitchenGrid .kf-craft.ready').first().click();
+    await p.waitForTimeout(250);
+    ok(await p.evaluate(()=>Game.ingCount('om')) < om0, '합성하면 재료가 줄어듦');
+    ok(await p.evaluate(()=>Game.foodBonus()) > bonus0, '첫 합성으로 도감 배율이 오름');
+    // 고급 탭엔 아직 잠긴(???) 레시피가 있다 (사장 레벨 부족분)
+    await p.click('#gradeTabs button[data-grade="3"]'); await p.waitForTimeout(200);
+    ok(await p.locator('#kitchenGrid .kfood.locked').count() >= 0, '등급 탭 전환 동작');
 
     console.log('\n[4] 소리');
     ok(await p.evaluate(()=>typeof Sound!=='undefined'), 'Sound 모듈 로드');

@@ -970,5 +970,55 @@ console.log('\n[22] 오프라인 꼬리 보상');
   ok(rMid.gain > rUnder.gain && rFar.gain > rMid.gain, '오래 비울수록 보상이 늘어남 (상한까지)');
 })();
 
+/* ===== 🍳 주방 (재료 · 합성 · 레시피 · 도감) ===== */
+console.log('\n[23] 주방 — 재료/합성/레시피/도감');
+(function () {
+  var K = Data.KITCHEN;
+  var k1 = K.foods.find(function (f) { return f.id === 'k1'; });   // at:1
+  var k9 = K.foods.find(function (f) { return f.id === 'k9'; });   // at:14
+
+  // 레시피 해금 = 사장 레벨
+  State.set({ totalEarned: 500 }); Game.invalidate();
+  ok(Game.bossLevel() === 0 && !Game.recipeUnlocked('k1'), '레벨 낮으면 레시피 잠김(???)');
+  State.set({ totalEarned: 1e12 }); Game.invalidate();
+  ok(Game.recipeUnlocked('k1') && Game.recipeUnlocked('k9'), '레벨 높으면 레시피 해금');
+
+  // 재료 없으면 합성 불가
+  var s = State.get(); s.ings = {}; s.kfoods = {}; Game.invalidate();
+  ok(Game.canCraft('k1') === false, '재료 없으면 합성 불가');
+  ok(Game.craftFood('k1') === null, '합성 실패는 null');
+
+  // 재료 채우고 합성 → 소모 + 첫 등록시 도감 배율 + 목돈
+  Object.keys(k1.need).forEach(function (ing) { s.ings[ing] = k1.need[ing] + 3; });
+  Game.invalidate();
+  ok(Game.canCraft('k1') === true, '재료 충분하면 합성 가능');
+  var b = Game.foodBonus();
+  var r = Game.craftFood('k1');
+  ok(r && r.first === true && r.gain > 0, '첫 합성: 성공 + 목돈');
+  ok(Game.ingCount(Object.keys(k1.need)[0]) === 3, '재료가 레시피만큼 소모됨');
+  ok(near(Game.foodBonus(), b + k1.bonus), '첫 합성으로 도감 배율 +' + k1.bonus);
+  // 두 번째 합성은 도감 배율 안 늘어남 (재료 다시 채워서)
+  Object.keys(k1.need).forEach(function (ing) { s.ings[ing] = k1.need[ing] + 1; });
+  Game.invalidate();
+  var b2 = Game.foodBonus();
+  var r2 = Game.craftFood('k1');
+  ok(r2 && r2.first === false, '두 번째 합성은 first=false');
+  ok(near(Game.foodBonus(), b2), '두 번째 합성은 도감 배율 그대로');
+
+  // 도감 배율이 실제 수익에 반영
+  State.set({ totalEarned: 1e12, gens: { g1: 10 } }); var s2 = State.get();
+  s2.kfoods = {}; Game.invalidate(); var noDex = Game.perSec(true);
+  s2.kfoods = { k1: 1, k4: 1 }; Game.invalidate();
+  ok(Game.perSec(true) > noDex, '도감이 차면 초당 수익이 오름');
+
+  // 재료 트럭: 틱을 돌리면 재료가 쌓인다 (탭 or 자동수거)
+  State.set({}); var s3 = State.get(); s3.ings = {}; Game.invalidate();
+  var total0 = 0; Data.KITCHEN.ings.forEach(function (g) { total0 += Game.ingCount(g.id); });
+  for (var i = 0; i < 120; i++) { Game.tick(1); }   // 2분 → 트럭 여러 번
+  var total1 = 0; Data.KITCHEN.ings.forEach(function (g) { total1 += Game.ingCount(g.id); });
+  ok(total1 > total0, '트럭이 돌면 재료가 쌓인다: ' + total1 + '개');
+  ok(typeof Game.truckState().here === 'boolean', 'truckState().here 는 불리언');
+})();
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);

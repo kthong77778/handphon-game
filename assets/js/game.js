@@ -60,6 +60,7 @@ var Game = (function () {
     stat *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
     stat *= Math.pow(3, fameLv('f_legend'));      // 명성상점: 분식 왕조 (후반 소비처)
     stat *= 1 + Data.PARTY.dexBonus * (s.partyFoods ? s.partyFoods.length : 0);  // 파티 도감 1칸당 +1%
+    stat *= 1 + foodBonus();                                 // 🍳 주방 음식 도감 (등급별 영구 배율)
     if (s.michelinGrand) stat *= Data.MICHELIN.grandMult;   // 미슐랭 5성 영구 배율
 
     var genM = {};
@@ -639,6 +640,89 @@ var Game = (function () {
     return '동네 사장';
   }
 
+  /* ---------- 🍳 주방 (재료 트럭 · 합성 · 레시피 · 음식 도감) ---------- */
+  var FOOD_BY_ID = {};
+  Data.KITCHEN.foods.forEach(function (f) { FOOD_BY_ID[f.id] = f; });
+
+  /** 만든 음식(도감) 등급별 영구 배율의 합 (calc 에 곱해진다) */
+  function foodBonus() {
+    var s = S(), sum = 0;
+    Data.KITCHEN.foods.forEach(function (f) { if (s.kfoods[f.id] >= 1) sum += f.bonus; });
+    return sum;
+  }
+
+  function ingCount(id) { return S().ings[id] || 0; }
+  function foodMade(id) { return S().kfoods[id] || 0; }
+
+  /** 레시피 해금: 사장 레벨이 음식의 at 이상이면 조합이 보인다 (몰라도 재료는 쌓인다) */
+  function recipeUnlocked(f) {
+    if (typeof f === 'string') f = FOOD_BY_ID[f];
+    return !!f && bossLevel() >= f.at;
+  }
+
+  /** 지금 창고 재료로 이 음식을 만들 수 있나 */
+  function canCraft(id) {
+    var f = FOOD_BY_ID[id];
+    if (!f || !recipeUnlocked(f)) return false;
+    var s = S();
+    for (var k in f.need) { if ((s.ings[k] || 0) < f.need[k]) return false; }
+    return true;
+  }
+
+  /**
+   * 합성: 레시피대로 재료를 소모해 음식을 만든다.
+   * 처음 만들면 도감에 등록되며 영구 배율이 붙고(캐시 무효화), 만들 때마다 목돈(초당×sec)을 준다.
+   * @returns {{food:Object, first:boolean, gain:number}|null}
+   */
+  function craftFood(id) {
+    var f = FOOD_BY_ID[id];
+    if (!canCraft(id)) return null;
+    var s = S();
+    for (var k in f.need) { s.ings[k] -= f.need[k]; }
+    var first = !(s.kfoods[id] >= 1);
+    s.kfoods[id] = foodMade(id) + 1;
+    if (first) bump();   // 도감 배율이 바뀌므로 캐시를 무효화한다
+    var gain = earn(s, Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade));
+    return { food: f, first: first, gain: gain };
+  }
+
+  /* ---- 재료 트럭 (타이머는 세이브하지 않는다 — 온라인일 때만 굴러간다) ---- */
+  var truckLeft = Data.KITCHEN.truckEvery * Math.random();  // 다음 트럭까지 남은 시간(초)
+  var truckHere = 0;                                        // 트럭이 머무는 남은 시간(0=없음)
+
+  function dropIngredients(n) {
+    var s = S(), all = Data.KITCHEN.ings, got = [];
+    for (var i = 0; i < n; i++) {
+      var ing = all[Math.floor(Math.random() * all.length)];
+      s.ings[ing.id] = (s.ings[ing.id] || 0) + 1;
+      got.push(ing);
+    }
+    return got;
+  }
+
+  /** 매 틱 트럭 타이머. 트럭이 그냥 지나가면 missDrop 만큼 자동 수거(방치 배려) */
+  function tickTruck(dt) {
+    if (truckHere > 0) {
+      truckHere -= dt;
+      if (truckHere <= 0) { truckHere = 0; dropIngredients(Data.KITCHEN.missDrop); }
+      return;
+    }
+    truckLeft -= dt;
+    if (truckLeft <= 0) {
+      truckLeft += Data.KITCHEN.truckEvery;
+      truckHere = Data.KITCHEN.truckLife;
+    }
+  }
+
+  /** 트럭을 탭해서 재료를 더 받는다 (있을 때만) */
+  function grabTruck() {
+    if (truckHere <= 0) return null;
+    truckHere = 0;
+    return dropIngredients(Data.KITCHEN.tapDrop);
+  }
+
+  function truckState() { return { here: truckHere > 0, hereLeft: truckHere, nextIn: truckLeft }; }
+
   /* ---------- 명예의 전당 ---------- */
 
   /** 역대 회차를 명성 순으로. 동점이면 빨리 끝낸 회차가 위로. */
@@ -1018,6 +1102,7 @@ var Game = (function () {
   function tick(dt) {
     var s = S();
     tickBuffs(dt);
+    tickTruck(dt);
 
     // 자정을 넘기면 퀘스트가 새로 깔린다.
     // 매 프레임 Date 를 새로 만들 이유가 없어 10초에 한 번만 본다.
@@ -1427,6 +1512,14 @@ var Game = (function () {
     bossLevel: bossLevel,
     bossXpRatio: bossXpRatio,
     bossTitle: bossTitle,
+    foodBonus: foodBonus,
+    ingCount: ingCount,
+    foodMade: foodMade,
+    recipeUnlocked: recipeUnlocked,
+    canCraft: canCraft,
+    craftFood: craftFood,
+    grabTruck: grabTruck,
+    truckState: truckState,
     nextGoldenGap: nextGoldenGap,
     rollGolden: rollGolden,
     claimGolden: claimGolden,

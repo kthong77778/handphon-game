@@ -21,7 +21,9 @@ var State = (function () {
     gens: idSet(Data.GENERATORS),
     upgrades: idSet(Data.UPGRADES),
     fameLv: idSet(Data.FAME_SHOP),
-    achievements: idSet(Data.ACHIEVEMENTS)
+    achievements: idSet(Data.ACHIEVEMENTS),
+    ings: idSet(Data.KITCHEN.ings),
+    kfoods: idSet(Data.KITCHEN.foods)
   };
 
   // 명성상점 레벨 상한 (max 를 낮췄을 때 초과분이 남지 않게)
@@ -77,6 +79,8 @@ var State = (function () {
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
       region: '',        // 전국 맛집 랭킹에서 내 가게가 속한 지역 (한 번 배정되면 고정)
       partyFoods: [],    // 주말 파티에서 모은 음식 도감 (id 배열)
+      ings: {},          // 🍳 주방 재료 창고 (재료id -> 개수)
+      kfoods: {},        // 🍳 주방 음식 도감 (음식id -> 만든 횟수, 1 이상이면 도감 등록)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
 
@@ -132,7 +136,7 @@ var State = (function () {
       if (isFinite(v) && v >= 0) s[k] = v;
     });
 
-    var mapKeys = ['gens', 'upgrades', 'fameLv', 'achievements'];
+    var mapKeys = ['gens', 'upgrades', 'fameLv', 'achievements', 'ings', 'kfoods'];
     mapKeys.forEach(function (k) {
       if (raw[k] && typeof raw[k] === 'object') {
         Object.keys(raw[k]).forEach(function (id) {

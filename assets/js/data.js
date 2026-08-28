@@ -770,6 +770,52 @@ var Data = (function () {
     guests: ['🕺', '💃', '🧑‍🎤', '🧑‍🎄', '🎅', '🤶']
   };
 
+  /* ---------- 🍳 주방 (재료 트럭 · 합성 · 레시피 · 음식 도감) ----------
+     재료 트럭이 주기적으로 와서 재료를 떨군다 → 재료를 쌓아 레시피대로 합성 → 음식 완성.
+     레시피(조합)는 사장 레벨로 하나씩 해금된다 — 해금 전엔 '??? 미발견' 으로 조합을 가린다.
+     음식을 처음 만들면 도감에 등록되며 모든 수익이 영구 +bonus, 만들 때마다 목돈(sec 초치)을 준다.
+     ※ 주말 파티 도감(PARTY.foods)과는 별개의 새 도감이다. */
+  var KITCHEN = {
+    truckEvery: 30,     // 트럭이 오는 간격 (초)
+    truckLife: 12,      // 트럭이 머무는 시간 (초) — 이 안에 탭하면 더 많이 준다
+    tapDrop: 2,         // 탭해서 받으면 재료 이만큼
+    missDrop: 1,        // 못 잡고 지나가면 이만큼만 자동 수거 (방치 배려)
+
+    // 재료 8종
+    ings: [
+      { id: 'fl', icon: '🌾', name: '밀가루' },
+      { id: 'gj', icon: '🌶️', name: '고추장' },
+      { id: 'eg', icon: '🥚', name: '계란' },
+      { id: 'om', icon: '🐟', name: '어묵' },
+      { id: 'vg', icon: '🧅', name: '야채' },
+      { id: 'rc', icon: '🍚', name: '쌀' },
+      { id: 'ch', icon: '🧀', name: '치즈' },
+      { id: 'mt', icon: '🥩', name: '고기' }
+    ],
+
+    // 음식 = 레시피. grade 1 초급 / 2 중급 / 3 고급.
+    // at: 이 사장 레벨이 되면 레시피가 해금된다. need: 재료 소모량. bonus: 도감 영구 배율(+). sec: 만들 때 목돈(초당×sec).
+    foods: [
+      // 초급
+      { id: 'k1', icon: '🍢', name: '어묵탕',   grade: 1, at: 1, bonus: 0.01, sec: 60,  need: { om: 2, vg: 2 } },
+      { id: 'k2', icon: '🥘', name: '떡볶이',   grade: 1, at: 2, bonus: 0.01, sec: 90,  need: { gj: 2, fl: 2, om: 1 } },
+      { id: 'k3', icon: '🍙', name: '김밥',     grade: 1, at: 3, bonus: 0.01, sec: 120, need: { rc: 2, eg: 1, vg: 2 } },
+      // 중급
+      { id: 'k4', icon: '🍜', name: '라면',     grade: 2, at: 5, bonus: 0.02, sec: 300, need: { fl: 3, vg: 2, eg: 2 } },
+      { id: 'k5', icon: '🌭', name: '핫도그',   grade: 2, at: 6, bonus: 0.02, sec: 420, need: { fl: 3, mt: 3 } },
+      { id: 'k6', icon: '🥟', name: '만두',     grade: 2, at: 8, bonus: 0.02, sec: 600, need: { fl: 3, mt: 2, vg: 2 } },
+      // 고급
+      { id: 'k7', icon: '🧀', name: '치즈김밥', grade: 3, at: 10, bonus: 0.03, sec: 1200, need: { rc: 3, ch: 3, eg: 2 } },
+      { id: 'k8', icon: '🍲', name: '부대찌개', grade: 3, at: 12, bonus: 0.03, sec: 1800, need: { mt: 4, ch: 2, gj: 2 } },
+      { id: 'k9', icon: '🍱', name: '모둠 한상', grade: 3, at: 14, bonus: 0.03, sec: 3600, need: { om: 3, rc: 3, mt: 3, ch: 2 } }
+    ],
+    grades: [
+      { g: 1, name: '초급' },
+      { g: 2, name: '중급' },
+      { g: 3, name: '고급' }
+    ]
+  };
+
   /* ---------- 미슐랭 도전 (액티브 던전) ---------- */
   // 제한 시간 안에 조리(탭)를 많이 할수록 별을 얻는다. 방치가 아니라 손 실력 도전.
   // 별 5개(미슐랭 3스타)를 처음 채우면 영구 배율이라는 큰 보상을 준다.
@@ -921,6 +967,7 @@ var Data = (function () {
     RANK_TITLES: RANK_TITLES,
     TAP_SOUNDS: TAP_SOUNDS,
     PARTY: PARTY,
+    KITCHEN: KITCHEN,
     MICHELIN: MICHELIN
   };
 })();

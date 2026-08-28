@@ -3,6 +3,7 @@ var UI = (function () {
 
   var el = {};
   var currentTab = 'shop';
+  var currentGrade = 1;    // 주방 합성 등급 탭
   var buyAmt = 1;          // 1 | 10 | 'max'
   var sig = {};            // 목록 재생성 여부 판단용 서명
   var toastTimer = null;
@@ -18,6 +19,7 @@ var UI = (function () {
      'offlineModal', 'offlineText', 'offlineOk',
      'buffBar', 'partyBanner', 'partyHint', 'partyDex', 'combo', 'comboX', 'comboN', 'comboFill',
      'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
+     'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
@@ -793,6 +795,111 @@ var UI = (function () {
     });
   }
 
+  /* ---------- 🍳 주방 (재료 · 합성 · 레시피 · 도감) ---------- */
+
+  var ING_BY_ID = {}; Data.KITCHEN.ings.forEach(function (g) { ING_BY_ID[g.id] = g; });
+  var FOOD_BY_ID_U = {}; Data.KITCHEN.foods.forEach(function (f) { FOOD_BY_ID_U[f.id] = f; });
+  var kitchenCells = {};
+
+  function renderIngStore() {
+    if (!el.ingStore.firstChild) {
+      el.ingStore.innerHTML = Data.KITCHEN.ings.map(function (g) {
+        return '<div class="ing" data-ing="' + g.id + '"><span class="ing-ic">' + g.icon +
+               '</span><span class="ing-n">0</span></div>';
+      }).join('');
+    }
+    Data.KITCHEN.ings.forEach(function (g) {
+      var n = el.ingStore.querySelector('[data-ing="' + g.id + '"] .ing-n');
+      if (n) n.textContent = Fmt.comma(Game.ingCount(g.id));
+    });
+  }
+
+  function buildKitchenGrid() {
+    el.kitchenGrid.innerHTML = '';
+    kitchenCells = {};
+    Data.KITCHEN.foods.filter(function (f) { return f.grade === currentGrade; }).forEach(function (f) {
+      var unlocked = Game.recipeUnlocked(f);
+      var made = Game.foodMade(f.id) >= 1;
+      var cell = document.createElement('div');
+      cell.className = 'kfood' + (unlocked ? '' : ' locked') + (made ? ' done' : '');
+      if (!unlocked) {
+        cell.innerHTML = '<div class="kf-head"><span class="kf-icon">❓</span>' +
+          '<span class="kf-name">??? 미발견</span></div>' +
+          '<div class="kf-lock">사장 Lv.' + f.at + ' 에 레시피 해금</div>';
+      } else {
+        var needHtml = Object.keys(f.need).map(function (k) {
+          return '<span class="need" data-need="' + k + '"><span class="need-ic">' + ING_BY_ID[k].icon +
+                 '</span><b class="need-c">0</b><span class="need-max">/' + f.need[k] + '</span></span>';
+        }).join('');
+        cell.innerHTML =
+          '<div class="kf-head"><span class="kf-icon">' + f.icon + '</span>' +
+            '<span class="kf-name">' + f.name + '</span>' +
+            (made ? '<span class="kf-badge">✔ +' + Math.round(f.bonus * 100) + '%</span>' : '') + '</div>' +
+          '<div class="kf-need">' + needHtml + '</div>' +
+          '<button type="button" class="kf-craft" data-food="' + f.id + '">합성</button>';
+        cell.querySelector('.kf-craft').addEventListener('click', function () { onCraft(f.id); });
+      }
+      el.kitchenGrid.appendChild(cell);
+      kitchenCells[f.id] = cell;
+    });
+  }
+
+  function updateKitchenGrid() {
+    Object.keys(kitchenCells).forEach(function (id) {
+      var f = FOOD_BY_ID_U[id];
+      if (!Game.recipeUnlocked(f)) return;
+      var cell = kitchenCells[id];
+      Object.keys(f.need).forEach(function (k) {
+        var wrap = cell.querySelector('[data-need="' + k + '"]');
+        if (!wrap) return;
+        var have = Game.ingCount(k);
+        wrap.querySelector('.need-c').textContent = have;
+        wrap.classList.toggle('short', have < f.need[k]);
+      });
+      var btn = cell.querySelector('.kf-craft');
+      if (btn) { var ok = Game.canCraft(id); btn.disabled = !ok; btn.classList.toggle('ready', ok); }
+    });
+  }
+
+  function renderKitchen() {
+    renderIngStore();
+    var madeSet = Data.KITCHEN.foods.map(function (f) { return Game.foodMade(f.id) >= 1 ? 1 : 0; }).join('');
+    var gsig = currentGrade + '|' + Game.bossLevel() + '|' + madeSet;
+    if (sig.kitchen !== gsig) { sig.kitchen = gsig; buildKitchenGrid(); }
+    updateKitchenGrid();
+  }
+
+  function onCraft(id) {
+    var r = Game.craftFood(id);
+    if (!r) { toast('재료가 부족해요'); return; }
+    Sound.play(r.first ? 'levelup' : 'buy');
+    buzz(12);
+    toast((r.first ? '🎉 새 음식 발견! ' : '🍳 ') + r.food.name + '  +' + Fmt.won(r.gain));
+    if (r.first) sig.kitchen = '';   // 도감 등록 → 구조 다시 그림
+    refresh(true);
+  }
+
+  function updateTruck() {
+    var here = Game.truckState().here;
+    if (el.truckPop.hidden !== !here) el.truckPop.hidden = !here;
+    // 주방 탭 점: 트럭이 왔거나 합성 가능한 게 있으면
+    var any = here;
+    if (!any) for (var i = 0; i < Data.KITCHEN.foods.length; i++) {
+      if (Game.canCraft(Data.KITCHEN.foods[i].id)) { any = true; break; }
+    }
+    el.dotKitchen.hidden = !any;
+  }
+
+  function grabTruckUI() {
+    var got = Game.grabTruck();
+    el.truckPop.hidden = true;
+    if (got && got.length) {
+      Sound.play('buy'); buzz(8);
+      toast('🚚 재료 +' + got.length + ' ' + got.map(function (g) { return g.icon; }).join(''));
+      if (currentTab === 'kitchen') refresh(true);
+    }
+  }
+
   /* ---------- 환생 화면 ---------- */
 
   function renderPrestige() {
@@ -960,6 +1067,7 @@ var UI = (function () {
     updatePartyBanner();
     updateCombo();
     updateBoostBtn();
+    updateTruck();
   }
 
   /* ---------- 주말 파티 배너 ---------- */
@@ -1491,6 +1599,7 @@ var UI = (function () {
     updateHud();
     if (currentTab === 'shop') { updateGenList(); updateReco(); }
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
+    else if (currentTab === 'kitchen') renderKitchen();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
     else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
@@ -1793,6 +1902,16 @@ var UI = (function () {
     });
 
     el.recoBar.addEventListener('click', onBuyBest);
+
+    el.truckPop.addEventListener('click', grabTruckUI);
+    el.gradeTabs.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-grade]');
+      if (!b) return;
+      currentGrade = +b.dataset.grade;
+      Array.prototype.forEach.call(el.gradeTabs.children, function (o) { o.classList.toggle('active', o === b); });
+      sig.kitchen = '';
+      renderKitchen();
+    });
 
     el.boostBtn.addEventListener('click', function () {
       var st = State.get();

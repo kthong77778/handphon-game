@@ -161,6 +161,24 @@
 
     </section>
 
+    <!-- 주방 탭 -->
+    <section class="tab-page" data-page="kitchen" hidden>
+      <h2 class="section-title">🌾 재료 창고</h2>
+      <p class="hint">재료 트럭이 30초마다 들러 재료를 떨궈요. 탭하면 더 많이 받습니다.</p>
+      <div class="card ing-store" id="ingStore"></div>
+
+      <div class="section-head">
+        <h2 class="section-title">🍳 합성 · 레시피 · 도감</h2>
+        <div class="grade-tabs" id="gradeTabs">
+          <button data-grade="1" class="active">초급</button>
+          <button data-grade="2">중급</button>
+          <button data-grade="3">고급</button>
+        </div>
+      </div>
+      <p class="hint">레시피(조합)는 <b>사장 레벨</b>이 오르면 열립니다. 재료를 모아 합성하면 도감에 등록되고 모든 수익이 영구히 늘어나요.</p>
+      <div class="kitchen-grid" id="kitchenGrid"></div>
+    </section>
+
     <!-- 설정 탭 -->
     <section class="tab-page" data-page="settings" hidden>
       <h2 class="section-title">스킨</h2>
@@ -222,15 +240,22 @@
         <button class="btn" id="dbgFame">✨ 명성 +10</button>
       </div>
 
-      <p class="hint small center">v1.22.0 · 자동 저장 10초 간격</p>
+      <p class="hint small center">v1.23.0 · 자동 저장 10초 간격</p>
     </section>
 
   </main>
+
+  <!-- 재료 트럭 팝업 (등장 시에만) -->
+  <button class="truck-pop" id="truckPop" hidden>
+    <span class="truck-ic">🚚</span>
+    <span class="truck-tx"><b>재료 트럭!</b><small>탭해서 재료 받기</small></span>
+  </button>
 
   <!-- 하단 탭바 -->
   <nav id="tabbar">
     <button class="tab active" data-tab="shop"><span>🏪</span>가게</button>
     <button class="tab" data-tab="upgrade"><span>⬆️</span>업그레이드<i class="dot" id="dotUpgrade" hidden></i></button>
+    <button class="tab" data-tab="kitchen"><span>🍳</span>주방<i class="dot" id="dotKitchen" hidden></i></button>
     <button class="tab" data-tab="prestige"><span>✨</span>환생<i class="dot" id="dotPrestige" hidden></i></button>
     <button class="tab" data-tab="achv"><span>🏆</span>기록<i class="dot" id="dotAchv" hidden></i></button>
     <button class="tab" data-tab="settings"><span>⚙️</span>설정</button>
