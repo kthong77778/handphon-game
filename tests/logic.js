@@ -3,6 +3,13 @@
 const { load, near, autoBuy, humanTap } = require('./_harness');
 const { Fmt, Data, State, Game } = load();
 
+// 테스트를 실제 시계에서 떼어놓는다: 날짜는 그대로 두되 '시각'만 주말 파티
+// 시간대(금·토 17~24시) 밖으로 고정한다. 이렇게 안 하면 금·토 저녁에 돌릴 때
+// 주말 파티 ×3 버프가 perSec 에 섞여 buff·재계산 검증이 통째로 깨진다
+// (bruteRate 는 파티 배율을 일부러 안 셈). 파티 자체 검증([13])은 그때그때
+// Game.setClock 으로 파티 시각을 따로 지정하므로 영향받지 않는다.
+Game.setClock(function () { var d = new Date(); d.setHours(10, 0, 0, 0); return d; });
+
 let fails = 0;
 function ok(cond, label, extra) {
   if (!cond) { fails++; console.log('  ✗ ' + label + (extra ? '  → ' + extra : '')); }
