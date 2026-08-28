@@ -30,6 +30,7 @@ var UI = (function () {
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
+     'dbgHour', 'dbgDay', 'dbgMoney', 'dbgFame',
      'michelinCard', 'michelinModal', 'michPlay', 'michStars', 'michBar', 'michCount',
      'michNext', 'michTime', 'michTap', 'michTapEmoji', 'michResult', 'michResultEmoji',
      'michResultStars', 'michResultText', 'michDone', 'michQuit', 'michShareResult'].forEach(function (id) {
@@ -1832,6 +1833,13 @@ var UI = (function () {
       }
     });
     el.helpBtn.addEventListener('click', function () { showTour(0); });
+
+    // 테스트 도구 (테스트 빌드 전용 — 정식 버전에서는 index.html 에서 통째로 뺀다)
+    [['dbgHour', 'hour'], ['dbgDay', 'day'],
+     ['dbgMoney', 'money'], ['dbgFame', 'fame']].forEach(function (pair) {
+      var node = el[pair[0]];
+      if (node) node.addEventListener('click', function () { handlers.onDebug(pair[1]); });
+    });
 
     el.prestigeBtn.addEventListener('click', handlers.onPrestige);
     el.saveBtn.addEventListener('click', handlers.onSave);
