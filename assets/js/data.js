@@ -213,6 +213,14 @@ var Data = (function () {
     keepRatio: 0.25      // 보유 금액의 이만큼은 남겨둔다 (돌아와서 쓸 돈)
   };
 
+  /* ---------- 오프라인 보상 ---------- */
+  // 인정 시간(상한)까지는 제값(offlineEfficiency), 그 뒤 2차 상한까지는 꼬리 효율로 '찔끔' 더 준다.
+  // 오래 비워도 손해가 덜하게 하되, 자주 접속하는 이득은 유지 — tailMult 는 상한 배수, tailEff 는 꼬리 효율.
+  var OFFLINE = {
+    tailMult: 3,    // 2차 상한 = 인정 시간 × 3 (기본 4h→12h, 풀강 28h→84h)
+    tailEff: 0.15   // 꼬리 구간은 제 효율의 15% 만 인정
+  };
+
   /* ---------- 일일 출석 보상 ---------- */
   // 하루 한 번, 초당 수익 기준으로 지급. 연속 출석하면 늘어난다 (최대 7일치).
   var DAILY = {
@@ -901,6 +909,7 @@ var Data = (function () {
     GOLDEN: GOLDEN,
     THIEF: THIEF,
     MANAGER: MANAGER,
+    OFFLINE: OFFLINE,
     BOOST: BOOST,
     DAILY: DAILY,
     QUEST: QUEST,

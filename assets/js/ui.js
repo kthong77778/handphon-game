@@ -902,8 +902,10 @@ var UI = (function () {
       ['보유 명성', Fmt.num(s.fame)],
       ['재개업 횟수', Fmt.comma(s.prestiges) + '회'],
       ['도전과제', Game.achievementCount() + ' / ' + Data.ACHIEVEMENTS.length],
-      ['오프라인 인정 시간', Fmt.time(Game.offlineCapSeconds())],
-      ['오프라인 효율', Math.round(Game.offlineEfficiency() * 100) + '%'],
+      ['오프라인 인정 시간', Fmt.time(Game.offlineCapSeconds()) +
+        ' (+' + Fmt.time(Game.offlineTailCapSeconds() - Game.offlineCapSeconds()) + ' 보너스)'],
+      ['오프라인 효율', Math.round(Game.offlineEfficiency() * 100) + '% (보너스 ' +
+        Math.round(Game.offlineEfficiency() * Data.OFFLINE.tailEff * 100) + '%)'],
       ['총 플레이 시간', Fmt.time(s.playTime)]
     ];
     el.statsBox.innerHTML = rows.map(function (r) {
@@ -1663,18 +1665,24 @@ var UI = (function () {
   /* ---------- 오프라인 모달 ---------- */
 
   function showOffline(reward, onOk) {
-    var lost = reward.seconds - reward.capped;
-    var capped = lost > 1;               // 인정 시간을 꽉 채우고도 남았다
+    var tailCap = Game.offlineTailCapSeconds();
+    var maxedOut = reward.seconds - tailCap > 1;   // 2차 상한(꼬리 끝)마저 넘겼다
+    var pct = Math.round(reward.tailEff * 100);
     var txt = '';
-    if (capped) {
-      // 돌아왔을 때 '가득 찼었다'를 눈에 띄게 알린다
+    if (maxedOut) {
+      // 돌아왔을 때 '가득 찼었다'를 눈에 띄게 알린다 (꼬리까지 다 찼을 때만)
       txt += '<div class="offline-full">🔔 오프라인 보상이 <b>가득 찼었어요!</b><br>' +
              '<span>더 자주 들르면 한 푼도 안 놓쳐요</span></div>';
     }
     txt += '자리를 비운 ' + Fmt.time(reward.seconds) + ' 동안<br>' +
            '<b>' + Fmt.won(reward.gain) + '</b>을 벌었습니다.';
-    if (lost > 60) {
-      txt += '<br><span style="font-size:12px">(최대 ' + Fmt.time(reward.capped) +
+    if (reward.tailSeconds > 60) {
+      // 제값 구간 + 보너스(꼬리) 구간을 나눠 보여준다
+      txt += '<br><span style="font-size:12px">⏱ ' + Fmt.time(reward.capped) +
+             ' 제값 + ' + Fmt.time(reward.tailSeconds) + ' 보너스(' + pct + '%)</span>';
+    }
+    if (maxedOut) {
+      txt += '<br><span style="font-size:12px">(최대 ' + Fmt.time(tailCap) +
              '까지만 인정 — 명성 상점에서 늘릴 수 있어요)</span>';
     }
     if (Game.managerBuys() > 0) {

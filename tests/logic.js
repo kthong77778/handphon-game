@@ -932,5 +932,43 @@ console.log('\n[21] 돈 오버플로 / NaN 방어');
   ok(State.get().money < m0, '구매하면 돈이 실제로 줄어듦');
 })();
 
+/* ===== 오프라인 꼬리 보상 =====
+   인정 시간까지는 제값, 그 뒤 2차 상한까지는 꼬리 효율(tailEff)로 조금 더 준다. */
+console.log('\n[22] 오프라인 꼬리 보상');
+(function () {
+  State.set({ money: 0 });
+  var s = State.get(); s.gens = { g1: 50, g2: 20, g3: 5 }; Game.invalidate();
+
+  var cap = Game.offlineCapSeconds();
+  var tailCap = Game.offlineTailCapSeconds();
+  var eff = Game.offlineEfficiency();
+  var tailEff = Data.OFFLINE.tailEff;
+  var ps = Game.perSec(true);
+  var tailRoom = tailCap - cap;
+
+  ok(tailCap === cap * Data.OFFLINE.tailMult, '2차 상한 = 인정 시간 × ' + Data.OFFLINE.tailMult);
+
+  // 상한 이하: 예전과 동일 (제값만, 꼬리 0)
+  var rUnder = Game.offlineReward(cap / 2);
+  ok(rUnder.tailSeconds === 0, '상한 이하면 꼬리 구간 없음');
+  ok(near(rUnder.gain, ps * eff * (cap / 2)), '상한 이하 보상은 제값 그대로');
+
+  // 상한과 2차 상한 사이: 제값 + 꼬리
+  var mid = cap + tailRoom / 2;
+  var rMid = Game.offlineReward(mid);
+  ok(rMid.capped === cap, '중간 구간의 제값은 상한까지');
+  ok(near(rMid.tailSeconds, tailRoom / 2), '중간 구간의 꼬리 초가 맞음');
+  ok(near(rMid.gain, ps * eff * (cap + (tailRoom / 2) * tailEff)), '중간 구간 보상 = 제값 + 꼬리');
+
+  // 2차 상한 초과: 꼬리도 꽉 참, 더는 안 늘어남
+  var rFar = Game.offlineReward(tailCap * 10);
+  ok(rFar.tailSeconds === tailRoom, '2차 상한 넘으면 꼬리도 최대치');
+  ok(near(rFar.gain, ps * eff * (cap + tailRoom * tailEff)), '2차 상한 넘으면 보상 고정');
+  ok(Game.offlineReward(tailCap * 1000).gain === rFar.gain, '아무리 오래 비워도 2차 상한에서 컷');
+
+  // 오래 비울수록 늘긴 하되 상한이 있다
+  ok(rMid.gain > rUnder.gain && rFar.gain > rMid.gain, '오래 비울수록 보상이 늘어남 (상한까지)');
+})();
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);

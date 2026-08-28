@@ -984,15 +984,26 @@ var Game = (function () {
     return 0.5 + 0.1 * fameLv('f_offeff');
   }
 
+  /** 오프라인 2차 상한(꼬리 끝) — 여기를 넘으면 더 이상 안 준다 */
+  function offlineTailCapSeconds() {
+    return offlineCapSeconds() * Data.OFFLINE.tailMult;
+  }
+
   /**
    * 자리를 비운 동안의 수익 계산.
-   * @returns {{seconds:number, capped:number, gain:number}}
+   * 인정 시간(capped)까지는 제 효율, 그 뒤 2차 상한까지는 꼬리 효율(tailEff)로 조금 더 준다.
+   * @returns {{seconds:number, capped:number, tailSeconds:number, tailEff:number, gain:number}}
    */
   function offlineReward(elapsedSec) {
-    var capped = Math.min(elapsedSec, offlineCapSeconds());
+    var cap = offlineCapSeconds();
+    var capped = Math.min(elapsedSec, cap);                       // 제값 구간(초)
+    var tailRoom = offlineTailCapSeconds() - cap;                 // 꼬리 구간 길이
+    var tailSeconds = Math.min(Math.max(elapsedSec - cap, 0), tailRoom);  // 실제로 인정된 꼬리(초)
     // 자리를 비운 동안에는 일시 버프가 흐르지 않으므로 버프를 뺀 수익으로 계산한다
-    var gain = perSec(true) * capped * offlineEfficiency();
-    return { seconds: elapsedSec, capped: capped, gain: gain };
+    var eff = offlineEfficiency();
+    var gain = perSec(true) * eff * (capped + tailSeconds * Data.OFFLINE.tailEff);
+    return { seconds: elapsedSec, capped: capped, tailSeconds: tailSeconds,
+             tailEff: Data.OFFLINE.tailEff, gain: gain };
   }
 
   function claimOffline(gain) {
@@ -1391,6 +1402,7 @@ var Game = (function () {
     projectedRank: projectedRank,
     records: records,
     offlineCapSeconds: offlineCapSeconds,
+    offlineTailCapSeconds: offlineTailCapSeconds,
     offlineEfficiency: offlineEfficiency,
     offlineReward: offlineReward,
     claimOffline: claimOffline,

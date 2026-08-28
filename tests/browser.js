@@ -1340,14 +1340,15 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     await p.click('#tabbar .tab[data-tab="settings"]'); await p.waitForTimeout(200);
     await p.click('#notifyBtn'); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>State.get().notifyOffline) === 0, '다시 누르면 꺼짐');
-    // 오프라인 보상이 꽉 찼으면 복귀 모달에서 강조된다
-    await p.evaluate(()=>UI.showOffline({seconds:40000, capped:14400, gain:5e8}, function(){}));
+    // 2차 상한(꼬리 끝)마저 넘기면 복귀 모달에서 강조된다
+    await p.evaluate(()=>UI.showOffline({seconds:2e5, capped:14400, tailSeconds:28800, tailEff:0.15, gain:5e8}, function(){}));
     await p.waitForTimeout(150);
     ok(await p.locator('#offlineText .offline-full').count() === 1, '가득 찼으면 강조 배너');
     ok(/가득 찼/.test(await p.textContent('#offlineText')), '가득 참 문구');
+    ok(/보너스/.test(await p.textContent('#offlineText')), '보너스 구간 안내');
     await p.click('#offlineOk'); await p.waitForTimeout(150);
-    // 꽉 안 찼으면 강조 없음
-    await p.evaluate(()=>UI.showOffline({seconds:600, capped:600, gain:1000}, function(){}));
+    // 상한 안이면 강조 없음
+    await p.evaluate(()=>UI.showOffline({seconds:600, capped:600, tailSeconds:0, tailEff:0.15, gain:1000}, function(){}));
     await p.waitForTimeout(150);
     ok(await p.locator('#offlineText .offline-full').count() === 0, '덜 찼으면 강조 없음');
     await p.click('#offlineOk'); await p.waitForTimeout(150);
