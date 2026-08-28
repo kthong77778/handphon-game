@@ -639,24 +639,25 @@ body{
   background:var(--card);box-shadow:none;opacity:.7;
 }
 
-/* 업그레이드 탭만 더 작고 촘촘하게 (내용은 그대로, 크기만 축소) */
-[data-page="upgrade"] .list{gap:5px}
-[data-page="upgrade"] .section-title{font-size:12px;margin:12px 4px 5px}
-[data-page="upgrade"] .hint{font-size:11.5px;margin-bottom:7px;line-height:1.4}
-[data-page="upgrade"] .item{padding:6px 9px;border-radius:11px;gap:8px}
+/* 업그레이드 탭만 살짝 축소 — 박스와 글자를 같은 비율(약 0.87×)로 균등하게 줄인다.
+   너무 줄이면 글자만 크게 남아 어색해서, 원본에서 고르게 한 단계만 내렸다. */
+[data-page="upgrade"] .list{gap:6px}
+[data-page="upgrade"] .section-title{font-size:12.5px;margin:14px 4px 6px}
+[data-page="upgrade"] .hint{font-size:12px;margin-bottom:8px;line-height:1.45}
+[data-page="upgrade"] .item{padding:9px 11px;border-radius:12px;gap:9px}
 [data-page="upgrade"] .item-icon{
-  flex:0 0 32px;width:32px;height:32px;border-radius:9px;font-size:17px;
+  flex:0 0 38px;width:38px;height:38px;border-radius:11px;font-size:21px;
 }
-[data-page="upgrade"] .item-name{font-size:12.5px}
-[data-page="upgrade"] .item-desc{font-size:10.5px;margin-top:1px}
-[data-page="upgrade"] .item-lv{font-size:9.5px;padding:1px 5px}
-#upgradeList .item-cost{padding:5px 9px;min-width:52px;font-size:12px;box-shadow:0 2px 0 #2f8544}
-/* 도전과제 폴더도 살짝 콤팩트하게 */
-[data-page="upgrade"] .achv-folder{padding:9px 9px 11px}
-[data-page="upgrade"] .achv-folder-head{font-size:12px;margin-bottom:8px}
-[data-page="upgrade"] .achv-grid{gap:6px;grid-template-columns:repeat(auto-fill,minmax(40px,1fr))}
-[data-page="upgrade"] .achv-chip{font-size:19px;border-radius:10px}
-[data-page="upgrade"] .item.achv-locked .item-desc .qbar{max-width:170px}
+[data-page="upgrade"] .item-name{font-size:13px}
+[data-page="upgrade"] .item-desc{font-size:11px;margin-top:2px}
+[data-page="upgrade"] .item-lv{font-size:10.5px;padding:1px 6px}
+#upgradeList .item-cost{padding:7px 11px;min-width:62px;font-size:13px;box-shadow:0 2px 0 #2f8544}
+/* 도전과제 폴더도 같은 비율로 */
+[data-page="upgrade"] .achv-folder{padding:11px 11px 13px}
+[data-page="upgrade"] .achv-folder-head{font-size:12.5px;margin-bottom:9px}
+[data-page="upgrade"] .achv-grid{gap:7px;grid-template-columns:repeat(auto-fill,minmax(44px,1fr))}
+[data-page="upgrade"] .achv-chip{font-size:20px;border-radius:11px}
+[data-page="upgrade"] .item.achv-locked .item-desc .qbar{max-width:190px}
 
 /* 명성 상점 레벨 표시 */
 .fame-lv{font-size:11px;color:var(--dim);font-weight:700}
