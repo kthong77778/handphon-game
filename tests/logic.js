@@ -900,5 +900,37 @@ console.log('\n[20] 사장 레벨');
   ok(Game.bossXpRatio() <= 1, 'Infinity 에서도 XP 비율 ≤ 1');
 })();
 
+/* ===== 돈 오버플로 / NaN 방어 =====
+   증상: 일정 수치를 넘으면 돈이 0원으로 보이고 구매가 무료가 된다.
+   원인 ① normalize 가 Infinity 돈을 0 으로 리셋  ② 구매 검사(money < cost)가 NaN 을 통과 */
+console.log('\n[21] 돈 오버플로 / NaN 방어');
+(function () {
+  // ① 큰 돈은 0 이 아니라 천장으로 clamp (빈털터리 방지)
+  State.set({ money: Infinity, runEarned: Infinity, totalEarned: 5 });
+  ok(State.get().money === Number.MAX_VALUE, 'Infinity 돈은 천장으로 (0 아님)');
+  ok(State.get().runEarned === Number.MAX_VALUE, 'Infinity 누적도 천장으로');
+  ok(Fmt.won(State.get().money) !== '0 원', '천장 돈은 0원으로 표기되지 않음: ' + Fmt.won(State.get().money));
+
+  // 지수로 새는 문자열(1e999 = Infinity)도 0 이 아니라 천장으로
+  State.set({ money: '1e999' });
+  ok(State.get().money === Number.MAX_VALUE, '오버플로 문자열도 천장으로');
+
+  // NaN 은 여전히 걸러져 0
+  State.set({ money: NaN });
+  ok(State.get().money === 0, 'NaN 돈은 0 으로 정리');
+
+  // ② 돈이 NaN 이어도 무료로 사지 않는다 (구매 fail-closed)
+  State.set({}); var s = State.get(); s.money = NaN; s.gens = {}; Game.invalidate();
+  ok(Game.buyGen('g1', 1) === false, 'NaN 돈으로는 설비 구매 실패');
+  ok(Game.genCount('g1') === 0, 'NaN 구매 실패 후 설비 수 그대로');
+  ok(Game.buyBest() === false, 'NaN 돈으로는 추천 구매도 실패');
+
+  // 돈이 넉넉하면 정상 구매 (회귀 확인)
+  State.set({ money: 1e6 }); Game.invalidate();
+  var m0 = State.get().money;
+  ok(Game.buyGen('g1', 1) === true, '돈이 있으면 정상 구매');
+  ok(State.get().money < m0, '구매하면 돈이 실제로 줄어듦');
+})();
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);

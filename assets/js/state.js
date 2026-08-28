@@ -101,8 +101,13 @@ var State = (function () {
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier'];
+    // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
+    // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
+    var CAPV = Number.MAX_VALUE;
+    var clampKeys = { money: 1, runEarned: 1, totalEarned: 1, bestRunEarned: 1, stolen: 1 };
     numKeys.forEach(function (k) {
       var v = Number(raw[k]);
+      if (clampKeys[k] && v > CAPV) v = CAPV;   // Infinity·오버플로 → 천장 (NaN 은 그대로 걸러진다)
       if (isFinite(v) && v >= 0) s[k] = v;
     });
 

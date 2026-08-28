@@ -444,7 +444,9 @@ var Game = (function () {
     amount = amount || 1;
     var cost = genCost(id, amount);
     var s = S();
-    if (s.money < cost || amount <= 0) return false;
+    // `>=` 로 검사한다: `money < cost` 는 money 가 NaN 이면 false 라 검사를 통과해
+    // 무료로 사지고, money 는 NaN 인 채(화면엔 0원) 남는다. `!(money >= cost)` 는 NaN 을 막는다.
+    if (!(s.money >= cost) || amount <= 0) return false;
     s.money -= cost;
     s.gens[id] = genCount(id) + amount;
     questBump('gen', amount);
@@ -456,7 +458,7 @@ var Game = (function () {
     var u = UP_BY_ID[id];
     var s = S();
     if (!u || s.upgrades[id]) return false;
-    if (s.money < u.cost) return false;
+    if (!(s.money >= u.cost)) return false;   // NaN fail-closed (무료 구매 방지)
     s.money -= u.cost;
     s.upgrades[id] = true;
     questBump('up', 1);
@@ -470,7 +472,7 @@ var Game = (function () {
     var f = FAME_BY_ID[id];
     if (!f || lv >= f.max) return false;
     var cost = fameCost(id, lv);
-    if (s.fame < cost) return false;
+    if (!(s.fame >= cost)) return false;   // NaN fail-closed (무료 강화 방지)
     s.fame -= cost;
     s.fameLv[id] = lv + 1;
     bump();
