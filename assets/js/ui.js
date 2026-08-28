@@ -25,7 +25,7 @@ var UI = (function () {
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
      'tapSkinRow', 'tapSkinNow', 'tapLadder', 'tapSoundRow', 'tapSoundNow',
-     'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
+     'crowdSkinRow', 'crowdSkinNow', 'crowdLadder', 'themeRow', 'themeNow',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
      'muteBtn', 'notifyBtn', 'helpBtn',
@@ -1224,6 +1224,65 @@ var UI = (function () {
     }
   }
 
+  /* ---------- 화면 테마 (색 스킨) ---------- */
+
+  // 테마가 덮어쓰는 CSS 변수 전부 — 먼저 지운 뒤(=기본으로 복귀) 고른 테마 값을 얹는다.
+  var THEME_VARS = ['--bg', '--bg2', '--card', '--card2', '--line', '--txt', '--dim',
+                    '--gold', '--good', '--bad', '--accent', '--accent2',
+                    '--appbg', '--hud', '--tabbar', '--tapbg'];
+
+  function applyTheme(id) {
+    var t = null;
+    for (var i = 0; i < Data.THEMES.length; i++) {
+      if (Data.THEMES[i].id === id) { t = Data.THEMES[i]; break; }
+    }
+    var root = document.documentElement;
+    THEME_VARS.forEach(function (v) { root.style.removeProperty(v); });
+    if (t && t.vars) {
+      Object.keys(t.vars).forEach(function (k) { root.style.setProperty(k, t.vars[k]); });
+    }
+  }
+
+  function renderThemes() {
+    var rowEl = el.themeRow;
+    if (!rowEl) return;
+
+    if (!rowEl.children.length) {
+      Data.THEMES.forEach(function (t) {
+        var b = document.createElement('button');
+        b.className = 'skin';
+        b.dataset.theme = t.id;
+        var sw = (t.sw || []).map(function (c) {
+          return '<i style="background:' + c + '"></i>';
+        }).join('');
+        b.innerHTML = '<span class="skin-ic theme-sw">' + sw + '</span>' +
+                      '<span class="skin-nm"></span>';
+        b.querySelector('.skin-nm').textContent = t.name;
+        b.addEventListener('click', function () {
+          var s = State.get();
+          if (s.theme === t.id) return;
+          s.theme = t.id;
+          applyTheme(t.id);
+          buzz(12);
+          State.save();
+          toast(t.name + ' 테마 적용!');
+          markThemes();
+        });
+        rowEl.appendChild(b);
+      });
+    }
+    markThemes();
+
+    function markThemes() {
+      var now = State.get().theme || 'auto';
+      Array.prototype.forEach.call(rowEl.children, function (b) {
+        b.classList.toggle('on', b.dataset.theme === now);
+      });
+      var meta = Data.THEMES.filter(function (t) { return t.id === now; })[0];
+      if (el.themeNow) el.themeNow.textContent = meta ? meta.name : '';
+    }
+  }
+
   /* ---------- 탭 소리 고르기 ---------- */
 
   var soundCombo = 0, soundTimer = null;
@@ -1602,7 +1661,7 @@ var UI = (function () {
     else if (currentTab === 'kitchen') renderKitchen();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
-    else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
+    else if (currentTab === 'settings') { renderStats(); renderThemes(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 
@@ -2049,12 +2108,13 @@ var UI = (function () {
 
   function init(handlers) {
     cache();
+    applyTheme(State.get().theme);   // 저장된 테마를 화면에 먼저 입힌다
     buildSteam();
     Scene.init(el.street, el.pops);
     buildGenList();
     bind(handlers);
     bindSheet();
-    [el.tapSoundRow, el.tapSkinRow, el.crowdSkinRow].forEach(enableDragScroll);
+    [el.tapSoundRow, el.tapSkinRow, el.crowdSkinRow, el.themeRow].forEach(enableDragScroll);
     bindTour();
     setSheet(sheetUp(), false);
     Sound.arm();

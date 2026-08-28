@@ -83,6 +83,7 @@ var State = (function () {
       kfoods: {},        // 🍳 주방 음식 도감 (음식id -> 만든 횟수, 1 이상이면 도감 등록)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
+      theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
 
       // 명예의 전당 — 환생해도 남는 개인 기록
       runTime: 0,        // 이번 회차 경과 시간 (초)
@@ -219,6 +220,13 @@ var State = (function () {
         if (list[i].id === v) { s[k] = v; return; }
       }
     });
+
+    // 화면 테마도 실제로 있는 id 일 때만 (없으면 기본 'auto' 유지)
+    if (typeof raw.theme === 'string') {
+      for (var thi = 0; thi < Data.THEMES.length; thi++) {
+        if (Data.THEMES[thi].id === raw.theme) { s.theme = raw.theme; break; }
+      }
+    }
 
     if (typeof raw.dailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dailyDate)) {
       s.dailyDate = raw.dailyDate;

@@ -942,12 +942,39 @@ var Data = (function () {
     { id: 'ac37', icon: '🌟', name: '미슐랭 3스타',    desc: '미슐랭 도전에서 별 5개',         prog: function (s) { return { cur: s.bestMichelin, goal: 5 }; }, check: function (s) { return s.bestMichelin >= 5; } }
   ];
 
+  /* ---------- 화면 테마 (색 스킨) ----------
+     기본(auto)은 style.css 의 :root 값을 그대로 쓰고, 나머지는 CSS 변수만 덮어쓴다.
+     폰트·이미지는 손대지 않는다 — 외부 파일 없이 색만 바꾸는 자기완결형 스킨이다.
+     sw 는 설정 화면의 미리보기 색막대(배경·강조·금색). */
+  var THEMES = [
+    {
+      id: 'auto', icon: '🌌', name: '기본',
+      sw: ['#141024', '#8b5cf6', '#ffcc44']
+      // vars 없음 = :root 기본값
+    },
+    {
+      id: 'pojang', icon: '🏮', name: '포장마차',
+      sw: ['#17110c', '#ff9f43', '#ffce54'],
+      vars: {
+        '--bg': '#17110c', '--bg2': '#2b2015', '--card': '#33261a', '--card2': '#3a2a19',
+        '--line': '#503a24', '--txt': '#fbeeda', '--dim': '#c3a982',
+        '--gold': '#ffce54', '--good': '#8bbf5a', '--bad': '#e0533a',
+        '--accent': '#ff9f43', '--accent2': '#e0533a',
+        '--appbg': 'radial-gradient(130% 60% at 50% 0%, #2e1e10 0%, #1c140d 46%, #150f09 100%)',
+        '--hud': 'linear-gradient(180deg, #241a12, #1a1410)',
+        '--tabbar': 'rgba(28,20,13,0.97)',
+        '--tapbg': 'radial-gradient(circle at 35% 30%, #4a3420, #241810 70%)'
+      }
+    }
+  ];
+
   return {
     COST_GROWTH: COST_GROWTH,
     GENERATORS: GENERATORS,
     UPGRADES: UPGRADES,
     FAME_SHOP: FAME_SHOP,
     ACHIEVEMENTS: ACHIEVEMENTS,
+    THEMES: THEMES,
     TAP_SKINS: TAP_SKINS,
     CROWD_SKINS: CROWD_SKINS,
     HEADWEAR: HEADWEAR,
