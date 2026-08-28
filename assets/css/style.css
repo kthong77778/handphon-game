@@ -69,6 +69,14 @@ body{
   text-shadow:0 2px 12px rgba(255,204,68,.25);
   font-variant-numeric:tabular-nums;
 }
+/* 매출을 부드러운 알약 + ₩ 동전으로 (친근하게) */
+.money-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:3px 15px 3px 7px;border-radius:999px;
+  background:rgba(255,204,68,.10);border:1px solid rgba(255,204,68,.28);
+}
+.money-pill .coin{flex:0 0 auto}
+.money-pill .coin-body{fill:var(--gold)}   /* 테마 금색에 맞춰 물든다 */
 .rate{font-size:13px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
 .hud-sub{display:flex;gap:8px;justify-content:center;margin-top:8px}
 .chip{
