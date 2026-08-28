@@ -4,7 +4,7 @@ var UI = (function () {
   var el = {};
   var currentTab = 'shop';
   var currentGrade = 1;    // 주방 합성 등급 탭
-  var buyAmt = 1;          // 1 | 10 | 'max'
+  var buyAmt = 1;          // 1 | 10 | 100 | 'max'
   var sig = {};            // 목록 재생성 여부 판단용 서명
   var toastTimer = null;
 

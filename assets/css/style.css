@@ -368,7 +368,7 @@ body{
 .buy-amt button{
   background:none;border:none;color:var(--dim);
   font-family:inherit;font-size:12px;font-weight:700;
-  padding:5px 10px;border-radius:7px;cursor:pointer;
+  padding:5px 9px;border-radius:7px;cursor:pointer;white-space:nowrap;
   transition:background .12s,color .12s;
 }
 .buy-amt button.active{
