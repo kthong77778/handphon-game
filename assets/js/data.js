@@ -965,6 +965,20 @@ var Data = (function () {
         '--tabbar': 'rgba(28,20,13,0.97)',
         '--tapbg': 'radial-gradient(circle at 35% 30%, #4a3420, #241810 70%)'
       }
+    },
+    {
+      id: 'china', icon: '🏮', name: '중화풍',
+      sw: ['#16110c', '#c8963f', '#c8632a'],
+      vars: {
+        '--bg': '#16110c', '--bg2': '#241a12', '--card': '#1e1813', '--card2': '#2a2018',
+        '--line': '#3a2f22', '--txt': '#e6dcc4', '--dim': '#9a876a',
+        '--gold': '#e0b45f', '--good': '#9db35a', '--bad': '#b5432f',
+        '--accent': '#c8963f', '--accent2': '#c8632a',
+        '--appbg': 'radial-gradient(120% 55% at 50% 0%, #2a2018 0%, #16110c 46%, #100c09 100%)',
+        '--hud': 'linear-gradient(180deg, #241a12, #1a1410)',
+        '--tabbar': 'rgba(18,13,9,0.97)',
+        '--tapbg': 'radial-gradient(circle at 50% 40%, #2a2018, #120d09 72%)'
+      }
     }
   ];
 
