@@ -65,6 +65,16 @@ var UI = (function () {
 
   /* ---------- 아이템 행 만들기 ---------- */
 
+  // 원으로 사는 버튼(설비·업그레이드)에 붙이는 작은 ₩ 동전 — 매출 알약과 통일.
+  // 초록/어두운 고정색 버튼 위라 금색은 고정으로 둔다(테마와 무관).
+  var COST_COIN =
+    '<svg class="cost-coin" width="16" height="16" viewBox="0 0 40 40" aria-hidden="true">' +
+      '<circle cx="20" cy="20" r="17" fill="#ffce54" stroke="#b9861a" stroke-width="2.5"/>' +
+      '<circle cx="20" cy="20" r="12.5" fill="none" stroke="#e0b84a" stroke-width="1.6"/>' +
+      '<text x="20" y="27" text-anchor="middle" font-size="17" font-weight="800"' +
+        ' fill="#8a6212" font-family="system-ui,-apple-system,sans-serif">₩</text>' +
+    '</svg>';
+
   function makeItem(iconText, opts) {
     // div + click 이면 키보드로 살 수 없고 스크린리더가 버튼으로 읽지 않는다.
     // 누를 수 있는 행은 button, 보여주기만 하는 행(도전과제)은 div 로 만든다.
@@ -153,8 +163,8 @@ var UI = (function () {
         r.p.desc.textContent = g.desc;
       }
 
-      r.p.cost.innerHTML = Fmt.num(cost) + '<small>' +
-        (buyAmt === 'max' ? (canBuy ? '×' + amt : '×1') : '×' + amt) + '</small>';
+      r.p.cost.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(cost) + '<small>' +
+        (buyAmt === 'max' ? (canBuy ? '×' + amt : '×1') : '×' + amt) + '</small></span>';
       r.p.cost.className = 'item-cost ' + (canBuy ? 'ok' : 'no');
       r.row.className = 'item' + (canBuy ? ' buyable' : '') + (unlocked ? '' : ' locked');
     });
@@ -248,7 +258,7 @@ var UI = (function () {
       if (!u) return;
       var ok = money >= u.cost;
       var costEl = row.querySelector('.item-cost');
-      costEl.textContent = Fmt.num(u.cost);
+      costEl.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(u.cost) + '</span>';
       costEl.className = 'item-cost ' + (ok ? 'ok' : 'no');
       row.className = 'item' + (ok ? ' buyable' : '');
     });

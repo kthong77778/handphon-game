@@ -646,6 +646,16 @@ body{
 }
 #genList .item.buyable .item-cost small, #upgradeList .item.buyable .item-cost small,
 #fameShopList .item.buyable .item-cost small{color:rgba(14,26,16,.7)}
+
+/* 원으로 사는 버튼(설비·업그레이드)은 ₩ 동전 + 둥근 알약 — 매출 알약과 통일.
+   명성 상점(✨)은 원이 아니라 제외한다. */
+#genList .item-cost, #upgradeList .item-cost{
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:999px;padding:7px 15px 7px 8px;text-align:left;
+}
+#genList .item-cost .cost-coin, #upgradeList .item-cost .cost-coin{flex:0 0 auto}
+#genList .item-cost.no .cost-coin, #upgradeList .item-cost.no .cost-coin{opacity:.45}
+#genList .item-cost .cnum, #upgradeList .item-cost .cnum{display:inline-block;text-align:center;line-height:1.05}
 #genList .item-cost.no, #upgradeList .item-cost.no, #fameShopList .item-cost.no{
   color:var(--dim);opacity:.85;
 }
