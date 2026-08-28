@@ -1012,12 +1012,19 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   ok(Game.perSec(true) > noDex, '도감이 차면 초당 수익이 오름');
 
   // 재료 트럭: 틱을 돌리면 재료가 쌓인다 (탭 or 자동수거)
-  State.set({}); var s3 = State.get(); s3.ings = {}; Game.invalidate();
+  State.set({}); var s3 = State.get(); s3.ings = {}; Game.invalidate(); Game.resetTruck();
   var total0 = 0; Data.KITCHEN.ings.forEach(function (g) { total0 += Game.ingCount(g.id); });
   for (var i = 0; i < 120; i++) { Game.tick(1); }   // 2분 → 트럭 여러 번
   var total1 = 0; Data.KITCHEN.ings.forEach(function (g) { total1 += Game.ingCount(g.id); });
   ok(total1 > total0, '트럭이 돌면 재료가 쌓인다: ' + total1 + '개');
   ok(typeof Game.truckState().here === 'boolean', 'truckState().here 는 불리언');
+
+  // 트럭 간격이 받을수록 늘어난다 (30·60·90…) — 연속 등장 간격이 커진다
+  Game.resetTruck();
+  var spawns = [], was = Game.truckState().here;
+  for (var t = 0; t < 1500; t++) { Game.tick(1); var h = Game.truckState().here; if (h && !was) spawns.push(t); was = h; }
+  var gaps = []; for (var j = 1; j < spawns.length; j++) gaps.push(spawns[j] - spawns[j - 1]);
+  ok(gaps.length >= 2 && gaps[gaps.length - 1] > gaps[0], '받을수록 트럭 간격이 늘어남: ' + gaps.join('·') + '초');
 })();
 
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);

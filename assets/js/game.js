@@ -686,9 +686,16 @@ var Game = (function () {
     return { food: f, first: first, gain: gain };
   }
 
-  /* ---- 재료 트럭 (타이머는 세이브하지 않는다 — 온라인일 때만 굴러간다) ---- */
-  var truckLeft = Data.KITCHEN.truckEvery * Math.random();  // 다음 트럭까지 남은 시간(초)
-  var truckHere = 0;                                        // 트럭이 머무는 남은 시간(0=없음)
+  /* ---- 재료 트럭 (전부 세션 내 변수 — 세이브하지 않는다) ----
+     받을수록 다음 간격이 30초씩 늘어난다: 30·60·90·… 세션(접속)마다 다시 30초부터.
+     영구 누적으로 하면 오래된 세이브에서 간격이 수십 분까지 늘어 트럭이 사실상 사라진다. */
+  var truckHere = 0;    // 트럭이 머무는 남은 시간(0=없음)
+  var truckCount = 0;   // 이번 세션에 온 트럭 수
+
+  /** 지금 기준 다음 트럭까지의 간격(초). 30 × (온 횟수+1) */
+  function truckGap() { return Data.KITCHEN.truckEvery * (truckCount + 1); }
+
+  var truckLeft = Data.KITCHEN.truckEvery;   // 첫 트럭까지 남은 시간(초)
 
   function dropIngredients(n) {
     var s = S(), all = Data.KITCHEN.ings, got = [];
@@ -709,8 +716,9 @@ var Game = (function () {
     }
     truckLeft -= dt;
     if (truckLeft <= 0) {
-      truckLeft += Data.KITCHEN.truckEvery;
       truckHere = Data.KITCHEN.truckLife;
+      truckCount++;              // 한 대 왔으니, 다음 간격이 30초 더 길어진다
+      truckLeft += truckGap();
     }
   }
 
@@ -721,7 +729,10 @@ var Game = (function () {
     return dropIngredients(Data.KITCHEN.tapDrop);
   }
 
-  function truckState() { return { here: truckHere > 0, hereLeft: truckHere, nextIn: truckLeft }; }
+  function truckState() { return { here: truckHere > 0, hereLeft: truckHere, nextIn: truckLeft, count: truckCount }; }
+
+  /** 트럭 타이머를 처음 상태로 (새 세션과 같게). 테스트에서 쓰며, 실제 부팅 때 불러도 안전하다. */
+  function resetTruck() { truckHere = 0; truckCount = 0; truckLeft = Data.KITCHEN.truckEvery; }
 
   /* ---------- 명예의 전당 ---------- */
 
@@ -1520,6 +1531,7 @@ var Game = (function () {
     craftFood: craftFood,
     grabTruck: grabTruck,
     truckState: truckState,
+    resetTruck: resetTruck,
     nextGoldenGap: nextGoldenGap,
     rollGolden: rollGolden,
     claimGolden: claimGolden,
