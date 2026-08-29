@@ -11,7 +11,7 @@ var UI = (function () {
   function $(id) { return document.getElementById(id); }
 
   function cache() {
-    ['money', 'rate', 'fameChip', 'multChip', 'tapZone', 'tapTarget', 'tapPower',
+    ['money', 'rate', 'fameChip', 'fameNum', 'multChip', 'tapZone', 'tapTarget', 'tapPower',
      'genList', 'upgradeList', 'upgradeHint', 'fameShopList', 'achvList', 'statsBox',
      'questList',
      'adCard', 'adModal', 'adEmoji', 'adCount', 'adBar', 'adNote', 'adQuit',
@@ -1221,7 +1221,7 @@ var UI = (function () {
     var s = State.get();
     el.money.textContent = Fmt.won(s.money);
     el.rate.textContent = '초당 ' + Fmt.rate(Game.perSec()) + ' 원';
-    el.fameChip.textContent = '✨ 명성 ' + Fmt.num(s.fame);
+    el.fameNum.textContent = Fmt.num(s.fame);
     el.multChip.textContent = Fmt.mult(Game.globalMult());
     el.bossChip.textContent = '사장 Lv.' + Game.bossLevel() + ' · ' + Game.bossTitle();
     el.bossXpFill.style.transform = 'scaleX(' + Game.bossXpRatio().toFixed(3) + ')';
@@ -1381,7 +1381,10 @@ var UI = (function () {
       var ct = Game.crowdTier();
       var steps = cur.tiers.map(function (tr, i) {
         var cls = i < ct.index ? 'done' : (i === ct.index ? 'now' : 'wait');
-        var face = tr.cast[0] + (tr.acc.length ? '<u>' + tr.acc[0] + '</u>' : '');
+        var c0 = tr.cast[0];
+        var face = (typeof c0 === 'string' && c0.indexOf('/') >= 0
+                     ? '<img class="gs-cust" src="assets/img/' + c0 + '" alt="">' : c0) +
+                   (tr.acc.length ? '<u>' + tr.acc[0] + '</u>' : '');
         var when = i === 0 ? '시작' : '초당 ' + Fmt.won(tr.at);
         return '<div class="grow-step ' + cls + '">' +
                  '<span class="gs-face">' + face + '</span>' +

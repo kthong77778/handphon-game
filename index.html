@@ -21,18 +21,13 @@
   <header id="hud">
     <div class="hud-main">
       <div class="money-pill">
-        <svg class="coin" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true">
-          <circle class="coin-body" cx="20" cy="20" r="17" stroke="#c99a17" stroke-width="2.5"/>
-          <circle cx="20" cy="20" r="12.5" fill="none" stroke="#e0b84a" stroke-width="1.6"/>
-          <text x="20" y="27" text-anchor="middle" font-size="17" font-weight="800"
-                fill="#a8791a" font-family="system-ui,-apple-system,sans-serif">₩</text>
-        </svg>
+        <img class="coin" src="assets/img/coin.png" alt="" width="28" height="28">
         <div class="money" id="money">0 원</div>
       </div>
       <div class="rate" id="rate">초당 0 원</div>
     </div>
     <div class="hud-sub">
-      <span class="chip" id="fameChip">✨ 명성 0</span>
+      <span class="chip" id="fameChip"><img class="chip-ic" src="assets/img/fame.png" alt="">명성 <b id="fameNum">0</b></span>
       <span class="chip" id="multChip">×1.00</span>
       <button class="chip coupon-chip" id="couponChip" hidden aria-label="할인 쿠폰 사용">🎟️ 0/3</button>
     </div>

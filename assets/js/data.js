@@ -644,6 +644,24 @@ var Data = (function () {
 
   var CROWD_SKINS = [
     {
+      // 그림 손님 — cast 가 이미지 경로('cust/..png', '/' 포함)면 scene/미리보기가 <img> 로 그린다.
+      // acc(장신구 이모지)는 이미지 위에 어색해서 비운다. 등급이 오를수록 진귀한 손님이 온다.
+      id: 'img', icon: '🧑‍🍳', name: '단골 손님',
+      desc: '학생·직장인부터 전설의 손님까지 — 그림으로 찾아옵니다',
+      tiers: crowd([
+        ['첫 손님',     ['cust/student.png', 'cust/office.png', 'cust/dog.png', 'cust/cat.png'], [],
+          '학생과 직장인, 강아지·고양이가 먼저 온다'],
+        ['입소문',      ['cust/rabbit.png', 'cust/hamster.png', 'cust/dog.png'], [],
+          '작은 친구들이 소문 듣고 몰려온다'],
+        ['북적북적',    ['cust/bear.png', 'cust/robot.png', 'cust/cat.png'], [],
+          '곰과 로봇까지 줄을 선다'],
+        ['진귀한 손님', ['cust/fairy.png', 'cust/ghost.png'], [],
+          '요정과 유령이 밤에 찾아온다'],
+        ['전설의 손님', ['cust/dragon.png', 'cust/dokkaebi.png'], [],
+          '용과 도깨비가 강림했다']
+      ])
+    },
+    {
       id: 'auto', icon: '🚶', name: '동네 → 재벌',
       desc: '소문이 나면 돈 있는 손님이 찾아옵니다',
       tiers: crowd([

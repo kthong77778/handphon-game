@@ -195,7 +195,7 @@ console.log('\n[6.7] 스킨 & 등급');
   State.wipe(); Game.invalidate(); Game.resetGuard();
   const s = State.get();
 
-  ok(s.tapSkin === 'auto' && s.crowdSkin === 'auto', '기본 스킨은 auto');
+  ok(s.tapSkin === 'auto' && s.crowdSkin === 'img', '기본 스킨은 조리 auto · 손님 img(그림 손님)');
   ok(Game.tapStep().index === 0, '처음엔 1단계');
   ok(Game.tapStep().step.icon === '🍢', '기본 메뉴는 어묵 꼬치');
 
@@ -259,7 +259,7 @@ console.log('\n[6.7] 스킨 & 등급');
 
   // 깨진 스킨 id 방어
   State.set({ tapSkin: 'ㅁㄴㅇㄹ', crowdSkin: 42 }); Game.invalidate();
-  ok(State.get().tapSkin === 'auto' && State.get().crowdSkin === 'auto',
+  ok(State.get().tapSkin === 'auto' && State.get().crowdSkin === 'img',
      '이상한 스킨 id 는 기본값으로');
   ok(Game.tapStep().step.icon && Game.crowdTier().cast.length > 0, '그래도 정상 동작');
 
@@ -279,8 +279,9 @@ console.log('\n[6.7] 스킨 & 등급');
       if (!t.name) bad.push(k.id + ' 등급 이름 없음');
       if (i > 0 && t.at <= k.tiers[i-1].at) bad.push(k.id + ' 문턱 역전');
     });
-    // 상위 등급은 소지품으로 격을 드러낸다
-    if (!k.tiers[4].acc.length) bad.push(k.id + ' 최고 등급에 소지품 없음');
+    // 상위 등급은 소지품으로 격을 드러낸다 (이미지 손님 스킨은 손님 자체가 격을 드러내므로 예외)
+    var isImgSkin = k.tiers[0].cast[0] && String(k.tiers[0].cast[0]).indexOf('/') >= 0;
+    if (!isImgSkin && !k.tiers[4].acc.length) bad.push(k.id + ' 최고 등급에 소지품 없음');
   });
   ok(bad.length === 0, '모든 스킨 데이터가 온전함', bad.join(', '));
 

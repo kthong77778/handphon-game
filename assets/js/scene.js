@@ -58,17 +58,28 @@ var Scene = (function () {
     var body = document.createElement('span');
     var tier = Game.crowdTier();
     var party = Game.partyActive && Game.partyActive();
-    // 파티 중엔 셋 중 하나꼴로 파티 전용 손님이 온다
-    if (party && Math.random() < 0.35) {
-      body.textContent = pick(Data.PARTY.guests);
-      node.classList.add('t' + (tier.index + 1), 'party');
+    // 파티 중엔 셋 중 하나꼴로 파티 전용 손님이 온다 (이모지)
+    var val, isParty = false;
+    if (party && Math.random() < 0.35) { val = pick(Data.PARTY.guests); isParty = true; }
+    else { val = pick(tier.cast); }
+    // cast 가 이미지 경로('/' 포함)면 <img> 손님, 아니면 이모지 손님
+    var isImg = typeof val === 'string' && val.indexOf('/') >= 0;
+    var im = null;
+    if (isImg) {
+      im = document.createElement('img');
+      im.src = 'assets/img/' + val; im.alt = '';
+      im.className = 'cust-img';
+      im.style.height = Math.round(rnd(40, 54)) + 'px';
+      body.appendChild(im);
+      node.classList.add('img-cust');
     } else {
-      body.textContent = pick(tier.cast);
-      node.classList.add('t' + (tier.index + 1));
+      body.textContent = val;
     }
+    node.classList.add('t' + (tier.index + 1));
+    if (isParty) node.classList.add('party');
 
-    // 등급이 오르면 값나가는 것을 들고 온다
-    if (tier.acc && tier.acc.length) {
+    // 등급이 오르면 값나가는 것을 들고 온다 (이미지 손님은 장신구 없음 — 이모지가 위에 뜨면 어색)
+    if (!isImg && tier.acc && tier.acc.length) {
       var icon = pick(tier.acc);
       var acc = document.createElement('b');
       acc.className = 'acc' + (Data.HEADWEAR.indexOf(icon) >= 0 ? ' head' : '');
@@ -81,9 +92,14 @@ var Scene = (function () {
     face.className = 'flip';
     face.appendChild(body);
     node.appendChild(face);
-    // 이모지 글리프는 CSS 박스보다 아래로 삐져나오므로 바닥에서 충분히 띄운다
-    node.style.bottom = Math.round(rnd(17, 25)) + 'px';
-    node.style.fontSize = Math.round(rnd(21, 29)) + 'px';
+    if (isImg) {
+      // 이미지 손님은 발이 바닥에 닿게 낮게 앉힌다 (전신 스프라이트)
+      node.style.bottom = Math.round(rnd(2, 9)) + 'px';
+    } else {
+      // 이모지 글리프는 CSS 박스보다 아래로 삐져나오므로 바닥에서 충분히 띄운다
+      node.style.bottom = Math.round(rnd(17, 25)) + 'px';
+      node.style.fontSize = Math.round(rnd(21, 29)) + 'px';
+    }
     node.style.opacity = String(rnd(0.75, 1));
 
     // 오른쪽에서 걸어와 가게 앞에 섰다가 왔던 길로 돌아간다.

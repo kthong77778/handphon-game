@@ -93,7 +93,7 @@ var State = (function () {
       adUsed: {},        // 광고 슬롯id -> 오늘 시청한 횟수 (자정 리셋)
       tabsSeen: [],      // 온보딩 — 이미 열린(연출을 본) 하단 탭 id 들. 다시 안 잠긴다.
       tapSkin: 'auto',   // 조리 음식 스킨 id
-      crowdSkin: 'auto', // 손님 스킨 id
+      crowdSkin: 'img',  // 손님 스킨 id (기본은 그림 손님)
       theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
       coupons: 0,        // 🎟️ 보유 할인 쿠폰 수 (0 ~ Data.COUPON.max)
 
