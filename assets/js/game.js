@@ -61,7 +61,7 @@ var Game = (function () {
     stat *= Math.pow(3, fameLv('f_legend'));      // 명성상점: 분식 왕조 (후반 소비처)
     stat *= 1 + Data.PARTY.dexBonus * (s.partyFoods ? s.partyFoods.length : 0);  // 파티 도감 1칸당 +1%
     stat *= 1 + foodBonus();                                 // 🍳 주방 음식 도감 (등급별 영구 배율)
-    if (s.michelinGrand) stat *= Data.MICHELIN.grandMult;   // 미슐랭 5성 영구 배율
+    if (s.michelinGrand) stat *= Data.MICHELIN.grandMult;   // 스타 셰프 별 5개 영구 배율
 
     var genM = {};
     Data.GENERATORS.forEach(function (g) { genM[g.id] = 1; });
@@ -981,7 +981,7 @@ var Game = (function () {
     return food;
   }
 
-  /* ---------- 미슐랭 도전 ---------- */
+  /* ---------- 스타 셰프 도전 ---------- */
 
   function michTier() { return S().michTier || 0; }
   /** 지금 단계의 별 1~5 목표 (단계가 오를수록 커진다) */

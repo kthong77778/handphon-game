@@ -834,7 +834,7 @@ suite('전국 맛집 랭킹', async ({ page, ctx, ok, errs }) => {
     ok((await p.textContent('#rankRegion')) === r1, '같은 지역 유지: ' + r1);
 });
 
-suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
+suite('스타 셰프 도전', async ({ page, ctx, ok, errs }) => {
   const p = page;
 
     await p.goto('/index.html'); await p.waitForTimeout(700);
@@ -842,7 +842,7 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     await p.evaluate(()=>{ Data.GENERATORS.forEach(g=>State.get().gens[g.id]=10); State.get().money=1e6; Game.invalidate(); });
     await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(400);
 
-    console.log('[1] 미슐랭 카드 · 시즌 · 랭킹');
+    console.log('[1] 스타 셰프 카드 · 시즌 · 랭킹');
     ok(await p.locator('#michelinCard').count() === 1, '카드 존재');
     ok(await p.locator('#michStart').count() === 1, '도전하기 버튼');
     ok(await p.locator('#michShare').count() === 1, '자랑(공유) 버튼');
@@ -923,7 +923,7 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     await p.click('#tabbar .tab[data-tab="achv"]'); await p.waitForTimeout(200);
     await p.click('#michShare'); await p.waitForTimeout(200);
     const shared = await p.evaluate(()=>window.__shared);
-    ok(shared && /미슐랭/.test(shared.text) && /별/.test(shared.text), '기기 공유 시트로 보냄(다른 앱): ' + (shared && shared.text || '').replace(/\n/g,' '));
+    ok(shared && /스타 셰프/.test(shared.text) && /별/.test(shared.text), '기기 공유 시트로 보냄(다른 앱): ' + (shared && shared.text || '').replace(/\n/g,' '));
 
     // 공유가 막힌(샌드박스) 경우엔 복사로 넘어간다
     await p.evaluate(()=>{
@@ -934,7 +934,7 @@ suite('미슐랭 도전', async ({ page, ctx, ok, errs }) => {
     });
     await p.click('#michShare'); await p.waitForTimeout(200);
     const copied = await p.evaluate(()=>window.__copied);
-    ok(copied && /미슐랭/.test(copied), '공유 불가 시 문구를 복사로 대체');
+    ok(copied && /스타 셰프/.test(copied), '공유 불가 시 문구를 복사로 대체');
 });
 
 suite('주말 파티 · 도감', async ({ page, ctx, ok, errs }) => {

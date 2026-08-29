@@ -336,7 +336,7 @@ var UI = (function () {
     });
   }
 
-  /* ---------- 미슐랭 도전 ---------- */
+  /* ---------- 스타 셰프 도전 ---------- */
 
   function starStr(n) {
     n = Math.max(0, Math.min(5, n));
@@ -402,11 +402,11 @@ var UI = (function () {
     var rank = Game.michRank(s.michSeasonTaps).rank;
     var url = '';
     try { url = location.href; } catch (e) {}
-    var text = '🌟 분식집 키우기 · 미슐랭 도전\n' +
+    var text = '🌟 분식집 키우기 · 스타 셰프 도전\n' +
       season.name + ' 시즌 ' + starStr(stars) + ' (별 ' + stars + '개)\n' +
       '전국 셰프 ' + Fmt.comma(rank) + '위! 너도 도전해봐 👉';
     var full = text + (url ? ' ' + url : '');
-    var data = { title: '분식집 키우기 · 미슐랭 도전', text: text };
+    var data = { title: '분식집 키우기 · 스타 셰프 도전', text: text };
     if (url) data.url = url;
 
     // 1순위: 기기 공유 시트 (카톡·인스타·문자 등 다른 앱으로 바로 보내기).
@@ -516,7 +516,7 @@ var UI = (function () {
     var txt = r.stars > 0
       ? '별 <b>' + r.stars + '개</b> · ' + Fmt.won(r.gain) + ' 획득!'
       : '별을 하나도 못 얻었어요. 다시 도전해 보세요!';
-    if (r.grandNew) txt += '<br><span class="mich-grand">🏆 미슐랭 5성! 모든 수익 ×' +
+    if (r.grandNew) txt += '<br><span class="mich-grand">🏆 별 5개 만점! 모든 수익 ×' +
       Data.MICHELIN.grandMult + ' 영구 획득!</span>';
     if (r.tierUp) txt += '<br><span class="mich-tierup">🔥 ' + r.tierUp +
       '단계 돌파! 다음 도전은 조리 ' + Fmt.comma(Game.michGoals()[4]) + '번으로 더 어려워집니다</span>';
@@ -1574,7 +1574,7 @@ var UI = (function () {
   var thiefTimer = 0;
   var thiefBusy = false;    // 도둑이 화면에 있는 동안엔 겹쳐 내보내지 않는다
   var onThief = null;
-  var michTapFn = null;   // main.js 의 onTap (미슐랭 조리에 재사용)
+  var michTapFn = null;   // main.js 의 onTap (스타 셰프 조리에 재사용)
 
   function armThief() { thiefTimer = Game.nextThiefGap(); }
 
@@ -2114,7 +2114,7 @@ var UI = (function () {
     onThief = handlers.onThief;
     michTapFn = handlers.onTap;
 
-    // 미슐랭 심사 조리 버튼
+    // 스타 셰프 심사 조리 버튼
     if (window.PointerEvent) el.michTap.addEventListener('pointerdown', michTapPress);
     else { el.michTap.addEventListener('touchstart', michTapPress, { passive: false });
            el.michTap.addEventListener('mousedown', michTapPress); }

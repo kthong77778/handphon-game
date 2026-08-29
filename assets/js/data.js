@@ -854,9 +854,9 @@ var Data = (function () {
     ]
   };
 
-  /* ---------- 미슐랭 도전 (액티브 던전) ---------- */
+  /* ---------- 스타 셰프 도전 (액티브 던전) ---------- */
   // 제한 시간 안에 조리(탭)를 많이 할수록 별을 얻는다. 방치가 아니라 손 실력 도전.
-  // 별 5개(미슐랭 3스타)를 처음 채우면 영구 배율이라는 큰 보상을 준다.
+  // 별 5개(만점)를 처음 채우면 영구 배율이라는 큰 보상을 준다.
   var MICHELIN = {
     time: 25,                         // 심사 시간 (초)
     goals: [15, 40, 75, 115, 160],    // 별 1~5 문턱 (1단계 기준 · 이번 판 조리 횟수)
@@ -866,7 +866,7 @@ var Data = (function () {
     minReward: 500,                   // 아직 수익이 없을 때의 별당 최소 보상
     grandMult: 1.5,                   // 5성 첫 달성 시 모든 수익 ×1.5 (영구)
     // ---- 시즌 & 랭킹 (연출용) ----
-    rankTotal: 8000,                  // 미슐랭 랭킹 가상 셰프 수
+    rankTotal: 8000,                  // 스타 셰프 랭킹 가상 셰프 수
     tapCap: 240,                      // 랭킹 계산 상한 (이만큼 조리하면 전국 1위권)
     histKeep: 6,                      // 지난 시즌 기록 보관 수
     // 달마다 바뀌는 시즌 이름 (getMonth 0~11)
@@ -976,8 +976,8 @@ var Data = (function () {
     { id: 'ac33', icon: '♾️', name: '천문학적',        desc: '누적 1극원 벌기',                prog: function (s) { return { cur: s.totalEarned, goal: 1e+48 }; }, fmt: 'num', check: function (s) { return s.totalEarned >= 1e48; } },
     { id: 'ac34', icon: '📋', name: '성실한 사장',     desc: '퀘스트 10개 완료',               prog: function (s) { return { cur: s.questsDone, goal: 10 }; }, check: function (s) { return s.questsDone >= 10; } },
     { id: 'ac35', icon: '🗂️', name: '퀘스트 수집가',   desc: '퀘스트 60개 완료',               prog: function (s) { return { cur: s.questsDone, goal: 60 }; }, check: function (s) { return s.questsDone >= 60; } },
-    { id: 'ac36', icon: '⭐', name: '미슐랭 입성',     desc: '미슐랭 도전에서 별 1개',         prog: function (s) { return { cur: s.bestMichelin, goal: 1 }; }, check: function (s) { return s.bestMichelin >= 1; } },
-    { id: 'ac37', icon: '🌟', name: '미슐랭 3스타',    desc: '미슐랭 도전에서 별 5개',         prog: function (s) { return { cur: s.bestMichelin, goal: 5 }; }, check: function (s) { return s.bestMichelin >= 5; } }
+    { id: 'ac36', icon: '⭐', name: '스타 셰프 입성',   desc: '스타 셰프 도전에서 별 1개',      prog: function (s) { return { cur: s.bestMichelin, goal: 1 }; }, check: function (s) { return s.bestMichelin >= 1; } },
+    { id: 'ac37', icon: '🌟', name: '5스타 셰프',      desc: '스타 셰프 도전에서 별 5개',      prog: function (s) { return { cur: s.bestMichelin, goal: 5 }; }, check: function (s) { return s.bestMichelin >= 5; } }
   ];
 
   /* ---------- 할인 쿠폰 (아이템) ----------

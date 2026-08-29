@@ -66,10 +66,10 @@ var State = (function () {
       tapSound: 'classic', // 조리음 종류 (Data.TAP_SOUNDS 의 id)
       notifyOffline: 0,  // 오프라인 보상 가득 참 알림 (0/1)
       lastBackup: 0,     // 마지막으로 세이브 코드를 내보낸 시각 (백업 알림용)
-      bestMichelin: 0,   // 미슐랭 도전 최고 별 (0~5, 통산)
+      bestMichelin: 0,   // 스타 셰프 도전 최고 별 (0~5, 통산)
       michelinGrand: 0,  // 5성 영구 보상을 받았는가 (0/1)
       michBestTaps: 0,   // 한 판 최고 조리 횟수 (통산, 랭킹용)
-      michTier: 0,       // 미슐랭 도전 단계 (0부터 · 5성 깰 때마다 +1, 다음이 더 어려워짐)
+      michTier: 0,       // 스타 셰프 도전 단계 (0부터 · 별 5개 깰 때마다 +1, 다음이 더 어려워짐)
       michSeason: '',    // 지금 시즌 id (YYYY-MM)
       michSeasonStars: 0,// 이번 시즌 최고 별
       michSeasonTaps: 0, // 이번 시즌 최고 조리 횟수
@@ -188,7 +188,7 @@ var State = (function () {
       }).slice(-MAX_RUNS);
     }
 
-    // 미슐랭 시즌 기록
+    // 스타 셰프 시즌 기록
     if (typeof raw.michSeason === 'string' && /^\d{4}-\d{2}$/.test(raw.michSeason)) {
       s.michSeason = raw.michSeason;
     }

@@ -722,7 +722,7 @@ console.log('\n[16] 퀘스트 세이브 방어');
   ok(Game.quests().length === Data.QUEST.count, '한 번 부르면 채워짐');
 }
 
-console.log('\n[17] 미슐랭 도전');
+console.log('\n[17] 스타 셰프 도전');
 {
   State.set({ money: 0, bestMichelin: 0, michelinGrand: 0 });
   Data.GENERATORS.forEach(function (g) { State.get().gens[g.id] = 10; });
