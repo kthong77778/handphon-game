@@ -12,6 +12,12 @@
   --bad:#f87171;
   --accent:#8b5cf6;
   --accent2:#ec4899;
+  /* 테마(색 스킨)로 갈아끼우는 큰 배경들 — 기본값은 지금 그대로.
+     data.js 의 THEMES 가 이 세 개까지 함께 덮어써야 화면이 한 톤으로 바뀐다. */
+  --appbg:linear-gradient(180deg,#1a1430 0%,var(--bg) 40%);
+  --hud:linear-gradient(180deg,rgba(40,30,75,.95),rgba(30,22,58,.85));
+  --tabbar:rgba(30,22,58,.97);
+  --tapbg:radial-gradient(circle at 35% 30%,#3f3170,#241d3f 70%);
   --tabbar-h:58px;
   --safe-b:env(safe-area-inset-bottom,0px);
   --safe-t:env(safe-area-inset-top,0px);
@@ -45,14 +51,14 @@ body{
   display:flex;flex-direction:column;
   height:100%;
   max-width:520px;margin:0 auto;
-  background:linear-gradient(180deg,#1a1430 0%,var(--bg) 40%);
+  background:var(--appbg);
 }
 
 /* ===== HUD ===== */
 #hud{
   flex:0 0 auto;
   padding:calc(12px + var(--safe-t)) 16px 12px;
-  background:linear-gradient(180deg,rgba(40,30,75,.95),rgba(30,22,58,.85));
+  background:var(--hud);
   border-bottom:1px solid var(--line);
   backdrop-filter:blur(8px);
 }
@@ -63,6 +69,14 @@ body{
   text-shadow:0 2px 12px rgba(255,204,68,.25);
   font-variant-numeric:tabular-nums;
 }
+/* 매출을 부드러운 알약 + ₩ 동전으로 (친근하게) */
+.money-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:3px 15px 3px 7px;border-radius:999px;
+  background:rgba(255,204,68,.10);border:1px solid rgba(255,204,68,.28);
+}
+.money-pill .coin{flex:0 0 auto}
+.money-pill .coin-body{fill:var(--gold)}   /* 테마 금색에 맞춰 물든다 */
 .rate{font-size:13px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
 .hud-sub{display:flex;gap:8px;justify-content:center;margin-top:8px}
 .chip{
@@ -116,7 +130,7 @@ body{
 }
 .tap-target{
   width:190px;height:190px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#3f3170,#241d3f 70%);
+  background:var(--tapbg);
   border:3px solid var(--accent);
   box-shadow:0 0 30px rgba(139,92,246,.35),inset 0 0 30px rgba(0,0,0,.4);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -246,7 +260,7 @@ body{
   height:calc(var(--tabbar-h) + var(--safe-b));
   padding-bottom:var(--safe-b);
   display:flex;
-  background:rgba(30,22,58,.97);
+  background:var(--tabbar);
   border-top:1px solid var(--line);
   backdrop-filter:blur(10px);
   z-index:20;
@@ -354,7 +368,7 @@ body{
 .buy-amt button{
   background:none;border:none;color:var(--dim);
   font-family:inherit;font-size:12px;font-weight:700;
-  padding:5px 10px;border-radius:7px;cursor:pointer;
+  padding:5px 9px;border-radius:7px;cursor:pointer;white-space:nowrap;
   transition:background .12s,color .12s;
 }
 .buy-amt button.active{
@@ -632,6 +646,16 @@ body{
 }
 #genList .item.buyable .item-cost small, #upgradeList .item.buyable .item-cost small,
 #fameShopList .item.buyable .item-cost small{color:rgba(14,26,16,.7)}
+
+/* 원으로 사는 버튼(설비·업그레이드)은 ₩ 동전 + 둥근 알약 — 매출 알약과 통일.
+   명성 상점(✨)은 원이 아니라 제외한다. */
+#genList .item-cost, #upgradeList .item-cost{
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:999px;padding:7px 15px 7px 8px;text-align:left;
+}
+#genList .item-cost .cost-coin, #upgradeList .item-cost .cost-coin{flex:0 0 auto}
+#genList .item-cost.no .cost-coin, #upgradeList .item-cost.no .cost-coin{opacity:.45}
+#genList .item-cost .cnum, #upgradeList .item-cost .cnum{display:inline-block;text-align:center;line-height:1.05}
 #genList .item-cost.no, #upgradeList .item-cost.no, #fameShopList .item-cost.no{
   color:var(--dim);opacity:.85;
 }
@@ -761,6 +785,19 @@ body{
 @keyframes boostPulse{
   0%,100%{box-shadow:0 0 0 rgba(255,204,68,0)}
   50%{box-shadow:0 0 18px rgba(255,204,68,.35)}
+}
+
+/* 🎟️ 할인 쿠폰 칩 — 상단 HUD. 있을 때만 뜨고, 눌러서 켜고/끄기.
+   켜면(armed) 금색으로 강조된다. */
+.coupon-chip{
+  font-family:inherit;cursor:pointer;line-height:1.2;
+  background:rgba(255,204,68,.16);border:1px solid rgba(255,204,68,.45);color:var(--gold);
+  transition:transform .06s,box-shadow .12s,background .12s;
+}
+.coupon-chip:active{transform:scale(.95)}
+.coupon-chip.armed{
+  background:var(--gold);border-color:var(--gold);color:#2a1c00;
+  box-shadow:0 0 14px rgba(255,204,68,.5);
 }
 .boost-ic{
   flex:0 0 40px;width:40px;height:40px;border-radius:11px;
@@ -1110,6 +1147,10 @@ body{
   color:var(--dim);
 }
 #tapSoundRow .skin.on .skin-sub{color:var(--txt)}
+
+/* 테마 미리보기 — 이모지 대신 배경·강조·금색 색막대를 보여준다 */
+.theme-sw{display:flex;gap:2px;align-items:center;justify-content:center;height:25px}
+.theme-sw i{display:block;width:9px;height:20px;border-radius:2px;border:1px solid rgba(255,255,255,.12)}
 
 
 /* ===== 손님 성장 단계 (스킨별) ===== */

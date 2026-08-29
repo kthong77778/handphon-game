@@ -494,46 +494,51 @@ var Data = (function () {
   function shopFront(sign) {
     var ink = 'stroke="' + INK + '" stroke-width="2" stroke-linejoin="round"';
     return '<svg viewBox="0 0 132 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<ellipse cx="66" cy="89" rx="56" ry="3.4" fill="rgba(0,0,0,.4)"/>' +
-      '<rect x="16" y="34" width="100" height="50" rx="3" fill="#3a2b1e"/>' +
-      '<rect x="22" y="37" width="88" height="21" rx="3" fill="#ffcc44" opacity=".34"/>' +
-      '<rect x="11" y="28" width="7" height="60" rx="2" fill="#7a5433" ' + ink + '/>' +
-      '<rect x="114" y="28" width="7" height="60" rx="2" fill="#7a5433" ' + ink + '/>' +
-      '<path d="M6 34L18 15h96l12 19z" fill="#e05a4e" ' + ink + '/>' +
-      '<g fill="#fff4e0" fill-opacity=".95">' +
-        '<path d="M30 15h12l-6 19H21z"/><path d="M54 15h12v19H51z"/>' +
-        '<path d="M78 15h12l6 19H81z"/><path d="M102 15h12l12 19h-15z"/></g>' +
-      '<path d="M6 34L18 15h96l12 19z" fill="none" ' + ink + '/>' +
-      '<path d="M6 34 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0 a4 4 0 0 0 8 0" fill="#e05a4e" ' + ink + '/>' +
-      '<g class="smoke" fill="none" stroke="#ffffff" stroke-opacity=".4"' +
-        ' stroke-width="2.4" stroke-linecap="round">' +
-        '<path d="M33 38q4-4 0-7"/><path d="M47 38q4-4 0-7"/></g>' +
-      '<rect x="38" y="16" width="56" height="17" rx="4" fill="#fff4e0" ' + ink + '/>' +
-      '<text x="66" y="29" text-anchor="middle" font-size="12.5" font-weight="800"' +
+      // 불 켜진 온기 + 바닥 그림자
+      '<ellipse cx="66" cy="46" rx="62" ry="40" fill="rgba(255,190,90,.13)"/>' +
+      '<ellipse cx="66" cy="89" rx="52" ry="3.4" fill="rgba(0,0,0,.4)"/>' +
+      // 기둥
+      '<rect x="12" y="26" width="6" height="62" rx="2" fill="#6b4a2c" ' + ink + '/>' +
+      '<rect x="114" y="26" width="6" height="62" rx="2" fill="#6b4a2c" ' + ink + '/>' +
+      // 몸통 + 판매대
+      '<rect x="16" y="60" width="100" height="28" rx="3" fill="#8a5a33" ' + ink + '/>' +
+      '<rect x="12" y="55" width="108" height="7" rx="3" fill="#c98a4b" ' + ink + '/>' +
+      // 천막 (굵은 스캘럽)
+      '<path d="M8 32 L20 14 H112 L124 32 Z" fill="#e0503f" ' + ink + '/>' +
+      '<g fill="#fff4e0" opacity=".92">' +
+        '<path d="M36 14h15l-4 18H31z"/><path d="M64 14h15v18H64z"/>' +
+        '<path d="M92 14h15l4 18H96z"/></g>' +
+      '<path d="M8 32 L20 14 H112 L124 32 Z" fill="none" ' + ink + '/>' +
+      '<path d="M8 32 a9.7 9.7 0 0 0 19.3 0 a9.7 9.7 0 0 0 19.3 0 a9.7 9.7 0 0 0 19.3 0 a9.7 9.7 0 0 0 19.3 0 a9.7 9.7 0 0 0 19.3 0 a9.7 9.7 0 0 0 19.3 0" fill="#e0503f" ' + ink + '/>' +
+      // 간판
+      '<rect x="41" y="15" width="50" height="15" rx="4" fill="#fff4e0" ' + ink + '/>' +
+      '<text x="66" y="26" text-anchor="middle" font-size="11" font-weight="800"' +
         ' fill="#c0392b" font-family="system-ui,-apple-system,sans-serif">' + sign + '</text>' +
-      '<g stroke="' + INK + '" stroke-width="1.6"><path d="M19 38v4"/><path d="M113 38v4"/></g>' +
-      '<circle cx="19" cy="46" r="4.2" fill="#ffe07a" stroke="' + INK + '" stroke-width="1.6"/>' +
-      '<circle cx="113" cy="46" r="4.2" fill="#ffe07a" stroke="' + INK + '" stroke-width="1.6"/>' +
-      // 주인 — 판매대 뒤라 어깨 위만 보인다
-      '<path d="M72 62q14-16 28 0v6H72z" fill="#e05a4e" ' + ink + '/>' +
-      '<circle cx="86" cy="44" r="8.5" fill="#f6d3ae" ' + ink + '/>' +
-      '<path d="M77 42q9-12 18 0z" fill="#fff4e0" ' + ink + '/>' +
-      '<rect x="77" y="40" width="18" height="4" rx="2" fill="#e05a4e" ' + ink + '/>' +
-      '<g fill="' + INK + '"><circle cx="83" cy="46" r="1.4"/><circle cx="89" cy="46" r="1.4"/></g>' +
-      '<path d="M83.5 49.5q2.5 2.2 5 0" fill="none" stroke="' + INK + '"' +
-        ' stroke-width="1.6" stroke-linecap="round"/>' +
-      '<g stroke="#e0bd85" stroke-width="2.6" stroke-linecap="round">' +
-        '<path d="M34 52v-11"/><path d="M40 51v-10"/><path d="M46 52v-11"/></g>' +
+      // 등불 (왼쪽에 하나만 — 또렷하게)
+      '<line x1="24" y1="33" x2="24" y2="39" stroke="' + INK + '" stroke-width="1.4"/>' +
+      '<ellipse cx="24" cy="45" rx="6" ry="7" fill="#ffcf5a" ' + ink + '/>' +
+      '<ellipse cx="24" cy="45" rx="6" ry="7" fill="#ffe89a" opacity=".5"/>' +
+      // 냄비에서 오르는 김
+      '<g class="smoke" fill="none" stroke="#ffffff" stroke-opacity=".45"' +
+        ' stroke-width="2.4" stroke-linecap="round">' +
+        '<path d="M40 51q4-5 0-9"/><path d="M50 51q4-5 0-9"/></g>' +
+      // 어묵 꼬치 + 국물 냄비
+      '<g stroke="#c98a4b" stroke-width="2.6" stroke-linecap="round">' +
+        '<path d="M36 53v-10"/><path d="M42 52v-10"/><path d="M48 53v-10"/></g>' +
       '<g fill="#f7e4bc" ' + ink + '>' +
-        '<rect x="30.5" y="39" width="7" height="10" rx="3"/>' +
-        '<rect x="36.5" y="37" width="7" height="10" rx="3"/>' +
-        '<rect x="42.5" y="39" width="7" height="10" rx="3"/></g>' +
-      '<path d="M28 52h24l-2 6H30z" fill="#b8c0cc" ' + ink + '/>' +
-      '<ellipse cx="40" cy="52" rx="12" ry="3.2" fill="#9aa4b3" ' + ink + '/>' +
-      '<rect x="14" y="58" width="104" height="7" rx="2.5" fill="#c98a4b" ' + ink + '/>' +
-      '<rect x="18" y="65" width="96" height="23" fill="#8a5a33" ' + ink + '/>' +
-      '<g stroke="rgba(0,0,0,.28)" stroke-width="1.6">' +
-        '<path d="M42 66v21"/><path d="M66 66v21"/><path d="M90 66v21"/></g>' +
+        '<rect x="32.5" y="42" width="7" height="9" rx="3"/>' +
+        '<rect x="38.5" y="41" width="7" height="9" rx="3"/>' +
+        '<rect x="44.5" y="42" width="7" height="9" rx="3"/></g>' +
+      '<path d="M30 53h26l-3 8H33z" fill="#aeb6c2" ' + ink + '/>' +
+      '<ellipse cx="43" cy="53" rx="13" ry="3.4" fill="#8f99a8" ' + ink + '/>' +
+      // 주인 — 판매대 뒤라 어깨 위만 보인다 (파란 앞치마)
+      '<path d="M74 61q13-14 26 0v6H74z" fill="#4a7ab5" ' + ink + '/>' +
+      '<circle cx="87" cy="47" r="8" fill="#f6d3ae" ' + ink + '/>' +
+      '<path d="M79 45q8-11 16 0z" fill="#fff4e0" ' + ink + '/>' +
+      '<rect x="79" y="44" width="16" height="4" rx="2" fill="#e0503f" ' + ink + '/>' +
+      '<g fill="' + INK + '"><circle cx="84" cy="48" r="1.3"/><circle cx="90" cy="48" r="1.3"/></g>' +
+      '<path d="M84.5 51q2.5 2 5 0" fill="none" stroke="' + INK + '"' +
+        ' stroke-width="1.5" stroke-linecap="round"/>' +
       '</svg>';
   }
 
@@ -942,12 +947,65 @@ var Data = (function () {
     { id: 'ac37', icon: '🌟', name: '미슐랭 3스타',    desc: '미슐랭 도전에서 별 5개',         prog: function (s) { return { cur: s.bestMichelin, goal: 5 }; }, check: function (s) { return s.bestMichelin >= 5; } }
   ];
 
+  /* ---------- 할인 쿠폰 (아이템) ----------
+     재료 트럭을 탭해 받을 때 낮은 확률로 떨어진다. 최대 max장까지만 모인다.
+     '쿠폰 쓰기'를 켠 채 설비·업그레이드를 사면 그 한 번에 discount 만큼 깎이고
+     쿠폰 1장이 소모된다. 어디에 쓸지 고르는 게 재미(타깃형). 매출과 무관. */
+  var COUPON = { icon: '🎟️', max: 3, dropChance: 0.18, discount: 0.4 };
+
+  /* 첫 환생(재개업) 축하 보상 — 딱 한 번. 리셋을 '손해'가 아니라 '이벤트'로.
+     쿠폰은 최대치(3)로 채우되, 이미 꽉 차 있으면 예외로 1장 더(4) 준다. */
+  var FIRST_PRESTIGE = { gold: 30000 };
+
+  /* ---------- 화면 테마 (색 스킨) ----------
+     기본(auto)은 style.css 의 :root 값을 그대로 쓰고, 나머지는 CSS 변수만 덮어쓴다.
+     폰트·이미지는 손대지 않는다 — 외부 파일 없이 색만 바꾸는 자기완결형 스킨이다.
+     sw 는 설정 화면의 미리보기 색막대(배경·강조·금색). */
+  var THEMES = [
+    {
+      id: 'auto', icon: '🌌', name: '기본',
+      sw: ['#141024', '#8b5cf6', '#ffcc44']
+      // vars 없음 = :root 기본값
+    },
+    {
+      id: 'pojang', icon: '🏮', name: '포장마차',
+      sw: ['#17110c', '#ff9f43', '#ffce54'],
+      vars: {
+        '--bg': '#17110c', '--bg2': '#2b2015', '--card': '#33261a', '--card2': '#3a2a19',
+        '--line': '#503a24', '--txt': '#fbeeda', '--dim': '#c3a982',
+        '--gold': '#ffce54', '--good': '#8bbf5a', '--bad': '#e0533a',
+        '--accent': '#ff9f43', '--accent2': '#e0533a',
+        '--appbg': 'radial-gradient(130% 60% at 50% 0%, #2e1e10 0%, #1c140d 46%, #150f09 100%)',
+        '--hud': 'linear-gradient(180deg, #241a12, #1a1410)',
+        '--tabbar': 'rgba(28,20,13,0.97)',
+        '--tapbg': 'radial-gradient(circle at 35% 30%, #4a3420, #241810 70%)'
+      }
+    },
+    {
+      id: 'china', icon: '🏮', name: '중화풍',
+      sw: ['#16110c', '#c8963f', '#c8632a'],
+      vars: {
+        '--bg': '#16110c', '--bg2': '#241a12', '--card': '#1e1813', '--card2': '#2a2018',
+        '--line': '#3a2f22', '--txt': '#e6dcc4', '--dim': '#9a876a',
+        '--gold': '#e0b45f', '--good': '#9db35a', '--bad': '#b5432f',
+        '--accent': '#c8963f', '--accent2': '#c8632a',
+        '--appbg': 'radial-gradient(120% 55% at 50% 0%, #2a2018 0%, #16110c 46%, #100c09 100%)',
+        '--hud': 'linear-gradient(180deg, #241a12, #1a1410)',
+        '--tabbar': 'rgba(18,13,9,0.97)',
+        '--tapbg': 'radial-gradient(circle at 50% 40%, #2a2018, #120d09 72%)'
+      }
+    }
+  ];
+
   return {
     COST_GROWTH: COST_GROWTH,
     GENERATORS: GENERATORS,
     UPGRADES: UPGRADES,
     FAME_SHOP: FAME_SHOP,
     ACHIEVEMENTS: ACHIEVEMENTS,
+    COUPON: COUPON,
+    FIRST_PRESTIGE: FIRST_PRESTIGE,
+    THEMES: THEMES,
     TAP_SKINS: TAP_SKINS,
     CROWD_SKINS: CROWD_SKINS,
     HEADWEAR: HEADWEAR,

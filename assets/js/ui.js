@@ -4,7 +4,7 @@ var UI = (function () {
   var el = {};
   var currentTab = 'shop';
   var currentGrade = 1;    // 주방 합성 등급 탭
-  var buyAmt = 1;          // 1 | 10 | 'max'
+  var buyAmt = 1;          // 1 | 10 | 100 | 'max'
   var sig = {};            // 목록 재생성 여부 판단용 서명
   var toastTimer = null;
 
@@ -21,11 +21,12 @@ var UI = (function () {
      'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
      'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
+     'couponChip',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
      'tapSkinRow', 'tapSkinNow', 'tapLadder', 'tapSoundRow', 'tapSoundNow',
-     'crowdSkinRow', 'crowdSkinNow', 'crowdLadder',
+     'crowdSkinRow', 'crowdSkinNow', 'crowdLadder', 'themeRow', 'themeNow',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
      'muteBtn', 'notifyBtn', 'helpBtn',
@@ -64,6 +65,16 @@ var UI = (function () {
   }
 
   /* ---------- 아이템 행 만들기 ---------- */
+
+  // 원으로 사는 버튼(설비·업그레이드)에 붙이는 작은 ₩ 동전 — 매출 알약과 통일.
+  // 초록/어두운 고정색 버튼 위라 금색은 고정으로 둔다(테마와 무관).
+  var COST_COIN =
+    '<svg class="cost-coin" width="16" height="16" viewBox="0 0 40 40" aria-hidden="true">' +
+      '<circle cx="20" cy="20" r="17" fill="#ffce54" stroke="#b9861a" stroke-width="2.5"/>' +
+      '<circle cx="20" cy="20" r="12.5" fill="none" stroke="#e0b84a" stroke-width="1.6"/>' +
+      '<text x="20" y="27" text-anchor="middle" font-size="17" font-weight="800"' +
+        ' fill="#8a6212" font-family="system-ui,-apple-system,sans-serif">₩</text>' +
+    '</svg>';
 
   function makeItem(iconText, opts) {
     // div + click 이면 키보드로 살 수 없고 스크린리더가 버튼으로 읽지 않는다.
@@ -153,8 +164,8 @@ var UI = (function () {
         r.p.desc.textContent = g.desc;
       }
 
-      r.p.cost.innerHTML = Fmt.num(cost) + '<small>' +
-        (buyAmt === 'max' ? (canBuy ? '×' + amt : '×1') : '×' + amt) + '</small>';
+      r.p.cost.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(cost) + '<small>' +
+        (buyAmt === 'max' ? (canBuy ? '×' + amt : '×1') : '×' + amt) + '</small></span>';
       r.p.cost.className = 'item-cost ' + (canBuy ? 'ok' : 'no');
       r.row.className = 'item' + (canBuy ? ' buyable' : '') + (unlocked ? '' : ' locked');
     });
@@ -246,9 +257,10 @@ var UI = (function () {
     Array.prototype.forEach.call(el.upgradeList.children, function (row) {
       var u = Game.UP_BY_ID[row.dataset.up];
       if (!u) return;
-      var ok = money >= u.cost;
+      var cost = Game.upgradeCost(u.id);   // 쿠폰 무장 시 할인가
+      var ok = money >= cost;
       var costEl = row.querySelector('.item-cost');
-      costEl.textContent = Fmt.num(u.cost);
+      costEl.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(cost) + '</span>';
       costEl.className = 'item-cost ' + (ok ? 'ok' : 'no');
       row.className = 'item' + (ok ? ' buyable' : '');
     });
@@ -891,13 +903,15 @@ var UI = (function () {
   }
 
   function grabTruckUI() {
-    var got = Game.grabTruck();
+    var res = Game.grabTruck();
     el.truckPop.hidden = true;
-    if (got && got.length) {
-      Sound.play('buy'); buzz(8);
-      toast('🚚 재료 +' + got.length + ' ' + got.map(function (g) { return g.icon; }).join(''));
-      if (currentTab === 'kitchen') refresh(true);
-    }
+    if (!res) return;
+    var got = res.ings || [];
+    var msg = got.length ? ('🚚 재료 +' + got.length + ' ' +
+                got.map(function (g) { return g.icon; }).join('')) : '';
+    if (res.coupon) msg += (msg ? ' · ' : '') + '🎟️ 할인 쿠폰!';
+    if (msg) { Sound.play('buy'); buzz(res.coupon ? 14 : 8); toast(msg); }
+    if (res.coupon || currentTab === 'kitchen') refresh(true);  // 쿠폰 바 갱신
   }
 
   /* ---------- 환생 화면 ---------- */
@@ -1067,6 +1081,7 @@ var UI = (function () {
     updatePartyBanner();
     updateCombo();
     updateBoostBtn();
+    updateCoupon();
     updateTruck();
   }
 
@@ -1224,6 +1239,65 @@ var UI = (function () {
     }
   }
 
+  /* ---------- 화면 테마 (색 스킨) ---------- */
+
+  // 테마가 덮어쓰는 CSS 변수 전부 — 먼저 지운 뒤(=기본으로 복귀) 고른 테마 값을 얹는다.
+  var THEME_VARS = ['--bg', '--bg2', '--card', '--card2', '--line', '--txt', '--dim',
+                    '--gold', '--good', '--bad', '--accent', '--accent2',
+                    '--appbg', '--hud', '--tabbar', '--tapbg'];
+
+  function applyTheme(id) {
+    var t = null;
+    for (var i = 0; i < Data.THEMES.length; i++) {
+      if (Data.THEMES[i].id === id) { t = Data.THEMES[i]; break; }
+    }
+    var root = document.documentElement;
+    THEME_VARS.forEach(function (v) { root.style.removeProperty(v); });
+    if (t && t.vars) {
+      Object.keys(t.vars).forEach(function (k) { root.style.setProperty(k, t.vars[k]); });
+    }
+  }
+
+  function renderThemes() {
+    var rowEl = el.themeRow;
+    if (!rowEl) return;
+
+    if (!rowEl.children.length) {
+      Data.THEMES.forEach(function (t) {
+        var b = document.createElement('button');
+        b.className = 'skin';
+        b.dataset.theme = t.id;
+        var sw = (t.sw || []).map(function (c) {
+          return '<i style="background:' + c + '"></i>';
+        }).join('');
+        b.innerHTML = '<span class="skin-ic theme-sw">' + sw + '</span>' +
+                      '<span class="skin-nm"></span>';
+        b.querySelector('.skin-nm').textContent = t.name;
+        b.addEventListener('click', function () {
+          var s = State.get();
+          if (s.theme === t.id) return;
+          s.theme = t.id;
+          applyTheme(t.id);
+          buzz(12);
+          State.save();
+          toast(t.name + ' 테마 적용!');
+          markThemes();
+        });
+        rowEl.appendChild(b);
+      });
+    }
+    markThemes();
+
+    function markThemes() {
+      var now = State.get().theme || 'auto';
+      Array.prototype.forEach.call(rowEl.children, function (b) {
+        b.classList.toggle('on', b.dataset.theme === now);
+      });
+      var meta = Data.THEMES.filter(function (t) { return t.id === now; })[0];
+      if (el.themeNow) el.themeNow.textContent = meta ? meta.name : '';
+    }
+  }
+
   /* ---------- 탭 소리 고르기 ---------- */
 
   var soundCombo = 0, soundTimer = null;
@@ -1326,6 +1400,19 @@ var UI = (function () {
       el.boostTitle.textContent = '손님 몰이';
       el.boostSub.textContent = Data.BOOST.dur + '초 동안 모든 수익 ×' + Data.BOOST.mult;
     }
+  }
+
+  function updateCoupon() {
+    if (!el.couponChip) return;
+    var c = Game.couponState();
+    if (c.count <= 0) { el.couponChip.hidden = true; return; }   // 없으면 숨긴다
+    el.couponChip.hidden = false;
+    el.couponChip.textContent = '🎟️ ×' + c.count;
+    el.couponChip.classList.toggle('armed', c.armed);           // 켜면 금색 강조
+    var pct = Math.round(c.discount * 100);
+    el.couponChip.title = c.armed
+      ? '다음 구매 −' + pct + '% 적용 중 (눌러서 끄기)'
+      : '눌러서 다음 구매 −' + pct + '%';
   }
 
   /* ---------- 황금 손님 ---------- */
@@ -1602,7 +1689,7 @@ var UI = (function () {
     else if (currentTab === 'kitchen') renderKitchen();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
-    else if (currentTab === 'settings') { renderStats(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
+    else if (currentTab === 'settings') { renderStats(); renderThemes(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 
@@ -1903,6 +1990,14 @@ var UI = (function () {
 
     el.recoBar.addEventListener('click', onBuyBest);
 
+    el.couponChip.addEventListener('click', function () {
+      var c = Game.couponState();
+      var on = Game.setCouponArmed(!c.armed);
+      buzz(8);
+      toast(on ? ('🎟️ 다음 구매 −' + Math.round(c.discount * 100) + '%!') : '쿠폰 사용을 껐어요');
+      refresh(true);   // 무장 상태 + 할인가 미리보기를 다시 그린다
+    });
+
     el.truckPop.addEventListener('click', grabTruckUI);
     el.gradeTabs.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-grade]');
@@ -2049,12 +2144,13 @@ var UI = (function () {
 
   function init(handlers) {
     cache();
+    applyTheme(State.get().theme);   // 저장된 테마를 화면에 먼저 입힌다
     buildSteam();
     Scene.init(el.street, el.pops);
     buildGenList();
     bind(handlers);
     bindSheet();
-    [el.tapSoundRow, el.tapSkinRow, el.crowdSkinRow].forEach(enableDragScroll);
+    [el.tapSoundRow, el.tapSkinRow, el.crowdSkinRow, el.themeRow].forEach(enableDragScroll);
     bindTour();
     setSheet(sheetUp(), false);
     Sound.arm();

@@ -49,6 +49,7 @@
               '대신 <b>명성 ' + Fmt.num(gain) + '</b> 을(를) 영구히 얻습니다.',
         ok: '재개업하기'
       }, function () {
+        var first = State.get().prestiges === 0;
         Game.doPrestige();
         Scene.clear();
         announceAchievements();
@@ -56,7 +57,24 @@
         State.save();
         UI.showTab('shop');
         Sound.play('prestige');
-        UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
+        if (first) {
+          // 첫 재개업 — 토스트 대신 축하 모달로 특별 선물을 알려준다
+          var cp = State.get().coupons;
+          UI.ask({
+            emoji: '🎊',
+            title: '첫 재개업 축하해요!',
+            text: '명성 <b>' + Fmt.num(gain) + '</b> 을(를) 얻고 새 출발!<br><br>' +
+                  '처음이라 특별 선물이에요:<br>' +
+                  '💰 축하 골드 <b>' + Fmt.num(Data.FIRST_PRESTIGE.gold) + '원</b><br>' +
+                  '🎟️ 할인 쿠폰 <b>' + cp + '장</b>' +
+                  (cp > Data.COUPON.max ? ' <b>(가득 차서 1장 더!)</b>' : '') + '<br><br>' +
+                  '쿠폰으로 설비를 싸게 사서 빠르게 다시 키워보세요!',
+            ok: '고마워요!',
+            oneButton: true
+          }, function () {});
+        } else {
+          UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
+        }
       });
     },
 
@@ -188,6 +206,7 @@
     if (uiAcc >= UI_MS) {
       uiAcc = 0;
       announceAchievements();
+      maybePrestigeIntro();
       UI.refresh();
     }
 
@@ -298,6 +317,28 @@
     // 안내가 끝난 뒤에 정산한다. 먼저 띄우면 모달이 겹치고,
     // 아예 건너뛰면 첫날 출석 보상을 그날 못 받는다.
     UI.showTour(0, settleReturn);
+  }
+
+  // 첫 환생 안내 — 환생해도 명성이 0이면 의미가 없으니, 명성이 처음 붙는
+  // 순간(가게가 제법 커진 시점)에 딱 한 번 친절히 알려준다. 강요가 아니라
+  // '잃는 게 아니라 강해진다'를 이해시키는 게 목적. 캐주얼 이탈 방지.
+  function maybePrestigeIntro() {
+    var s = State.get();
+    if (s.sawPrestigeIntro) return;
+    if (s.prestiges > 0) { s.sawPrestigeIntro = 1; return; }   // 이미 해본 사람에겐 불필요
+    if (!(Game.fameGain() > 0)) return;
+    s.sawPrestigeIntro = 1;              // 띄운 순간 봤다고 적는다 (도중 종료 방지)
+    State.save();
+    UI.ask({
+      emoji: '🎉',
+      title: '재개업(환생)이 열렸어요!',
+      text: '가게가 제법 커졌어요. 이제 <b>재개업</b>을 할 수 있습니다.<br><br>' +
+            '가게·설비·업그레이드는 리셋되지만, <b>명성</b>이 영구히 남아 ' +
+            '<b>다음 판이 훨씬 빨라져요.</b> 잃는 게 아니라 <b>강해지는</b> 거예요.<br><br>' +
+            '급할 것 없으니 원할 때 하시면 됩니다!',
+      ok: '환생 보러 가기',
+      oneButton: true
+    }, function () { UI.showTab('prestige'); });
   }
 
   /* ---------- 오프라인 보상 알림 ---------- */
