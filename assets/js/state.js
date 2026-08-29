@@ -84,6 +84,7 @@ var State = (function () {
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
       theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
+      coupons: 0,        // 🎟️ 보유 할인 쿠폰 수 (0 ~ Data.COUPON.max)
 
       // 명예의 전당 — 환생해도 남는 개인 기록
       runTime: 0,        // 이번 회차 경과 시간 (초)
@@ -126,7 +127,8 @@ var State = (function () {
                    'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup',
-                   'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier'];
+                   'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
+                   'coupons'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
     // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
     var CAPV = Number.MAX_VALUE;
@@ -158,6 +160,9 @@ var State = (function () {
     // 배율은 1 미만으로 내려가면 안 된다 (0이 저장돼 있으면 수익이 통째로 사라진다)
     if (!(s.goldMult >= 1)) s.goldMult = 1;
     if (!(s.goldTapMult >= 1)) s.goldTapMult = 1;
+
+    // 쿠폰은 정수·최대치로 묶는다 (깨진 값이나 상한 초과 방지)
+    s.coupons = Math.min(Math.floor(s.coupons) || 0, Data.COUPON.max);
 
     // 회차 기록 — 숫자만 추리고 개수를 제한한다 (깨진 값이 순위표를 망치지 않게)
     if (Array.isArray(raw.runs)) {

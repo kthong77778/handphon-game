@@ -947,6 +947,12 @@ var Data = (function () {
     { id: 'ac37', icon: '🌟', name: '미슐랭 3스타',    desc: '미슐랭 도전에서 별 5개',         prog: function (s) { return { cur: s.bestMichelin, goal: 5 }; }, check: function (s) { return s.bestMichelin >= 5; } }
   ];
 
+  /* ---------- 할인 쿠폰 (아이템) ----------
+     재료 트럭을 탭해 받을 때 낮은 확률로 떨어진다. 최대 max장까지만 모인다.
+     '쿠폰 쓰기'를 켠 채 설비·업그레이드를 사면 그 한 번에 discount 만큼 깎이고
+     쿠폰 1장이 소모된다. 어디에 쓸지 고르는 게 재미(타깃형). 매출과 무관. */
+  var COUPON = { icon: '🎟️', max: 3, dropChance: 0.18, discount: 0.4 };
+
   /* ---------- 화면 테마 (색 스킨) ----------
      기본(auto)은 style.css 의 :root 값을 그대로 쓰고, 나머지는 CSS 변수만 덮어쓴다.
      폰트·이미지는 손대지 않는다 — 외부 파일 없이 색만 바꾸는 자기완결형 스킨이다.
@@ -993,6 +999,7 @@ var Data = (function () {
     UPGRADES: UPGRADES,
     FAME_SHOP: FAME_SHOP,
     ACHIEVEMENTS: ACHIEVEMENTS,
+    COUPON: COUPON,
     THEMES: THEMES,
     TAP_SKINS: TAP_SKINS,
     CROWD_SKINS: CROWD_SKINS,

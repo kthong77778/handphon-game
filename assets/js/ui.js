@@ -21,6 +21,7 @@ var UI = (function () {
      'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
      'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
+     'couponBar', 'couponTitle', 'couponSub', 'couponAct',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
@@ -256,9 +257,10 @@ var UI = (function () {
     Array.prototype.forEach.call(el.upgradeList.children, function (row) {
       var u = Game.UP_BY_ID[row.dataset.up];
       if (!u) return;
-      var ok = money >= u.cost;
+      var cost = Game.upgradeCost(u.id);   // 쿠폰 무장 시 할인가
+      var ok = money >= cost;
       var costEl = row.querySelector('.item-cost');
-      costEl.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(u.cost) + '</span>';
+      costEl.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(cost) + '</span>';
       costEl.className = 'item-cost ' + (ok ? 'ok' : 'no');
       row.className = 'item' + (ok ? ' buyable' : '');
     });
@@ -901,13 +903,15 @@ var UI = (function () {
   }
 
   function grabTruckUI() {
-    var got = Game.grabTruck();
+    var res = Game.grabTruck();
     el.truckPop.hidden = true;
-    if (got && got.length) {
-      Sound.play('buy'); buzz(8);
-      toast('🚚 재료 +' + got.length + ' ' + got.map(function (g) { return g.icon; }).join(''));
-      if (currentTab === 'kitchen') refresh(true);
-    }
+    if (!res) return;
+    var got = res.ings || [];
+    var msg = got.length ? ('🚚 재료 +' + got.length + ' ' +
+                got.map(function (g) { return g.icon; }).join('')) : '';
+    if (res.coupon) msg += (msg ? ' · ' : '') + '🎟️ 할인 쿠폰!';
+    if (msg) { Sound.play('buy'); buzz(res.coupon ? 14 : 8); toast(msg); }
+    if (res.coupon || currentTab === 'kitchen') refresh(true);  // 쿠폰 바 갱신
   }
 
   /* ---------- 환생 화면 ---------- */
@@ -1077,6 +1081,7 @@ var UI = (function () {
     updatePartyBanner();
     updateCombo();
     updateBoostBtn();
+    updateCoupon();
     updateTruck();
   }
 
@@ -1394,6 +1399,24 @@ var UI = (function () {
       b.className = 'boost-btn';
       el.boostTitle.textContent = '손님 몰이';
       el.boostSub.textContent = Data.BOOST.dur + '초 동안 모든 수익 ×' + Data.BOOST.mult;
+    }
+  }
+
+  function updateCoupon() {
+    if (!el.couponBar) return;
+    var c = Game.couponState();
+    if (c.count <= 0) { el.couponBar.hidden = true; return; }   // 없으면 숨긴다
+    el.couponBar.hidden = false;
+    var pct = Math.round(c.discount * 100);
+    el.couponTitle.textContent = '할인 쿠폰 ×' + c.count;
+    if (c.armed) {
+      el.couponBar.classList.add('armed');
+      el.couponSub.textContent = '다음 구매 −' + pct + '% 적용! (다시 눌러 끄기)';
+      el.couponAct.textContent = '켜짐';
+    } else {
+      el.couponBar.classList.remove('armed');
+      el.couponSub.textContent = '켜면 다음 구매 −' + pct + '%';
+      el.couponAct.textContent = '쓰기';
     }
   }
 
@@ -1971,6 +1994,13 @@ var UI = (function () {
     });
 
     el.recoBar.addEventListener('click', onBuyBest);
+
+    el.couponBar.addEventListener('click', function () {
+      var c = Game.couponState();
+      Game.setCouponArmed(!c.armed);
+      buzz(8);
+      refresh(true);   // 무장 상태 + 할인가 미리보기를 다시 그린다
+    });
 
     el.truckPop.addEventListener('click', grabTruckUI);
     el.gradeTabs.addEventListener('click', function (e) {

@@ -176,10 +176,30 @@ var Game = (function () {
     return Math.pow(0.97, fameLv('f_cheap'));
   }
 
+  /* 🎟️ 할인 쿠폰 — '쓰기'를 켠 상태(couponArmed)에서 설비·업그레이드를 사면
+     그 한 번만 discount 만큼 깎이고 쿠폰 1장이 소모된다. 무장 여부는 저장하지
+     않는 일시 상태다. couponFactor 는 가격 계산 곳곳에 곱해져 미리보기도 맞춘다. */
+  var couponArmed = false;
+  function couponFactor() {
+    return (couponArmed && S().coupons > 0) ? (1 - Data.COUPON.discount) : 1;
+  }
+  function setCouponArmed(v) { couponArmed = !!v && S().coupons > 0; return couponArmed; }
+  function couponState() {
+    return { count: S().coupons, max: Data.COUPON.max,
+             armed: couponArmed && S().coupons > 0, discount: Data.COUPON.discount };
+  }
+  // 구매가 실제로 성사됐을 때만 부른다: 쿠폰 1장 소모 + 무장 해제
+  function useCouponIfArmed() {
+    var s = S();
+    if (couponArmed && s.coupons > 0) { s.coupons -= 1; couponArmed = false; return true; }
+    couponArmed = false;
+    return false;
+  }
+
   /** n번째(0-indexed) 하나의 가격 */
   function genCostAt(id, index) {
     var g = GEN_BY_ID[id];
-    return g.baseCost * Math.pow(Data.COST_GROWTH, index) * costDiscount();
+    return g.baseCost * Math.pow(Data.COST_GROWTH, index) * costDiscount() * couponFactor();
   }
 
   /** 지금 amount개를 살 때 총 가격 */
@@ -189,7 +209,7 @@ var Game = (function () {
     var g = GEN_BY_ID[id];
     // 등비수열 합
     var r = Data.COST_GROWTH;
-    var base = g.baseCost * Math.pow(r, owned) * costDiscount();
+    var base = g.baseCost * Math.pow(r, owned) * costDiscount() * couponFactor();
     return base * (Math.pow(r, amount) - 1) / (r - 1);
   }
 
@@ -198,7 +218,7 @@ var Game = (function () {
     var g = GEN_BY_ID[id];
     var r = Data.COST_GROWTH;
     var owned = genCount(id);
-    var base = g.baseCost * Math.pow(r, owned) * costDiscount();
+    var base = g.baseCost * Math.pow(r, owned) * costDiscount() * couponFactor();
     var money = S().money;
     if (money < base) return 0;
     var n = Math.floor(Math.log(money * (r - 1) / base + 1) / Math.log(r));
@@ -450,18 +470,26 @@ var Game = (function () {
     if (!(s.money >= cost) || amount <= 0) return false;
     s.money -= cost;
     s.gens[id] = genCount(id) + amount;
+    useCouponIfArmed();               // 성사됐으니 쿠폰(있으면) 1장 소모
     questBump('gen', amount);
     bump();
     return true;
+  }
+
+  function upgradeCost(id) {
+    var u = UP_BY_ID[id];
+    return u ? u.cost * couponFactor() : 0;   // 쿠폰 무장 시 할인가
   }
 
   function buyUpgrade(id) {
     var u = UP_BY_ID[id];
     var s = S();
     if (!u || s.upgrades[id]) return false;
-    if (!(s.money >= u.cost)) return false;   // NaN fail-closed (무료 구매 방지)
-    s.money -= u.cost;
+    var cost = u.cost * couponFactor();
+    if (!(s.money >= cost)) return false;      // NaN fail-closed (무료 구매 방지)
+    s.money -= cost;
     s.upgrades[id] = true;
+    useCouponIfArmed();                        // 성사됐으니 쿠폰(있으면) 1장 소모
     questBump('up', 1);
     bump();
     return true;
@@ -722,11 +750,18 @@ var Game = (function () {
     }
   }
 
-  /** 트럭을 탭해서 재료를 더 받는다 (있을 때만) */
+  /** 트럭을 탭해서 재료를 더 받는다 (있을 때만).
+      낮은 확률로 🎟️ 할인 쿠폰도 하나 얹어준다 (최대치까지만). */
   function grabTruck() {
     if (truckHere <= 0) return null;
     truckHere = 0;
-    return dropIngredients(Data.KITCHEN.tapDrop);
+    var got = dropIngredients(Data.KITCHEN.tapDrop);
+    var s = S(), coupon = false;
+    if (s.coupons < Data.COUPON.max && Math.random() < Data.COUPON.dropChance) {
+      s.coupons += 1;
+      coupon = true;
+    }
+    return { ings: got, coupon: coupon };
   }
 
   function truckState() { return { here: truckHere > 0, hereLeft: truckHere, nextIn: truckLeft, count: truckCount }; }
@@ -1479,6 +1514,9 @@ var Game = (function () {
     upgradeUnlocked: upgradeUnlocked,
     buyGen: buyGen,
     buyUpgrade: buyUpgrade,
+    upgradeCost: upgradeCost,
+    setCouponArmed: setCouponArmed,
+    couponState: couponState,
     buyFame: buyFame,
     fameLv: fameLv,
     fameCost: fameCost,
