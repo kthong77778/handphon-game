@@ -172,15 +172,15 @@ var Data = (function () {
     gapPerLv: 0.92,    // 명성상점 f_gold 1레벨당 간격 배율
     types: [
       {
-        id: 'cash', icon: '💰', name: '현금 다발', weight: 5,
+        id: 'cash', icon: 'event/event_cash.png', name: '현금 다발', weight: 5,
         desc: '초당 수익 4분치를 즉시 획득'
       },
       {
-        id: 'rush', icon: '⚡', name: '손님 폭주', weight: 3,
+        id: 'rush', icon: 'event/event_boost.png', name: '손님 폭주', weight: 3,
         desc: '30초 동안 모든 수익 ×7', mult: 7, dur: 30
       },
       {
-        id: 'hand', icon: '👐', name: '신들린 손', weight: 2,
+        id: 'hand', icon: 'event/event_golden_hand.png', name: '신들린 손', weight: 2,
         desc: '30초 동안 탭 수익 ×25', mult: 25, dur: 30
       }
     ]
@@ -1050,10 +1050,10 @@ var Data = (function () {
     goldMin: 5000,  // 아직 수익이 없을 때의 최소 골드
     ingCount: 12,   // '재료' 로 주는 랜덤 재료 개수
     slots: [
-      { id: 'gold',   icon: '💰', name: '보너스 골드', desc: '1시간치 수익을 목돈으로' },
-      { id: 'boost',  icon: '⚡', name: '수익 2배',   desc: '30분 동안 모든 수익 ×2' },
-      { id: 'coupon', icon: '🎟️', name: '할인 쿠폰',   desc: '설비·업그레이드 할인권 1장' },
-      { id: 'ings',   icon: '🚚', name: '재료 한 아름', desc: '주방 재료 여러 개' }
+      { id: 'gold',   icon: 'event/event_bonus_gold.png', name: '보너스 골드', desc: '1시간치 수익을 목돈으로' },
+      { id: 'boost',  icon: 'event/event_double_coin.png', name: '수익 2배',   desc: '30분 동안 모든 수익 ×2' },
+      { id: 'coupon', icon: 'event/event_coupon.png', name: '할인 쿠폰',   desc: '설비·업그레이드 할인권 1장' },
+      { id: 'ings',   icon: 'event/event_material_box.png', name: '재료 한 아름', desc: '주방 재료 여러 개' }
     ]
   };
 

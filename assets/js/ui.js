@@ -787,7 +787,7 @@ var UI = (function () {
       var out = a.left <= 0;
       return '<button type="button" class="ad-slot' + (out ? ' out' : '') + '" data-ad="' + a.def.id + '"' +
         (out ? ' disabled' : '') + '>' +
-        '<span class="ad-ic">' + a.def.icon + '</span>' +
+        '<span class="ad-ic">' + iconHtml(a.def.icon) + '</span>' +
         '<span class="ad-tx"><b>' + a.def.name + '</b><small>' + a.def.desc + '</small></span>' +
         '<span class="ad-left">' + (out ? '내일 다시' : '▶ ' + a.left + '/' + a.max) + '</span>' +
         '</button>';
@@ -804,7 +804,7 @@ var UI = (function () {
     if (!adRun) return;
     var def = null, slots = Data.ADS.slots;
     for (var i = 0; i < slots.length; i++) if (slots[i].id === adRun.id) def = slots[i];
-    el.adEmoji.textContent = def ? def.icon : '📺';
+    setIcon(el.adEmoji, def ? def.icon : '📺');
     el.adCount.textContent = adRun.left;
     var pct = (1 - adRun.left / Data.ADS.watchSec) * 100;
     el.adBar.style.width = Math.max(0, Math.min(100, pct)) + '%';
@@ -1654,7 +1654,7 @@ var UI = (function () {
 
     var node = document.createElement('div');
     node.className = 'golden';
-    node.textContent = type.icon;
+    setIcon(node, type.icon);
     // 상단 HUD 와 하단 탭바를 피해서 배치
     node.style.left = Math.round(12 + Math.random() * Math.max(1, w - size - 24)) + 'px';
     node.style.top = Math.round(h * 0.22 + Math.random() * Math.max(1, h * 0.45)) + 'px';

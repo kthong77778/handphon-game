@@ -853,6 +853,7 @@ body{
   background:var(--bg2);
   display:flex;align-items:center;justify-content:center;font-size:21px;
 }
+.boost-ic .ico-img{width:34px;height:34px;object-fit:contain}
 .boost-txt{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
 .boost-txt b{font-size:14px;font-weight:800}
 .boost-txt small{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
@@ -875,6 +876,7 @@ body{
   pointer-events:auto;cursor:pointer;
   animation:goldenSpin 2.4s ease-in-out infinite;
 }
+.golden .ico-img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.28))}
 .golden:active{transform:scale(.9)}
 .golden.pop{animation:goldenPop .3s ease-out forwards;pointer-events:none}
 @keyframes goldenSpin{
@@ -1556,6 +1558,7 @@ button.item:focus-visible,
 .ad-slot:active{transform:scale(.99)}
 .ad-slot.out{opacity:.5;cursor:default}
 .ad-ic{font-size:24px;width:40px;height:40px;border-radius:11px;background:var(--card);display:flex;align-items:center;justify-content:center;flex:0 0 40px}
+.ad-ic .ico-img{width:34px;height:34px;object-fit:contain}
 .ad-tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
 .ad-tx b{font-size:13.5px;font-weight:800}
 .ad-tx small{font-size:11px;color:var(--dim)}
@@ -1567,6 +1570,7 @@ button.item:focus-visible,
   padding:24px 16px 18px;margin-bottom:12px}
 .ad-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:800;color:#1a1400;background:#e8c24a;border-radius:5px;padding:2px 6px;letter-spacing:.5px}
 .ad-emoji{font-size:52px;line-height:1}
+.ad-emoji .ico-img{width:58px;height:58px;object-fit:contain;vertical-align:middle}
 .ad-count{font-size:34px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;margin-top:6px}
 .ad-bar{height:6px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;margin-top:14px}
 .ad-bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7ee29a,#54c26a);transition:width .9s linear}
