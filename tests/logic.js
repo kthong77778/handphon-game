@@ -1065,6 +1065,42 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   var ia = 0; Data.KITCHEN.ings.forEach(function (g) { ia += Game.ingCount(g.id); });
   ok(ia - ib === rw.trucks * Data.KITCHEN.missDrop, '수령하면 재료가 그만큼 늘어난다');
 
+  // 🎁 무료 보상(광고) — 아이콘 4개, 하나당 하루 perDay 번, 자정 리셋
+  Game.setClock(function () { return new Date(2026, 0, 10, 12, 0, 0); });
+  State.set({ totalEarned: 1e9, gens: { g1: 20 } }); var sa = State.get();
+  sa.adDate = ''; sa.adUsed = {}; sa.coupons = 0; sa.ings = {}; Game.invalidate();
+  var adlist = Game.adSlots();
+  ok(adlist.length === Data.ADS.slots.length, '광고 아이콘 ' + Data.ADS.slots.length + '개');
+  ok(adlist.every(function (a) { return a.left === Data.ADS.perDay; }), '처음엔 아이콘마다 ' + Data.ADS.perDay + '번');
+  // 골드 보상: 돈이 는다 + 남은 횟수 감소
+  var adm0 = sa.money;
+  var rg = Game.claimAd('gold');
+  ok(rg && rg.gold > 0 && sa.money > adm0, '광고 골드 보상은 돈을 준다');
+  ok(Game.adLeft('gold') === Data.ADS.perDay - 1, '보고 나면 남은 횟수가 준다');
+  // 부스터: 수익 배율 버프가 걸린다 (⚡ = goldMult/goldLeft 자리 재사용)
+  Game.claimAd('boost');
+  ok(sa.goldLeft > 0 && sa.goldMult >= Data.ADS.boostMult, '광고 부스터는 수익 배율 버프를 건다');
+  // 쿠폰: +1, 이미 꽉 차면 시청 소모 없이 full
+  sa.coupons = 0; Game.claimAd('coupon');
+  ok(sa.coupons === 1, '광고 쿠폰은 1장을 준다');
+  sa.coupons = Data.COUPON.max;
+  var adLeftBefore = Game.adLeft('coupon');
+  var rc = Game.claimAd('coupon');
+  ok(rc && rc.full === true && Game.adLeft('coupon') === adLeftBefore, '쿠폰이 꽉 차면 시청을 소모하지 않는다');
+  // 재료: 창고가 ingCount 만큼 는다
+  var adib = 0; Data.KITCHEN.ings.forEach(function (g) { adib += Game.ingCount(g.id); });
+  Game.claimAd('ings');
+  var adia = 0; Data.KITCHEN.ings.forEach(function (g) { adia += Game.ingCount(g.id); });
+  ok(adia - adib === Data.ADS.ingCount, '광고 재료 보상은 창고를 채운다');
+  // 하루 제한: perDay 번 다 보면 null
+  sa.adUsed = {}; Game.adRoll();
+  for (var av = 0; av < Data.ADS.perDay; av++) Game.claimAd('gold');
+  ok(Game.adLeft('gold') === 0 && Game.claimAd('gold') === null, '하루 제한을 넘으면 못 본다');
+  // 자정이 지나면 다시 채워진다
+  Game.setClock(function () { return new Date(2026, 0, 11, 0, 30, 0); });
+  ok(Game.adLeft('gold') === Data.ADS.perDay, '자정이 지나면 광고 횟수가 다시 채워진다');
+  Game.setClock(null);
+
   // 재료 트럭: 틱을 돌리면 재료가 쌓인다 (탭 or 자동수거)
   State.set({}); var s3 = State.get(); s3.ings = {}; Game.invalidate(); Game.resetTruck();
   var total0 = 0; Data.KITCHEN.ings.forEach(function (g) { total0 += Game.ingCount(g.id); });

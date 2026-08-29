@@ -141,6 +141,10 @@
 
     <!-- 기록 탭 -->
     <section class="tab-page" data-page="achv" hidden>
+      <h2 class="section-title">🎁 무료 보상</h2>
+      <p class="hint">광고를 보고 보상을 받아요. 아이콘마다 하루 <b>3번</b>, 자정에 다시 채워집니다.</p>
+      <div class="card ad-card" id="adCard"></div>
+
       <h2 class="section-title">📋 오늘의 퀘스트</h2>
       <p class="hint">자정에 세 개가 새로 깔립니다. 셋 다 끝내면 보너스가 있습니다.</p>
       <div class="list" id="questList"></div>
@@ -331,6 +335,20 @@
     <p id="dailyText"></p>
     <div class="streak-dots" id="streakDots"></div>
     <button class="btn big" id="dailyOk">받기</button>
+  </div>
+</div>
+
+<!-- 🎁 광고 시청 (30초 시뮬 — 나중에 실제 광고로 교체) -->
+<div class="modal" id="adModal" hidden>
+  <div class="modal-box ad-modal">
+    <div class="ad-screen">
+      <div class="ad-badge">광고</div>
+      <div class="ad-emoji" id="adEmoji">📺</div>
+      <div class="ad-count" id="adCount">30</div>
+      <div class="ad-bar"><i id="adBar"></i></div>
+      <div class="ad-note" id="adNote">잠시만요 — 광고가 끝나면 보상을 드려요</div>
+    </div>
+    <button class="btn ghost" id="adQuit">그만두기</button>
   </div>
 </div>
 

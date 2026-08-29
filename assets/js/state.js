@@ -23,7 +23,8 @@ var State = (function () {
     fameLv: idSet(Data.FAME_SHOP),
     achievements: idSet(Data.ACHIEVEMENTS),
     ings: idSet(Data.KITCHEN.ings),
-    kfoods: idSet(Data.KITCHEN.foods)
+    kfoods: idSet(Data.KITCHEN.foods),
+    adUsed: idSet(Data.ADS.slots)
   };
 
   // 명성상점 레벨 상한 (max 를 낮췄을 때 초과분이 남지 않게)
@@ -88,6 +89,8 @@ var State = (function () {
       specialFood: '',   // 오늘의 특선 음식 id (game.js 가 날짜로 정한다)
       specialProg: 0,    // 오늘 특선을 만든 횟수 (단골 주문 진행)
       specialTaken: 0,   // 단골 주문 보상을 받았는가 (0/1)
+      adDate: '',        // 🎁 무료 보상(광고) 시청 횟수가 속한 날짜 (YYYY-MM-DD)
+      adUsed: {},        // 광고 슬롯id -> 오늘 시청한 횟수 (자정 리셋)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
       theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
@@ -146,7 +149,7 @@ var State = (function () {
       if (isFinite(v) && v >= 0) s[k] = v;
     });
 
-    var mapKeys = ['gens', 'upgrades', 'fameLv', 'achievements', 'ings', 'kfoods'];
+    var mapKeys = ['gens', 'upgrades', 'fameLv', 'achievements', 'ings', 'kfoods', 'adUsed'];
     mapKeys.forEach(function (k) {
       if (raw[k] && typeof raw[k] === 'object') {
         Object.keys(raw[k]).forEach(function (id) {
@@ -253,6 +256,11 @@ var State = (function () {
         typeof raw.specialFood === 'string' && VALID.kfoods[raw.specialFood]) {
       s.specialDate = raw.specialDate;
       s.specialFood = raw.specialFood;
+    }
+
+    // 🎁 무료 보상(광고) 시청 횟수의 날짜. 날짜가 없거나 어제 것이면 game.js 의 adRoll() 이 오늘로 리셋한다.
+    if (typeof raw.adDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.adDate)) {
+      s.adDate = raw.adDate;
     }
 
     // 퀘스트 — 네 배열의 길이가 어긋나면 통째로 버린다.

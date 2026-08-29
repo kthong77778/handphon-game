@@ -990,6 +990,27 @@ var Data = (function () {
      쿠폰은 최대치(3)로 채우되, 이미 꽉 차 있으면 예외로 1장 더(4) 준다. */
   var FIRST_PRESTIGE = { gold: 30000 };
 
+  /* ---------- 🎁 무료 보상 (광고) ----------
+     아이콘 4개, 하나당 하루 3번(자정 리셋). 지금은 '30초 시청'을 카운트다운 모달로
+     시뮬레이션한다 — 정적 사이트라 실제 보상형 광고 SDK 를 못 붙인다. 나중에 앱으로
+     포장하거나 광고 SDK 가 생기면 ui.js 의 시청 자리(30초 타이머)에 실제 광고만 끼우면 된다.
+     보상은 게임의 네 경제(돈·버프·상점·주방)를 하나씩 건드린다. */
+  var ADS = {
+    watchSec: 30,   // 한 번 시청 시간(초) — 실제 광고로 교체될 자리
+    perDay: 3,      // 아이콘 하나당 하루 시청 횟수 (자정 리셋)
+    boostMult: 2,   // '수익 2배' 버프 배율
+    boostDur: 600,  // '수익 2배' 지속(초) = 10분
+    goldSec: 1800,  // '보너스 골드' = 초당 수익 × 이만큼(초) = 30분치
+    goldMin: 3000,  // 아직 수익이 없을 때의 최소 골드
+    ingCount: 8,    // '재료' 로 주는 랜덤 재료 개수
+    slots: [
+      { id: 'gold',   icon: '💰', name: '보너스 골드', desc: '30분치 수익을 목돈으로' },
+      { id: 'boost',  icon: '⚡', name: '수익 2배',   desc: '10분 동안 모든 수익 ×2' },
+      { id: 'coupon', icon: '🎟️', name: '할인 쿠폰',   desc: '설비·업그레이드 할인권 1장' },
+      { id: 'ings',   icon: '🚚', name: '재료 한 아름', desc: '주방 재료 여러 개' }
+    ]
+  };
+
   /* ---------- 화면 테마 (색 스킨) ----------
      기본(auto)은 style.css 의 :root 값을 그대로 쓰고, 나머지는 CSS 변수만 덮어쓴다.
      폰트·이미지는 손대지 않는다 — 외부 파일 없이 색만 바꾸는 자기완결형 스킨이다.
@@ -1038,6 +1059,7 @@ var Data = (function () {
     ACHIEVEMENTS: ACHIEVEMENTS,
     COUPON: COUPON,
     FIRST_PRESTIGE: FIRST_PRESTIGE,
+    ADS: ADS,
     THEMES: THEMES,
     TAP_SKINS: TAP_SKINS,
     CROWD_SKINS: CROWD_SKINS,

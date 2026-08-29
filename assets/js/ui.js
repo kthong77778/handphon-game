@@ -14,6 +14,7 @@ var UI = (function () {
     ['money', 'rate', 'fameChip', 'multChip', 'tapZone', 'tapTarget', 'tapPower',
      'genList', 'upgradeList', 'upgradeHint', 'fameShopList', 'achvList', 'statsBox',
      'questList',
+     'adCard', 'adModal', 'adEmoji', 'adCount', 'adBar', 'adNote', 'adQuit',
      'pFameNow', 'pFameGain', 'pMultNext', 'prestigeBtn', 'prestigeReq',
      'dotUpgrade', 'dotPrestige', 'dotAchv', 'buyAmt', 'toast',
      'offlineModal', 'offlineText', 'offlineOk',
@@ -756,6 +757,81 @@ var UI = (function () {
         refresh(true);
       }
     }));
+  }
+
+  /* ---------- 🎁 무료 보상 (광고) ---------- */
+
+  function renderAds() {
+    var slots = Game.adSlots();
+    var mark = slots.map(function (a) { return a.left; }).join(',');
+    if (sig.ad === mark) return;   // 남은 횟수가 바뀔 때만 다시 그린다
+    sig.ad = mark;
+
+    el.adCard.innerHTML = slots.map(function (a) {
+      var out = a.left <= 0;
+      return '<button type="button" class="ad-slot' + (out ? ' out' : '') + '" data-ad="' + a.def.id + '"' +
+        (out ? ' disabled' : '') + '>' +
+        '<span class="ad-ic">' + a.def.icon + '</span>' +
+        '<span class="ad-tx"><b>' + a.def.name + '</b><small>' + a.def.desc + '</small></span>' +
+        '<span class="ad-left">' + (out ? '내일 다시' : '▶ ' + a.left + '/' + a.max) + '</span>' +
+        '</button>';
+    }).join('');
+    Array.prototype.forEach.call(el.adCard.querySelectorAll('.ad-slot'), function (btn) {
+      btn.addEventListener('click', function () { openAd(btn.dataset.ad); });
+    });
+  }
+
+  // 광고 시청(30초 시뮬). adRun 이 있으면 시청 중.
+  var adRun = null;   // { id, left, timer }
+
+  function paintAd() {
+    if (!adRun) return;
+    var def = null, slots = Data.ADS.slots;
+    for (var i = 0; i < slots.length; i++) if (slots[i].id === adRun.id) def = slots[i];
+    el.adEmoji.textContent = def ? def.icon : '📺';
+    el.adCount.textContent = adRun.left;
+    var pct = (1 - adRun.left / Data.ADS.watchSec) * 100;
+    el.adBar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  function openAd(id) {
+    if (adRun) return;                       // 이미 보는 중
+    if (Game.adLeft(id) <= 0) { toast('오늘은 다 봤어요 — 내일 다시 오세요'); return; }
+    adRun = { id: id, left: Data.ADS.watchSec, timer: null };
+    paintAd();
+    el.adNote.textContent = '잠시만요 — 광고가 끝나면 보상을 드려요';
+    el.adModal.hidden = false;
+    adRun.timer = setInterval(function () {
+      adRun.left -= 1;
+      if (adRun.left <= 0) finishAd();
+      else paintAd();
+    }, 1000);
+  }
+
+  function closeAd() {
+    if (adRun && adRun.timer) clearInterval(adRun.timer);
+    adRun = null;
+    el.adModal.hidden = true;
+  }
+
+  function finishAd() {
+    var id = adRun ? adRun.id : null;
+    closeAd();
+    if (!id) return;
+    var r = Game.claimAd(id);
+    if (!r) return;
+    if (r.full) { toast('🎟️ 쿠폰이 이미 꽉 찼어요 (횟수는 그대로예요)'); refresh(true); return; }
+    Sound.play('reward');
+    buzz(14);
+    var msg = '🎁 ';
+    if (r.gold != null) msg += r.slot.name + ' · ' + Fmt.won(r.gold);
+    else if (r.boost) msg += '수익 ×' + r.boost.mult + ' · ' + Fmt.time(r.boost.dur) + ' 발동!';
+    else if (r.coupon) msg += '🎟️ 할인 쿠폰 1장 획득!';
+    else if (r.ings) msg += '🚚 재료 ' + r.ings.length + '개 획득!';
+    else msg += r.slot.name;
+    toast(msg);
+    sig.ad = '';   // 남은 횟수 갱신
+    refresh(true);
   }
 
   /* ---------- 도전과제 ---------- */
@@ -1772,7 +1848,7 @@ var UI = (function () {
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'kitchen') renderKitchen();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
-    else if (currentTab === 'achv') { renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
+    else if (currentTab === 'achv') { renderAds(); renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
     else if (currentTab === 'settings') { renderStats(); renderThemes(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
@@ -2125,6 +2201,11 @@ var UI = (function () {
     el.michDone.addEventListener('click', closeMichelinResult);
     el.michShareResult.addEventListener('click', function () { shareMichelin(); });
     el.michQuit.addEventListener('click', quitMichelin);
+
+    el.adQuit.addEventListener('click', function () {
+      closeAd();
+      toast('광고를 끝까지 봐야 보상을 받아요');
+    });
 
     el.muteBtn.addEventListener('click', function () {
       Sound.setMuted(!Sound.muted());

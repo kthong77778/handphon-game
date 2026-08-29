@@ -1497,6 +1497,29 @@ button.item:focus-visible,
 .sp-claim{font-size:12px;font-weight:800;color:#0e1a10;background:linear-gradient(180deg,#ffe08a,#ffc23e);border-radius:999px;padding:6px 12px;white-space:nowrap}
 .sp-done{font-size:12px;font-weight:800;color:var(--good);white-space:nowrap}
 
+/* 🎁 무료 보상 (광고) 카드 */
+.ad-card{display:flex;flex-direction:column;gap:8px;padding:10px}
+.ad-slot{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:inherit;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:9px 11px;transition:transform .06s}
+.ad-slot:active{transform:scale(.99)}
+.ad-slot.out{opacity:.5;cursor:default}
+.ad-ic{font-size:24px;width:40px;height:40px;border-radius:11px;background:var(--card);display:flex;align-items:center;justify-content:center;flex:0 0 40px}
+.ad-tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.ad-tx b{font-size:13.5px;font-weight:800}
+.ad-tx small{font-size:11px;color:var(--dim)}
+.ad-left{font-size:12px;font-weight:800;color:var(--good);white-space:nowrap;flex:0 0 auto}
+.ad-slot.out .ad-left{color:var(--dim)}
+
+/* 광고 시청 모달 (30초 시뮬) */
+.ad-screen{position:relative;overflow:hidden;background:#0e1017;border:1px solid var(--line);border-radius:14px;
+  padding:24px 16px 18px;margin-bottom:12px}
+.ad-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:800;color:#1a1400;background:#e8c24a;border-radius:5px;padding:2px 6px;letter-spacing:.5px}
+.ad-emoji{font-size:52px;line-height:1}
+.ad-count{font-size:34px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;margin-top:6px}
+.ad-bar{height:6px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;margin-top:14px}
+.ad-bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7ee29a,#54c26a);transition:width .9s linear}
+.ad-note{font-size:12px;color:var(--dim);margin-top:12px}
+
 .truck-pop{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 14px);transform:translateX(-50%);
   display:flex;align-items:center;gap:10px;z-index:40;
   background:linear-gradient(135deg,#f2a341,#e0503a);color:#fff;border:none;border-radius:14px;padding:10px 16px;

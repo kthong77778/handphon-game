@@ -805,6 +805,64 @@ var Game = (function () {
     return { food: sp.food, gain: gain };
   }
 
+  /* ---------- 🎁 무료 보상 (광고) ----------
+     아이콘 4개, 하나당 하루 perDay 번(자정 리셋). claimAd() 가 실제 보상을 준다.
+     '30초 시청' 자체는 ui.js 가 카운트다운으로 흉내내고, 다 보면 claimAd 를 부른다. */
+  var AD_BY_ID = {};
+  Data.ADS.slots.forEach(function (a) { AD_BY_ID[a.id] = a; });
+
+  /** 날짜가 바뀌었으면 오늘치 광고 시청 횟수를 리셋한다 */
+  function adRoll() {
+    var s = S(), t = today();
+    if (s.adDate !== t) { s.adDate = t; s.adUsed = {}; }
+  }
+  /** 이 슬롯을 오늘 몇 번 더 볼 수 있나 */
+  function adLeft(id) { adRoll(); return Math.max(0, Data.ADS.perDay - (S().adUsed[id] || 0)); }
+  /** 화면에 뿌릴 광고 슬롯 목록 */
+  function adSlots() {
+    adRoll();
+    return Data.ADS.slots.map(function (a) {
+      return { def: a, left: adLeft(a.id), max: Data.ADS.perDay };
+    });
+  }
+  /** '수익 배율' 버프를 건다 — 황금 손님과 같은 자리(⚡)를 쓴다(세이브 필드 추가 없음) */
+  function applyIncomeBuff(mult, dur) {
+    var s = S();
+    s.goldMult = Math.max(s.goldLeft > 0 ? s.goldMult : 1, mult);
+    s.goldLeft = Math.max(s.goldLeft, dur);
+  }
+
+  /**
+   * 광고를 끝까지 본 뒤 보상을 지급한다. 오늘 남은 횟수가 없으면 null.
+   * 쿠폰이 이미 꽉 찼으면 시청을 소모하지 않고 { full:true } 를 돌려준다(허탕 방지).
+   * @returns {{slot:Object, gold?:number, boost?:Object, coupon?:boolean, ings?:Array, full?:boolean}|null}
+   */
+  function claimAd(id) {
+    var a = AD_BY_ID[id];
+    if (!a) return null;
+    adRoll();
+    if (adLeft(id) <= 0) return null;
+    var s = S();
+
+    // 쿠폰이 꽉 찬 상태면 시청을 낭비시키지 않는다
+    if (id === 'coupon' && s.coupons >= Data.COUPON.max) return { slot: a, full: true };
+
+    s.adUsed[id] = (s.adUsed[id] || 0) + 1;
+    var out = { slot: a };
+    if (id === 'gold') {
+      out.gold = earn(s, Math.max(perSec(true) * Data.ADS.goldSec, Data.ADS.goldMin));
+    } else if (id === 'boost') {
+      applyIncomeBuff(Data.ADS.boostMult, Data.ADS.boostDur);
+      out.boost = { mult: Data.ADS.boostMult, dur: Data.ADS.boostDur };
+    } else if (id === 'coupon') {
+      s.coupons += 1;
+      out.coupon = true;
+    } else if (id === 'ings') {
+      out.ings = dropIngredients(Data.ADS.ingCount);
+    }
+    return out;
+  }
+
   /* ---- 재료 트럭 ----
      받을수록 다음 간격이 30초씩 늘어난다: 30·60·90·… 오늘 온 횟수(s.truckCount)는
      세이브하되 자정(날짜 변경)에 0으로 리셋한다. 남은 시간(truckLeft)만 세션 변수다. */
@@ -1277,7 +1335,7 @@ var Game = (function () {
     // 자정을 넘기면 퀘스트가 새로 깔린다.
     // 매 프레임 Date 를 새로 만들 이유가 없어 10초에 한 번만 본다.
     questCheckLeft -= dt;
-    if (questCheckLeft <= 0) { questCheckLeft = 10; questRoll(); specialRoll(); }
+    if (questCheckLeft <= 0) { questCheckLeft = 10; questRoll(); specialRoll(); adRoll(); }
 
     var rate = perSec();
     var gain = earn(s, rate * dt);
@@ -1698,6 +1756,10 @@ var Game = (function () {
     craftFood: craftFood,
     specialToday: specialToday,
     claimSpecialOrder: claimSpecialOrder,
+    adSlots: adSlots,
+    adLeft: adLeft,
+    adRoll: adRoll,
+    claimAd: claimAd,
     grabTruck: grabTruck,
     truckState: truckState,
     resetTruck: resetTruck,
