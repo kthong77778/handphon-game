@@ -570,6 +570,13 @@ var Data = (function () {
               'skin_dess_icecream', 'skin_dess_cake'].map(simg);
   var NOODLE = ['skin_noodle_janchi', 'skin_noodle_jjajang', 'skin_noodle_pasta',
                 'skin_noodle_seafood', 'skin_noodle_lobster'].map(simg);
+  var BUNG = ['skin_bung_plain', 'skin_bung_creamfish', 'skin_bung_eggbread', 'skin_bung_hotteok',
+              'skin_bung_delimanju', 'skin_bung_cream', 'skin_bung_cake', 'skin_bung_golden'].map(simg);
+  var CHICK = ['skin_chick_fried', 'skin_chick_fries', 'skin_chick_burger',
+               'skin_chick_pizza', 'skin_chick_taco'].map(simg);
+  var BAKE = ['skin_bake_bagel', 'skin_bake_baguette', 'skin_bake_waffle',
+              'skin_bake_donut', 'skin_bake_applepie'].map(simg);
+  var MEAT = ['skin_meat_pork', 'skin_meat_bacon', 'skin_meat_steak'].map(simg);
 
   var TAP_SKINS = [
     {
@@ -581,12 +588,12 @@ var Data = (function () {
       ], SNACKS)
     },
     {
-      id: 'bungeo', sign: '붕어빵', icon: '🐟', name: '붕어빵 가게',
-      desc: '겨울 간식으로 통일',
+      id: 'bungeo', sign: '붕어빵', icon: '🐟', svg: BUNG[0], name: '붕어빵 가게',
+      desc: '손그림 겨울 간식 — 붕어빵에서 황금 붕어빵까지',
       steps: ladder([
         ['🐟', '붕어빵'], ['🐠', '슈크림 붕어빵'], ['🥚', '계란빵'], ['🥞', '호떡'],
         ['🍞', '델리만쥬'], ['🥐', '크림 붕어빵'], ['🍰', '붕어빵 케이크'], ['🐡', '황금 붕어빵']
-      ])
+      ], BUNG)
     },
     {
       id: 'jumeok', sign: '주먹밥', icon: '🍙', svg: RICE[0], name: '주먹밥 부락',
@@ -613,28 +620,27 @@ var Data = (function () {
       ], NOODLE)
     },
     {
-      id: 'chicken', sign: '치킨', icon: '🍗', name: '치킨 야식집',
-      desc: '밤이 되면 배달이 몰린다',
+      id: 'chicken', sign: '치킨', icon: '🍗', svg: CHICK[0], name: '치킨 야식집',
+      desc: '손그림 야식 — 후라이드에서 타코까지',
       steps: ladder([
-        ['🍗', '후라이드'], ['🍟', '감자튀김'], ['🌭', '핫도그'], ['🍔', '치즈버거'],
-        ['🍕', '피자'], ['🌮', '타코'], ['🍤', '새우튀김'], ['🍱', '치킨 한상']
-      ])
+        ['🍗', '후라이드'], ['🍟', '감자튀김'], ['🍔', '치즈버거'],
+        ['🍕', '피자'], ['🌮', '타코']
+      ], CHICK)
     },
     {
-      id: 'bakery', sign: '베이커리', icon: '🥐', name: '카페 베이커리',
-      desc: '갓 구운 빵 냄새로',
+      id: 'bakery', sign: '베이커리', icon: '🥐', svg: BAKE[0], name: '카페 베이커리',
+      desc: '손그림 갓 구운 빵 — 베이글에서 애플파이까지',
       steps: ladder([
-        ['🥐', '크루아상'], ['🥯', '베이글'], ['🥖', '바게트'], ['🍞', '식빵'],
-        ['🧇', '와플'], ['🍩', '도넛'], ['🥧', '애플파이'], ['🎂', '생크림 케이크']
-      ])
+        ['🥯', '베이글'], ['🥖', '바게트'], ['🧇', '와플'],
+        ['🍩', '도넛'], ['🥧', '애플파이']
+      ], BAKE)
     },
     {
-      id: 'bbq', sign: '고깃집', icon: '🍖', name: '고깃집',
-      desc: '숯불에 지글지글',
+      id: 'bbq', sign: '고깃집', icon: '🍖', svg: MEAT[0], name: '고깃집',
+      desc: '손그림 숯불 구이 — 삼겹살·베이컨·스테이크',
       steps: ladder([
-        ['🍖', '삼겹살'], ['🍗', '닭갈비'], ['🥓', '베이컨'], ['🌭', '소시지'],
-        ['🍔', '수제버거'], ['🥩', '스테이크'], ['🍱', '모둠구이'], ['🦞', '랍스터 구이']
-      ])
+        ['🍖', '삼겹살'], ['🥓', '베이컨'], ['🥩', '스테이크']
+      ], MEAT)
     }
   ];
 

@@ -31,7 +31,7 @@ var UI = (function () {
      'prestigeOwner', 'ownerStage', 'ownerSexNow', 'ownerPick',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
-     'muteBtn', 'notifyBtn', 'helpBtn',
+     'muteBtn', 'muteIc', 'muteTx', 'notifyBtn', 'helpBtn',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
@@ -581,7 +581,7 @@ var UI = (function () {
           var mine = Game.partyGot(f.id);
           return '<div class="dex-cell' + (mine ? ' got' : '') + '" title="' +
             (mine ? f.name : '???') + '">' +
-            '<span class="dex-ic">' + (mine ? f.icon : '❔') + '</span>' +
+            '<span class="dex-ic">' + (mine ? iconHtml(f.icon) : '❔') + '</span>' +
             '<span class="dex-nm">' + (mine ? f.name : '???') + '</span></div>';
         }).join('') +
       '</div>';
@@ -1143,7 +1143,9 @@ var UI = (function () {
   }
 
   function updateMuteBtn() {
-    el.muteBtn.textContent = Sound.muted() ? '🔇 소리 꺼짐' : '🔊 소리 켜짐';
+    var off = Sound.muted();
+    el.muteIc.src = 'assets/img/ui/ui_sound_' + (off ? 'off' : 'on') + '.png';
+    el.muteTx.textContent = off ? '소리 꺼짐' : '소리 켜짐';
   }
 
   /* ---------- 세이브 안전 안내 ---------- */
@@ -2180,8 +2182,10 @@ var UI = (function () {
       var found = Game.tryDiscoverFood();
       if (found) {
         Sound.play('reward');
-        toast('🎉 파티 음식 발견! ' + found.icon + ' ' + found.name);
-        floatText(x, y - 26, found.icon);
+        // 레시피 아이콘은 이제 그림(경로 문자열)이라 토스트·플로트에 그대로 넣으면 경로가 보인다.
+        var fico = iconIsImg(found.icon) ? '🍽' : found.icon;
+        toast('🎉 파티 음식 발견! ' + fico + ' ' + found.name);
+        floatText(x, y - 26, fico);
         sig.partydex = '';
       }
       updateHud();
