@@ -75,6 +75,7 @@ var State = (function () {
       michSeasonTaps: 0, // 이번 시즌 최고 조리 횟수
       michHist: [],      // 지난 시즌 기록 [{s, stars, taps}]
       sawTour: 0,        // 첫 실행 안내를 봤는가 (0/1)
+      sawPrestigeIntro: 0, // 첫 환생 안내를 봤는가 (0/1)
       autoBought: 0,     // 점장이 대신 산 설비 수
       sheetUp: 0,        // 가게 탭 시트를 올려둔 상태인가 (0/1)
       region: '',        // 전국 맛집 랭킹에서 내 가게가 속한 지역 (한 번 배정되면 고정)
@@ -126,7 +127,7 @@ var State = (function () {
                    'runTime', 'bestRunEarned', 'bestPerSec', 'bestTap',
                    'bestFameGain', 'fastestPrestige',
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
-                   'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup',
+                   'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup', 'sawPrestigeIntro',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
                    'coupons'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
