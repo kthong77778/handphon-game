@@ -831,18 +831,18 @@ var Data = (function () {
     // 재료 12종 — 종류가 늘면 랜덤 드롭이 얕아지므로 위 tapDrop·missDrop 을 함께 키웠다.
     // 새 재료(새우·감자·버섯·옥수수)는 중·고급 레시피에서 주로 쓴다.
     ings: [
-      { id: 'fl', icon: '🌾', name: '밀가루' },
-      { id: 'gj', icon: '🌶️', name: '고추장' },
-      { id: 'eg', icon: '🥚', name: '계란' },
-      { id: 'om', icon: '🐟', name: '어묵' },
-      { id: 'vg', icon: '🧅', name: '야채' },
-      { id: 'rc', icon: '🍚', name: '쌀' },
-      { id: 'ch', icon: '🧀', name: '치즈' },
-      { id: 'mt', icon: '🥩', name: '고기' },
-      { id: 'sh', icon: '🦐', name: '새우' },
-      { id: 'pt', icon: '🥔', name: '감자' },
-      { id: 'ms', icon: '🍄', name: '버섯' },
-      { id: 'cn', icon: '🌽', name: '옥수수' }
+      { id: 'fl', icon: 'ing/mat_flour.png', name: '밀가루' },
+      { id: 'gj', icon: 'ing/mat_gochujang.png', name: '고추장' },
+      { id: 'eg', icon: 'ing/mat_egg.png', name: '계란' },
+      { id: 'om', icon: 'ing/mat_odeng.png', name: '어묵' },
+      { id: 'vg', icon: 'ing/mat_vegetable.png', name: '야채' },
+      { id: 'rc', icon: 'ing/mat_rice.png', name: '쌀' },
+      { id: 'ch', icon: 'ing/mat_cheese.png', name: '치즈' },
+      { id: 'mt', icon: 'ing/mat_meat.png', name: '고기' },
+      { id: 'sh', icon: 'ing/mat_shrimp.png', name: '새우' },
+      { id: 'pt', icon: 'ing/mat_potato.png', name: '감자' },
+      { id: 'ms', icon: 'ing/mat_mushroom.png', name: '버섯' },
+      { id: 'cn', icon: 'ing/mat_corn.png', name: '옥수수' }
     ],
 
     // 🍳 음식 숙련도 — 같은 음식을 누적으로 만들수록 그 음식의 도감 배율이 커진다.

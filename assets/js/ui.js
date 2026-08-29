@@ -931,7 +931,7 @@ var UI = (function () {
   function renderIngStore() {
     if (!el.ingStore.firstChild) {
       el.ingStore.innerHTML = Data.KITCHEN.ings.map(function (g) {
-        return '<div class="ing" data-ing="' + g.id + '"><span class="ing-ic">' + g.icon +
+        return '<div class="ing" data-ing="' + g.id + '"><span class="ing-ic">' + iconHtml(g.icon) +
                '</span><span class="ing-n">0</span></div>';
       }).join('');
     }
@@ -969,7 +969,7 @@ var UI = (function () {
           '<div class="kf-lock">사장 Lv.' + f.at + ' 에 레시피 해금</div>';
       } else {
         var needHtml = Object.keys(f.need).map(function (k) {
-          return '<span class="need" data-need="' + k + '"><span class="need-ic">' + ING_BY_ID[k].icon +
+          return '<span class="need" data-need="' + k + '"><span class="need-ic">' + iconHtml(ING_BY_ID[k].icon) +
                  '</span><b class="need-c">0</b><span class="need-max">/' + f.need[k] + '</span></span>';
         }).join('');
         var tier = Game.masteryTier(count);
@@ -1080,8 +1080,10 @@ var UI = (function () {
     el.truckPop.hidden = true;
     if (!res) return;
     var got = res.ings || [];
-    var msg = got.length ? ('🚚 재료 +' + got.length + ' ' +
-                got.map(function (g) { return g.icon; }).join('')) : '';
+    // 재료 아이콘이 그림이라 토스트엔 이름으로 보여준다 (중복 제거)
+    var names = got.map(function (g) { return g.name; });
+    var uniq = names.filter(function (n, i) { return names.indexOf(n) === i; });
+    var msg = got.length ? ('🚚 재료 +' + got.length + ' (' + uniq.join(', ') + ')') : '';
     if (res.coupon) msg += (msg ? ' · ' : '') + '🎟️ 할인 쿠폰!';
     if (msg) { Sound.play('buy'); buzz(res.coupon ? 14 : 8); toast(msg); }
     if (res.coupon || currentTab === 'kitchen') refresh(true);  // 쿠폰 바 갱신

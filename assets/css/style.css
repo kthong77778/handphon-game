@@ -216,6 +216,9 @@ body{
 /* 그림 아이콘(설비·레시피) — 이모지 자리에 들어간다 */
 .ico-img{width:84%;height:84%;object-fit:contain;display:block}
 .kf-icon .ico-img,.sp-ic .ico-img{width:100%;height:100%}
+/* 재료 그림 (창고 칸 · 레시피 재료칩) — 인라인이라 px 로 고정 */
+.ing-ic .ico-img{width:26px;height:26px;display:block}
+.need-ic .ico-img{width:19px;height:19px;display:inline-block;vertical-align:-4px}
 .item-body{flex:1 1 auto;min-width:0}
 .item-name{
   font-size:14px;font-weight:700;
