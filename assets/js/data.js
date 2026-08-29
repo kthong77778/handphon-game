@@ -953,6 +953,10 @@ var Data = (function () {
      쿠폰 1장이 소모된다. 어디에 쓸지 고르는 게 재미(타깃형). 매출과 무관. */
   var COUPON = { icon: '🎟️', max: 3, dropChance: 0.18, discount: 0.4 };
 
+  /* 첫 환생(재개업) 축하 보상 — 딱 한 번. 리셋을 '손해'가 아니라 '이벤트'로.
+     쿠폰은 최대치(3)로 채우되, 이미 꽉 차 있으면 예외로 1장 더(4) 준다. */
+  var FIRST_PRESTIGE = { gold: 30000 };
+
   /* ---------- 화면 테마 (색 스킨) ----------
      기본(auto)은 style.css 의 :root 값을 그대로 쓰고, 나머지는 CSS 변수만 덮어쓴다.
      폰트·이미지는 손대지 않는다 — 외부 파일 없이 색만 바꾸는 자기완결형 스킨이다.
@@ -1000,6 +1004,7 @@ var Data = (function () {
     FAME_SHOP: FAME_SHOP,
     ACHIEVEMENTS: ACHIEVEMENTS,
     COUPON: COUPON,
+    FIRST_PRESTIGE: FIRST_PRESTIGE,
     THEMES: THEMES,
     TAP_SKINS: TAP_SKINS,
     CROWD_SKINS: CROWD_SKINS,

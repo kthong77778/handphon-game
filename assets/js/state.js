@@ -162,8 +162,9 @@ var State = (function () {
     if (!(s.goldMult >= 1)) s.goldMult = 1;
     if (!(s.goldTapMult >= 1)) s.goldTapMult = 1;
 
-    // 쿠폰은 정수·최대치로 묶는다 (깨진 값이나 상한 초과 방지)
-    s.coupons = Math.min(Math.floor(s.coupons) || 0, Data.COUPON.max);
+    // 쿠폰은 정수로. 상한은 max+1 까지 허용한다 — 첫 환생 예외 보상(4장)이
+    // 저장에서 3으로 깎이지 않게. (트럭 드롭은 game.js 에서 max 까지만 준다)
+    s.coupons = Math.min(Math.floor(s.coupons) || 0, Data.COUPON.max + 1);
 
     // 회차 기록 — 숫자만 추리고 개수를 제한한다 (깨진 값이 순위표를 망치지 않게)
     if (Array.isArray(raw.runs)) {

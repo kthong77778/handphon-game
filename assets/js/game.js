@@ -535,6 +535,7 @@ var Game = (function () {
     var gain = fameGain();
     if (gain <= 0) return 0;
     var s = S();
+    var firstEver = (s.prestiges === 0);   // 첫 환생인가 (보상은 딱 한 번)
 
     // 명예의 전당에 이번 회차를 남긴다
     s.runs.push({
@@ -561,6 +562,15 @@ var Game = (function () {
     s.goldTapLeft = 0;
     s.boostLeft = 0;
     resetCombo();
+
+    // 첫 환생 축하 보상 — 리셋을 '이벤트'로. 딱 한 번.
+    if (firstEver) {
+      s.money += Data.FIRST_PRESTIGE.gold;                 // 축하 골드로 빠른 재시작
+      // 쿠폰: 최대치(3)로 채우되, 이미 꽉 차 있으면 예외로 1장 더(4)
+      s.coupons = (s.coupons >= Data.COUPON.max)
+        ? Data.COUPON.max + 1
+        : Data.COUPON.max;
+    }
 
     bump();
     return gain;

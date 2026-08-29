@@ -49,6 +49,7 @@
               '대신 <b>명성 ' + Fmt.num(gain) + '</b> 을(를) 영구히 얻습니다.',
         ok: '재개업하기'
       }, function () {
+        var first = State.get().prestiges === 0;
         Game.doPrestige();
         Scene.clear();
         announceAchievements();
@@ -56,7 +57,24 @@
         State.save();
         UI.showTab('shop');
         Sound.play('prestige');
-        UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
+        if (first) {
+          // 첫 재개업 — 토스트 대신 축하 모달로 특별 선물을 알려준다
+          var cp = State.get().coupons;
+          UI.ask({
+            emoji: '🎊',
+            title: '첫 재개업 축하해요!',
+            text: '명성 <b>' + Fmt.num(gain) + '</b> 을(를) 얻고 새 출발!<br><br>' +
+                  '처음이라 특별 선물이에요:<br>' +
+                  '💰 축하 골드 <b>' + Fmt.num(Data.FIRST_PRESTIGE.gold) + '원</b><br>' +
+                  '🎟️ 할인 쿠폰 <b>' + cp + '장</b>' +
+                  (cp > Data.COUPON.max ? ' <b>(가득 차서 1장 더!)</b>' : '') + '<br><br>' +
+                  '쿠폰으로 설비를 싸게 사서 빠르게 다시 키워보세요!',
+            ok: '고마워요!',
+            oneButton: true
+          }, function () {});
+        } else {
+          UI.toast('✨ 명성 ' + Fmt.num(gain) + ' 획득! 새 출발입니다.');
+        }
       });
     },
 
