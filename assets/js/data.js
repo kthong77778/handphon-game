@@ -999,13 +999,13 @@ var Data = (function () {
     watchSec: 30,   // 한 번 시청 시간(초) — 실제 광고로 교체될 자리
     perDay: 3,      // 아이콘 하나당 하루 시청 횟수 (자정 리셋)
     boostMult: 2,   // '수익 2배' 버프 배율
-    boostDur: 600,  // '수익 2배' 지속(초) = 10분
-    goldSec: 1800,  // '보너스 골드' = 초당 수익 × 이만큼(초) = 30분치
-    goldMin: 3000,  // 아직 수익이 없을 때의 최소 골드
-    ingCount: 8,    // '재료' 로 주는 랜덤 재료 개수
+    boostDur: 1800, // '수익 2배' 지속(초) = 30분
+    goldSec: 3600,  // '보너스 골드' = 초당 수익 × 이만큼(초) = 1시간치
+    goldMin: 5000,  // 아직 수익이 없을 때의 최소 골드
+    ingCount: 12,   // '재료' 로 주는 랜덤 재료 개수
     slots: [
-      { id: 'gold',   icon: '💰', name: '보너스 골드', desc: '30분치 수익을 목돈으로' },
-      { id: 'boost',  icon: '⚡', name: '수익 2배',   desc: '10분 동안 모든 수익 ×2' },
+      { id: 'gold',   icon: '💰', name: '보너스 골드', desc: '1시간치 수익을 목돈으로' },
+      { id: 'boost',  icon: '⚡', name: '수익 2배',   desc: '30분 동안 모든 수익 ×2' },
       { id: 'coupon', icon: '🎟️', name: '할인 쿠폰',   desc: '설비·업그레이드 할인권 1장' },
       { id: 'ings',   icon: '🚚', name: '재료 한 아름', desc: '주방 재료 여러 개' }
     ]
