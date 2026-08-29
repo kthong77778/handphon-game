@@ -132,6 +132,21 @@ body{
 .prestige-sign span{position:absolute;inset:0;padding-top:8px;
   display:flex;align-items:center;justify-content:center;text-align:center;
   font-weight:900;color:#8a5a24;font-size:16px;line-height:1.15;letter-spacing:-.02em}
+.prestige-owner-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+.owner-stage{font-size:11px;font-weight:800;color:var(--gold);
+  background:rgba(255,204,68,.12);border:1px solid rgba(255,204,68,.3);
+  padding:1px 9px;border-radius:999px}
+
+/* 설정 — 사장님 남/여 선택 */
+.owner-pick{display:flex;gap:10px}
+.owner-card{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:10px 6px;border-radius:14px;background:var(--bg2);border:1px solid var(--line);
+  font-family:inherit;cursor:pointer;transition:transform .06s}
+.owner-card:active{transform:scale(.98)}
+.owner-card.on{border-color:var(--accent);background:rgba(214,71,47,.08);box-shadow:0 0 0 1px var(--accent) inset}
+.owner-card img{height:78px;width:auto;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+.owner-card span{font-size:12.5px;font-weight:800;color:var(--dim)}
+.owner-card.on span{color:var(--txt)}
 .hint{font-size:13px;color:var(--dim);margin:0 4px 10px;line-height:1.5}
 .hint.small{font-size:12px}
 .hint.center{text-align:center}

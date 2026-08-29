@@ -28,6 +28,7 @@ var UI = (function () {
      'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
      'tapSkinRow', 'tapSkinNow', 'tapLadder', 'tapSoundRow', 'tapSoundNow',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder', 'themeRow', 'themeNow',
+     'prestigeOwner', 'ownerStage', 'ownerSexNow', 'ownerPick',
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
      'muteBtn', 'notifyBtn', 'helpBtn',
@@ -1088,9 +1089,36 @@ var UI = (function () {
 
   /* ---------- 환생 화면 ---------- */
 
+  /* ---------- 사장님 선택 (남/여) ---------- */
+  function renderOwnerPick() {
+    var cur = Game.ownerSex();
+    var stageKey = Game.ownerStage().key;
+    el.ownerSexNow.textContent = cur === 'male' ? '남자 사장' : '여자 사장';
+    var osig = cur + '|' + stageKey;   // 성별·단계가 바뀔 때만 다시 그린다
+    if (sig.owner === osig) return;
+    sig.owner = osig;
+    el.ownerPick.innerHTML = Data.OWNER.sexes.map(function (sx) {
+      return '<button type="button" class="owner-card' + (sx.id === cur ? ' on' : '') + '" data-sex="' + sx.id + '">' +
+        '<img src="assets/img/owner/owner_' + sx.id + '_' + stageKey + '.png" alt="">' +
+        '<span>' + sx.name + '</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(el.ownerPick.querySelectorAll('.owner-card'), function (btn) {
+      btn.addEventListener('click', function () {
+        if (Game.setOwnerSex(btn.dataset.sex)) {
+          Sound.play('buy'); buzz(8); sig.owner = ''; State.save(); refresh(true);
+        }
+      });
+    });
+  }
+
   function renderPrestige() {
     var s = State.get();
     var gain = Game.fameGain();
+
+    // 사장님 — 성별·성장 단계에 맞는 이미지
+    var oImg = 'assets/img/' + Game.ownerImg();
+    if (el.prestigeOwner.getAttribute('src') !== oImg) el.prestigeOwner.src = oImg;
+    el.ownerStage.textContent = Game.ownerStage().name;
 
     el.pFameNow.textContent = Fmt.num(s.fame);
     el.pFameGain.textContent = '+' + Fmt.num(gain);
@@ -1887,7 +1915,7 @@ var UI = (function () {
     else if (currentTab === 'kitchen') renderKitchen();
     else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderAds(); renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
-    else if (currentTab === 'settings') { renderStats(); renderThemes(); renderSkins(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
+    else if (currentTab === 'settings') { renderStats(); renderThemes(); renderSkins(); renderOwnerPick(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }
   }
 

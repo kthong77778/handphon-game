@@ -695,6 +695,22 @@ var Game = (function () {
     return '동네 사장';
   }
 
+  /* ---------- 사장님 (성장형 · 남/여) ----------
+     사장 레벨이 오르면 모습이 바뀐다. 성별은 세이브(ownerSex)에서. */
+  function ownerSex() { return S().ownerSex === 'male' ? 'male' : 'female'; }
+  function setOwnerSex(id) {
+    if (id !== 'male' && id !== 'female') return false;
+    S().ownerSex = id; return true;
+  }
+  /** 지금 사장 레벨에 맞는 성장 단계 */
+  function ownerStage() {
+    var lv = bossLevel(), st = Data.OWNER.stages, cur = st[0];
+    for (var i = 0; i < st.length; i++) if (lv >= st[i].at) cur = st[i];
+    return cur;
+  }
+  /** 지금 보여줄 사장 이미지 경로 (assets/img/ 기준) */
+  function ownerImg() { return 'owner/owner_' + ownerSex() + '_' + ownerStage().key + '.png'; }
+
   /* ---------- 🍳 주방 (재료 트럭 · 합성 · 레시피 · 음식 도감) ---------- */
   var FOOD_BY_ID = {};
   Data.KITCHEN.foods.forEach(function (f) { FOOD_BY_ID[f.id] = f; });
@@ -1763,6 +1779,10 @@ var Game = (function () {
     regionRank: regionRank,
     rankBoard: rankBoard,
     myShopName: myShopName,
+    ownerSex: ownerSex,
+    setOwnerSex: setOwnerSex,
+    ownerStage: ownerStage,
+    ownerImg: ownerImg,
     visibleTabs: visibleTabs,
     tabsToReveal: tabsToReveal,
     markTabsSeen: markTabsSeen,

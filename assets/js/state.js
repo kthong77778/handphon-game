@@ -94,6 +94,7 @@ var State = (function () {
       tabsSeen: [],      // 온보딩 — 이미 열린(연출을 본) 하단 탭 id 들. 다시 안 잠긴다.
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'img',  // 손님 스킨 id (기본은 그림 손님)
+      ownerSex: 'female',// 사장님 성별 (female/male) — 성장형 이미지 선택
       theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
       coupons: 0,        // 🎟️ 보유 할인 쿠폰 수 (0 ~ Data.COUPON.max)
 
@@ -263,6 +264,9 @@ var State = (function () {
     if (typeof raw.adDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.adDate)) {
       s.adDate = raw.adDate;
     }
+
+    // 사장님 성별 (female/male 만)
+    if (raw.ownerSex === 'male' || raw.ownerSex === 'female') s.ownerSex = raw.ownerSex;
 
     // 온보딩 — 이미 본 탭 목록 (알려진 탭 id 만, 중복 제거)
     if (Array.isArray(raw.tabsSeen)) {

@@ -642,6 +642,22 @@ var Data = (function () {
     });
   }
 
+  /* ---------- 사장님 (성장형 · 남/여 선택) ----------
+     사장 레벨(bossLevel)이 오르면 모습이 바뀐다: 앞치마 새내기 → 요리사 → 정장 사장 → 분식 대부.
+     이미지는 assets/img/owner/owner_<sex>_<key>.png. 환생(재개업) 화면에 크게 나온다. */
+  var OWNER = {
+    sexes: [
+      { id: 'female', name: '여자 사장', pick: 'lv2' },
+      { id: 'male',   name: '남자 사장', pick: 'lv2' }
+    ],
+    stages: [
+      { at: 0,  key: 'lv2', name: '새내기 사장' },   // 앞치마 알바
+      { at: 5,  key: 'lv3', name: '요리사 사장' },   // 요리사 모자
+      { at: 10, key: 'lv4', name: '정장 사장' },     // 정장 · 프랜차이즈
+      { at: 20, key: 'lv5', name: '분식 대부' }      // 왕관 · 대부
+    ]
+  };
+
   var CROWD_SKINS = [
     {
       // 그림 손님 — cast 가 이미지 경로('cust/..png', '/' 포함)면 scene/미리보기가 <img> 로 그린다.
@@ -1093,6 +1109,7 @@ var Data = (function () {
     THEMES: THEMES,
     TAP_SKINS: TAP_SKINS,
     CROWD_SKINS: CROWD_SKINS,
+    OWNER: OWNER,
     HEADWEAR: HEADWEAR,
     shopFront: shopFront,
     GOLDEN: GOLDEN,

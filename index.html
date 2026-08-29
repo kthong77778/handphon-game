@@ -118,7 +118,10 @@
       <h2 class="section-title">재개업 (환생)</h2>
       <div class="card prestige-card">
         <div class="prestige-hero">
-          <img class="prestige-owner" src="assets/img/owner.png" alt="사장님">
+          <div class="prestige-owner-wrap">
+            <img class="prestige-owner" id="prestigeOwner" src="assets/img/owner/owner_female_lv2.png" alt="사장님">
+            <span class="owner-stage" id="ownerStage">새내기 사장</span>
+          </div>
           <div class="prestige-sign">
             <img src="assets/img/popup_frame.png" alt="">
             <span>재개업<br>환영!</span>
@@ -228,6 +231,15 @@
         </div>
         <div class="skin-wrap"><div class="skin-row" id="crowdSkinRow"></div></div>
         <div class="ladder" id="crowdLadder"></div>
+      </div>
+
+      <div class="card skin-card">
+        <div class="skin-head">
+          <b>사장님</b>
+          <span class="skin-now" id="ownerSexNow"></span>
+        </div>
+        <p class="hint" style="margin:2px 0 8px">사장 레벨이 오르면 모습이 자랍니다. 남/여를 고르세요.</p>
+        <div class="owner-pick" id="ownerPick"></div>
       </div>
 
       <h2 class="section-title">탭 소리</h2>

@@ -263,6 +263,17 @@ console.log('\n[6.7] 스킨 & 등급');
      '이상한 스킨 id 는 기본값으로');
   ok(Game.tapStep().step.icon && Game.crowdTier().cast.length > 0, '그래도 정상 동작');
 
+  // 사장님 — 성장형(사장 레벨) + 남/여 선택
+  State.set({ totalEarned: 500 }); Game.invalidate();   // bossLevel 0
+  ok(Game.ownerSex() === 'female', '기본 사장은 여자');
+  ok(Game.ownerStage().key === 'lv2', '레벨 낮으면 새내기(lv2)');
+  ok(Game.ownerImg() === 'owner/owner_female_lv2.png', '이미지 경로가 성별·단계와 맞는다');
+  ok(Game.setOwnerSex('male') && Game.ownerSex() === 'male' &&
+     Game.ownerImg().indexOf('_male_') >= 0, '남자 사장으로 바꾸면 경로도 바뀐다');
+  ok(!Game.setOwnerSex('xxx') && Game.ownerSex() === 'male', '이상한 성별은 거부');
+  State.get().totalEarned = 1e15; Game.invalidate();     // bossLevel 아주 높음
+  ok(Game.ownerStage().key === 'lv5', '레벨이 아주 높으면 분식 대부(lv5)');
+
   // 모든 스킨이 형태를 갖췄는가
   let bad = [];
   Data.TAP_SKINS.forEach(k => {
