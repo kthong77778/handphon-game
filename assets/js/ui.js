@@ -223,20 +223,42 @@ var UI = (function () {
 
   /* ---------- 업그레이드 목록 ---------- */
 
+  function genNameById(id) {
+    for (var i = 0; i < Data.GENERATORS.length; i++) {
+      if (Data.GENERATORS[i].id === id) return Data.GENERATORS[i].name;
+    }
+    return '설비';
+  }
+
+  // 잠긴 업그레이드의 해금 조건 문구 (해금됐으면 '')
+  function upgradeLockText(u) {
+    var s = State.get();
+    if (u.needGen && (s.gens[u.needGen.id] || 0) < u.needGen.count) {
+      return genNameById(u.needGen.id) + ' ' + u.needGen.count + '개 필요';
+    }
+    if (u.needTaps && s.taps < u.needTaps) return '조리 ' + Fmt.num(u.needTaps) + '회 필요';
+    if (u.needEarned && s.runEarned < u.needEarned) return '이번 판 누적 ' + Fmt.won(u.needEarned) + '원 필요';
+    return '';
+  }
+
   function renderUpgrades() {
-    var list = Game.availableUpgrades();
-    var newSig = list.map(function (u) { return u.id; }).join(',');
+    // 살 수 있는 것만이 아니라 전체 목록: 해금된 것 위, 잠긴 것은 조건과 함께 아래.
+    // (이미 산 것만 제외) — 해금 상태가 바뀌면 다시 그리도록 서명에 포함한다.
+    var list = Game.allUpgrades();
+    var newSig = list.map(function (u) { return u.id + (Game.upgradeUnlocked(u) ? '1' : '0'); }).join(',');
 
     if (sig.up !== newSig) {
       sig.up = newSig;
       el.upgradeList.innerHTML = '';
       list.forEach(function (u) {
+        var locked = !Game.upgradeUnlocked(u);
         var row = makeItem(u.icon);
         row.dataset.up = u.id;
         var p = parts(row);
         p.nm.textContent = u.name;
-        p.desc.textContent = u.desc;
+        p.desc.textContent = locked ? ('🔒 ' + upgradeLockText(u) + ' · ' + u.desc) : u.desc;
         row.addEventListener('click', function () {
+          if (!Game.upgradeUnlocked(u)) { toast('🔒 ' + upgradeLockText(u)); return; }
           if (Game.buyUpgrade(u.id)) {
             Sound.play('upgrade');
             buzz(12);
@@ -249,20 +271,21 @@ var UI = (function () {
         el.upgradeList.appendChild(row);
       });
       el.upgradeHint.textContent = list.length
-        ? '한 번만 구매하면 영구적으로 적용됩니다. (환생 시 초기화)'
-        : '조리를 더 하거나 설비를 늘리면 새 업그레이드가 열립니다.';
+        ? '한 번 사면 영구 적용돼요. 잠긴 것(🔒)은 조건을 채우면 열립니다.'
+        : '업그레이드를 모두 구매했어요!';
     }
 
     var money = State.get().money;
     Array.prototype.forEach.call(el.upgradeList.children, function (row) {
       var u = Game.UP_BY_ID[row.dataset.up];
       if (!u) return;
+      var locked = !Game.upgradeUnlocked(u);
       var cost = Game.upgradeCost(u.id);   // 쿠폰 무장 시 할인가
-      var ok = money >= cost;
+      var ok = !locked && money >= cost;
       var costEl = row.querySelector('.item-cost');
       costEl.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(cost) + '</span>';
       costEl.className = 'item-cost ' + (ok ? 'ok' : 'no');
-      row.className = 'item' + (ok ? ' buyable' : '');
+      row.className = 'item' + (ok ? ' buyable' : '') + (locked ? ' locked' : '');
     });
   }
 

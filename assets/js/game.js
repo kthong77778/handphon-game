@@ -450,11 +450,24 @@ var Game = (function () {
     return true;
   }
 
-  /** 현재 화면에 보여줄 업그레이드 목록 */
+  /** 지금 바로 살 수 있는(해금된) 업그레이드만 — 추천/알림 판정에 쓴다 */
   function availableUpgrades() {
     return Data.UPGRADES
       .filter(upgradeUnlocked)
       .sort(function (a, b) {
+        if (a.cost !== b.cost) return a.cost - b.cost;
+        return (a.order || 0) - (b.order || 0);
+      });
+  }
+
+  /** 목록에 보여줄 전체 업그레이드 — 이미 산 것만 빼고, 잠긴 것도 포함한다.
+      해금된 것을 위로, 그다음 가격순. (탭 목록에서 잠긴 것도 조건과 함께 보여준다) */
+  function allUpgrades() {
+    return Data.UPGRADES
+      .filter(function (u) { return !S().upgrades[u.id]; })
+      .sort(function (a, b) {
+        var ua = upgradeUnlocked(a), ub = upgradeUnlocked(b);
+        if (ua !== ub) return ua ? -1 : 1;
         if (a.cost !== b.cost) return a.cost - b.cost;
         return (a.order || 0) - (b.order || 0);
       });
@@ -1527,6 +1540,7 @@ var Game = (function () {
     globalMult: globalMult,
     achievementCount: achievementCount,
     availableUpgrades: availableUpgrades,
+    allUpgrades: allUpgrades,
     upgradeUnlocked: upgradeUnlocked,
     buyGen: buyGen,
     buyUpgrade: buyUpgrade,
