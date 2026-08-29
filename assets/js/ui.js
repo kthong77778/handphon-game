@@ -1925,6 +1925,11 @@ var UI = (function () {
       txt += '<br><span style="font-size:12px">⏱ ' + Fmt.time(reward.capped) +
              ' 제값 + ' + Fmt.time(reward.tailSeconds) + ' 보너스(' + pct + '%)</span>';
     }
+    if (reward.trucks > 0) {
+      // 재료 트럭도 자리를 비운 만큼 지나갔다 — 재료를 자동으로 챙겨 온다
+      txt += '<br><span style="font-size:12px">🚚 재료 트럭 ' + reward.trucks +
+             '대 · 재료 ' + reward.ings + '개 챙김</span>';
+    }
     if (maxedOut) {
       txt += '<br><span style="font-size:12px">(최대 ' + Fmt.time(tailCap) +
              '까지만 인정 — 명성 상점에서 늘릴 수 있어요)</span>';

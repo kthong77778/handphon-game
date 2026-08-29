@@ -783,8 +783,8 @@ var Data = (function () {
   var KITCHEN = {
     truckEvery: 30,     // 트럭이 오는 간격 (초)
     truckLife: 12,      // 트럭이 머무는 시간 (초) — 이 안에 탭하면 더 많이 준다
-    tapDrop: 2,         // 탭해서 받으면 재료 이만큼
-    missDrop: 1,        // 못 잡고 지나가면 이만큼만 자동 수거 (방치 배려)
+    tapDrop: 4,         // 탭해서 받으면 재료 이만큼 (탭이 자동수거의 2배 — 손을 대는 보람)
+    missDrop: 2,        // 못 잡고 지나가면 이만큼만 자동 수거 (방치 배려 · 오프라인 트럭도 이 값)
 
     // 재료 8종
     ings: [
@@ -802,17 +802,23 @@ var Data = (function () {
     // at: 이 사장 레벨이 되면 레시피가 해금된다. need: 재료 소모량. bonus: 도감 영구 배율(+). sec: 만들 때 목돈(초당×sec).
     foods: [
       // 초급
-      { id: 'k1', icon: '🍢', name: '어묵탕',   grade: 1, at: 1, bonus: 0.01, sec: 60,  need: { om: 2, vg: 2 } },
-      { id: 'k2', icon: '🥘', name: '떡볶이',   grade: 1, at: 2, bonus: 0.01, sec: 90,  need: { gj: 2, fl: 2, om: 1 } },
-      { id: 'k3', icon: '🍙', name: '김밥',     grade: 1, at: 3, bonus: 0.01, sec: 120, need: { rc: 2, eg: 1, vg: 2 } },
+      { id: 'k1',  icon: '🍢', name: '어묵탕',    grade: 1, at: 1,  bonus: 0.01, sec: 60,   need: { om: 2, vg: 2 } },
+      { id: 'k2',  icon: '🥘', name: '떡볶이',    grade: 1, at: 2,  bonus: 0.01, sec: 90,   need: { gj: 2, fl: 2, om: 1 } },
+      { id: 'k3',  icon: '🍙', name: '김밥',      grade: 1, at: 3,  bonus: 0.01, sec: 120,  need: { rc: 2, eg: 1, vg: 2 } },
+      { id: 'k10', icon: '🍳', name: '계란말이',  grade: 1, at: 4,  bonus: 0.01, sec: 150,  need: { eg: 3, vg: 1 } },
       // 중급
-      { id: 'k4', icon: '🍜', name: '라면',     grade: 2, at: 5, bonus: 0.02, sec: 300, need: { fl: 3, vg: 2, eg: 2 } },
-      { id: 'k5', icon: '🌭', name: '핫도그',   grade: 2, at: 6, bonus: 0.02, sec: 420, need: { fl: 3, mt: 3 } },
-      { id: 'k6', icon: '🥟', name: '만두',     grade: 2, at: 8, bonus: 0.02, sec: 600, need: { fl: 3, mt: 2, vg: 2 } },
+      { id: 'k4',  icon: '🍜', name: '라면',      grade: 2, at: 5,  bonus: 0.02, sec: 300,  need: { fl: 3, vg: 2, eg: 2 } },
+      { id: 'k5',  icon: '🌭', name: '핫도그',    grade: 2, at: 6,  bonus: 0.02, sec: 420,  need: { fl: 3, mt: 3 } },
+      { id: 'k11', icon: '🍛', name: '김치볶음밥', grade: 2, at: 7,  bonus: 0.02, sec: 540,  need: { rc: 3, gj: 2, eg: 1 } },
+      { id: 'k6',  icon: '🥟', name: '만두',      grade: 2, at: 8,  bonus: 0.02, sec: 600,  need: { fl: 3, mt: 2, vg: 2 } },
+      { id: 'k12', icon: '🫕', name: '치즈라볶이', grade: 2, at: 9,  bonus: 0.02, sec: 720,  need: { fl: 3, gj: 2, ch: 2 } },
       // 고급
-      { id: 'k7', icon: '🧀', name: '치즈김밥', grade: 3, at: 10, bonus: 0.03, sec: 1200, need: { rc: 3, ch: 3, eg: 2 } },
-      { id: 'k8', icon: '🍲', name: '부대찌개', grade: 3, at: 12, bonus: 0.03, sec: 1800, need: { mt: 4, ch: 2, gj: 2 } },
-      { id: 'k9', icon: '🍱', name: '모둠 한상', grade: 3, at: 14, bonus: 0.03, sec: 3600, need: { om: 3, rc: 3, mt: 3, ch: 2 } }
+      { id: 'k7',  icon: '🧀', name: '치즈김밥',  grade: 3, at: 10, bonus: 0.03, sec: 1200, need: { rc: 3, ch: 3, eg: 2 } },
+      { id: 'k13', icon: '🥞', name: '해물파전',  grade: 3, at: 11, bonus: 0.03, sec: 1500, need: { fl: 3, om: 2, eg: 2, vg: 2 } },
+      { id: 'k8',  icon: '🍲', name: '부대찌개',  grade: 3, at: 12, bonus: 0.03, sec: 1800, need: { mt: 4, ch: 2, gj: 2 } },
+      { id: 'k14', icon: '🍖', name: '갈비탕',    grade: 3, at: 13, bonus: 0.03, sec: 2400, need: { mt: 5, vg: 2, rc: 2 } },
+      { id: 'k9',  icon: '🍱', name: '모둠 한상', grade: 3, at: 14, bonus: 0.03, sec: 3600, need: { om: 3, rc: 3, mt: 3, ch: 2 } },
+      { id: 'k15', icon: '🍤', name: '해물 모둠튀김', grade: 3, at: 16, bonus: 0.04, sec: 4800, need: { fl: 4, om: 3, vg: 3, mt: 2 } }
     ],
     grades: [
       { g: 1, name: '초급' },

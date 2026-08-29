@@ -241,13 +241,16 @@
     if (reward.gain <= 0) { done(); return; }
     UI.showOffline(reward, function () {
       Sound.play('reward');
-      Game.claimOffline(reward.gain);
+      var claim = Game.claimOffline(reward.gain, reward.trucks);
       // 보상을 받은 뒤에 점장이 그 돈으로 설비를 산다 (받기 전엔 살 돈이 없다)
       var hired = Game.runManager(elapsed);
       Game.invalidate();
       announceAchievements();
       State.save();
       UI.refresh(true);
+      if (claim && claim.ings && claim.ings.length > 0) {
+        UI.toast('🚚 재료 트럭에서 재료 ' + claim.ings.length + '개를 챙겼어요');
+      }
       if (hired.count > 0) {
         UI.toast('🧑‍💼 점장이 설비 ' + hired.count + '개를 사뒀습니다');
         Sound.play('buy');

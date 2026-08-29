@@ -793,6 +793,22 @@ var Game = (function () {
     return { ings: got, coupon: coupon };
   }
 
+  /** 자리를 비운 동안 트럭이 몇 대나 지나갔을지 센다.
+      간격이 30·60·90…로 escalating 이라 개수가 저절로 완만해진다(방치 농사 방지).
+      오늘치 카운트(truckCount)에서 이어 세므로, 이미 많이 받은 날은 적게 준다. */
+  function offlineTrucks(secs) {
+    if (secs <= 0) return 0;
+    truckDayRoll();                                  // 자정을 넘겼으면 오늘치는 0부터
+    var every = Data.KITCHEN.truckEvery, c = S().truckCount || 0;
+    var t = 0, n = 0;
+    while (n < 5000) {                               // 안전장치
+      var gap = every * (c + n + 1);
+      if (t + gap > secs) break;
+      t += gap; n++;
+    }
+    return n;
+  }
+
   function truckState() { return { here: truckHere > 0, hereLeft: truckHere, nextIn: truckLeft, count: S().truckCount || 0 }; }
 
   /** 트럭 타이머를 처음 상태로. 테스트에서 오늘치 카운트까지 초기화한다(실제 부팅에 불러도 안전). */
@@ -1161,14 +1177,25 @@ var Game = (function () {
     // 자리를 비운 동안에는 일시 버프가 흐르지 않으므로 버프를 뺀 수익으로 계산한다
     var eff = offlineEfficiency();
     var gain = perSec(true) * eff * (capped + tailSeconds * Data.OFFLINE.tailEff);
+    // 재료 트럭도 자리를 비운 만큼(제값 구간 기준) 지나갔다 — 재료만 자동 수거한다(돈·쿠폰 없음)
+    var trucks = offlineTrucks(capped);
     return { seconds: elapsedSec, capped: capped, tailSeconds: tailSeconds,
-             tailEff: Data.OFFLINE.tailEff, gain: gain };
+             tailEff: Data.OFFLINE.tailEff, gain: gain,
+             trucks: trucks, ings: trucks * Data.KITCHEN.missDrop };
   }
 
-  function claimOffline(gain) {
+  /** 오프라인 보상을 실제로 지급. 돈에 더해, 지나간 트럭 수만큼 재료를 자동 수거한다.
+      @returns {{ings:Array}} 받은 재료 목록(연출용) */
+  function claimOffline(gain, trucks) {
     var s = S();
     earn(s, gain);
     s.offlineClaims++;
+    var got = [];
+    if (trucks > 0) {
+      got = dropIngredients(trucks * Data.KITCHEN.missDrop);
+      s.truckCount = (s.truckCount || 0) + trucks;   // 다음 간격 escalation 을 이어간다
+    }
+    return { ings: got };
   }
 
   /* ---------- 진행 ---------- */
@@ -1569,6 +1596,7 @@ var Game = (function () {
     offlineTailCapSeconds: offlineTailCapSeconds,
     offlineEfficiency: offlineEfficiency,
     offlineReward: offlineReward,
+    offlineTrucks: offlineTrucks,
     claimOffline: claimOffline,
     tick: tick,
     checkAchievements: checkAchievements,
