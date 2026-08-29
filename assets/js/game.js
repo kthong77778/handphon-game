@@ -59,6 +59,7 @@ var Game = (function () {
     stat *= 1 + 0.01 * achievementCount();        // 도전과제 1개당 +1%
     stat *= Math.pow(1.5, fameLv('f_mult'));      // 명성상점: 전설의 명성
     stat *= Math.pow(3, fameLv('f_legend'));      // 명성상점: 분식 왕조 (후반 소비처)
+    stat *= Math.pow(1.05, fameLv('f_research'));  // 명성상점: 끝없는 연구 (상한 없는 소비처)
     stat *= 1 + Data.PARTY.dexBonus * (s.partyFoods ? s.partyFoods.length : 0);  // 파티 도감 1칸당 +1%
     stat *= 1 + foodBonus();                                 // 🍳 주방 음식 도감 (등급별 영구 배율)
     if (s.michelinGrand) stat *= Data.MICHELIN.grandMult;   // 스타 셰프 별 5개 영구 배율
@@ -523,19 +524,22 @@ var Game = (function () {
 
   /* ---------- 환생 ---------- */
   // 이번 회차 매출이 이 값을 넘으면 환생 가능.
-  // 명성 = (매출 / BASE) ^ 0.4  -> 2~3시간에 첫 환생, 하루 방치면 수십 단위
+  // 명성 = (매출 / BASE) ^ FAME_EXP  -> 2~3시간에 첫 환생, 하루 방치면 수십 단위
   var PRESTIGE_BASE = 1e6;
+  // 지수를 낮출수록 '큰 회차'의 명성이 줄어 환생 스노우볼이 완만해진다(문턱값의 첫 환생은 그대로).
+  // 0.4 → 0.37: 큰 매출일수록 명성을 덜 줘 후반 폭주를 늦춘다(명성 소비처 수명↑).
+  var FAME_EXP = 0.37;
 
   /** 지금 환생하면 받을 명성 */
   function fameGain() {
     var s = S();
     if (s.runEarned < PRESTIGE_BASE) return 0;
-    return Math.floor(Math.pow(s.runEarned / PRESTIGE_BASE, 0.4));
+    return Math.floor(Math.pow(s.runEarned / PRESTIGE_BASE, FAME_EXP));
   }
 
   /** 다음 명성 1을 더 받으려면 얼마가 더 필요한가 */
   function nextFameAt() {
-    var need = Math.pow(fameGain() + 1, 1 / 0.4) * PRESTIGE_BASE;
+    var need = Math.pow(fameGain() + 1, 1 / FAME_EXP) * PRESTIGE_BASE;
     return need;
   }
 

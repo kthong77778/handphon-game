@@ -1101,6 +1101,18 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   ok(Game.adLeft('gold') === Data.ADS.perDay, '자정이 지나면 광고 횟수가 다시 채워진다');
   Game.setClock(null);
 
+  // 🔬 끝없는 연구 — 상한 없는 명성 소비처 (무한)
+  var fr = Data.FAME_SHOP.find(function (f) { return f.id === 'f_research'; });
+  ok(fr && fr.infinite === true, '끝없는 연구는 무한(infinite) 항목');
+  State.set({ totalEarned: 1e9, gens: { g1: 10 }, fame: 1e18 }); Game.invalidate();
+  var frBase = Game.perSec(true);
+  Game.buyFame('f_research');
+  ok(Game.fameLv('f_research') === 1 && Game.perSec(true) > frBase, '끝없는 연구를 사면 수익이 오른다');
+  ok(Game.fameCost('f_research', 1) > Game.fameCost('f_research', 0), '레벨이 오를수록 비용이 커진다');
+  // 한참 사도 max 로 안 잠긴다 (기존 상한 항목과 달리)
+  State.get().fameLv.f_research = 50;
+  ok(Game.buyFame('f_research') === true && Game.fameLv('f_research') === 51, '무한 항목은 한참 사도 계속 살 수 있다');
+
   // 재료 트럭: 틱을 돌리면 재료가 쌓인다 (탭 or 자동수거)
   State.set({}); var s3 = State.get(); s3.ings = {}; Game.invalidate(); Game.resetTruck();
   var total0 = 0; Data.KITCHEN.ings.forEach(function (g) { total0 += Game.ingCount(g.id); });

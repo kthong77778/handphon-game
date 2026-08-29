@@ -306,7 +306,7 @@ var UI = (function () {
         var lv = Game.fameLv(f.id);
         p.nm.textContent = f.name;
         p.lv.hidden = false;
-        p.lv.textContent = 'Lv.' + lv + '/' + f.max;
+        p.lv.textContent = f.infinite ? ('Lv.' + lv + ' ∞') : ('Lv.' + lv + '/' + f.max);
         p.desc.textContent = f.desc;
         row.addEventListener('click', function () {
           if (Game.fameLv(f.id) >= f.max) { toast('이미 최대 레벨입니다'); return; }
@@ -327,7 +327,7 @@ var UI = (function () {
       var f = Game.FAME_BY_ID[row.dataset.fame];
       if (!f) return;
       var lv = Game.fameLv(f.id);
-      var maxed = lv >= f.max;
+      var maxed = !f.infinite && lv >= f.max;   // 무한 항목은 MAX 로 안 잠긴다
       var cost = Game.fameCost(f.id, lv);
       var ok = !maxed && s.fame >= cost;
       var costEl = row.querySelector('.item-cost');

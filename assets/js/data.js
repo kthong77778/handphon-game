@@ -152,6 +152,14 @@ var Data = (function () {
       id: 'f_legend', icon: '👑', name: '분식 왕조',
       desc: '모든 수익 ×3 (중첩) — 후반 명성 소비처',
       baseCost: 5000, costGrow: 3.2, max: 25
+    },
+    {
+      // 상한 없는 명성 소비처 — 명성상점을 다 채운 장기 유저에게 '항상 살 게 있는' 목적지.
+      // 효과(×1.05)보다 비용(×1.55)이 빨리 커져 파워 스파이크 없이 끝없이 이어진다.
+      // max 는 형식상 큰 값(999) — 비용이 기하급수라 사실상 무한이다.
+      id: 'f_research', icon: '🔬', name: '끝없는 연구',
+      desc: '모든 수익 ×1.05 (중첩 · 상한 없음 ∞)',
+      baseCost: 50, costGrow: 1.55, max: 999, infinite: true
     }
   ];
 
