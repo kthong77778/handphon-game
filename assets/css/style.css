@@ -298,13 +298,13 @@ body{
   transition:transform .18s cubic-bezier(.3,.9,.4,1.4);
 }
 .tab span{font-size:20px;line-height:1;transition:transform .14s,filter .14s}
+.tab span img{width:26px;height:26px;object-fit:contain;display:block;
+  filter:saturate(.9) opacity(.82);transition:filter .14s,transform .14s}
 .tab.active{color:var(--txt);font-weight:800}
 .tab.active::before{opacity:1;transform:scale(1)}
 .tab.active::after{transform:scaleX(1)}
-.tab.active span{
-  transform:translateY(-2px) scale(1.18);
-  filter:drop-shadow(0 0 6px rgba(139,92,246,.85));
-}
+.tab.active span{transform:translateY(-2px) scale(1.14)}
+.tab.active span img{filter:saturate(1.05) drop-shadow(0 3px 5px rgba(0,0,0,.35))}
 .tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:12px}
 /* 온보딩 — 방금 열린 탭이 눈에 띄게 (잠깐만) */
 .tab.just-open{animation:tabpop 2.6s ease}

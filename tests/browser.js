@@ -21,7 +21,8 @@ catch (e) {
 }
 
 const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css',
-               '.svg':'image/svg+xml', '.webmanifest':'application/manifest+json' };
+               '.svg':'image/svg+xml', '.webmanifest':'application/manifest+json',
+               '.png':'image/png', '.jpg':'image/jpeg', '.webp':'image/webp' };
 
 function serve() {
   return new Promise(resolve => {
