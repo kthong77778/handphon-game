@@ -99,57 +99,57 @@ var Data = (function () {
   // cost = baseCost * costGrow^level, max 까지 반복 구매
   var FAME_SHOP = [
     {
-      id: 'f_mult', icon: '💰', name: '전설의 명성',
+      id: 'f_mult', icon: 'fame/fame_legend.png', name: '전설의 명성',
       desc: '모든 수익 ×1.5 (중첩)',
       baseCost: 1, costGrow: 2.2, max: 20
     },
     {
-      id: 'f_tap', icon: '✋', name: '명인의 손',
+      id: 'f_tap', icon: 'fame/fame_master_hand.png', name: '명인의 손',
       desc: '탭 수익 ×3 (중첩)',
       baseCost: 1, costGrow: 2.0, max: 15
     },
     {
-      id: 'f_offtime', icon: '⏰', name: '무인 주문 시스템',
+      id: 'f_offtime', icon: 'fame/fame_kiosk.png', name: '무인 주문 시스템',
       desc: '오프라인 수익 인정 시간 +2시간',
       baseCost: 2, costGrow: 1.8, max: 12
     },
     {
-      id: 'f_offeff', icon: '🤖', name: '자동 조리 로봇',
+      id: 'f_offeff', icon: 'fame/fame_robot.png', name: '자동 조리 로봇',
       desc: '오프라인 수익 효율 +10%',
       baseCost: 3, costGrow: 1.9, max: 10
     },
     {
-      id: 'f_start', icon: '🏦', name: '창업 지원금',
+      id: 'f_start', icon: 'fame/fame_fund.png', name: '창업 지원금',
       desc: '재개업 후 시작 자금 ×100 증가',
       baseCost: 2, costGrow: 2.4, max: 12
     },
     {
-      id: 'f_cheap', icon: '🏷️', name: '단체 구매 계약',
+      id: 'f_cheap', icon: 'fame/fame_contract.png', name: '단체 구매 계약',
       desc: '모든 설비 가격 -3%',
       baseCost: 5, costGrow: 2.6, max: 10
     },
     {
-      id: 'f_gold', icon: '🌟', name: '황금 손님 단골화',
+      id: 'f_gold', icon: 'fame/fame_vip_star.png', name: '황금 손님 단골화',
       desc: '황금 손님이 8% 더 자주 옵니다',
       baseCost: 3, costGrow: 2.0, max: 12
     },
     {
-      id: 'f_boost', icon: '📣', name: '확성기',
+      id: 'f_boost', icon: 'fame/fame_megaphone.png', name: '확성기',
       desc: '손님 몰이 쿨다운 -8%',
       baseCost: 4, costGrow: 2.1, max: 10
     },
     {
-      id: 'f_police', icon: '🚓', name: '야간 순찰',
+      id: 'f_police', icon: 'fame/fame_patrol.png', name: '야간 순찰',
       desc: '경찰이 도둑을 잡아줄 확률 +7%p',
       baseCost: 3, costGrow: 1.9, max: 10
     },
     {
-      id: 'f_manager', icon: '🧑‍💼', name: '점장 고용',
+      id: 'f_manager', icon: 'fame/fame_manager.png', name: '점장 고용',
       desc: '자리를 비운 동안 설비를 대신 사둡니다 (레벨당 +2회)',
       baseCost: 8, costGrow: 2.3, max: 10
     },
     {
-      id: 'f_legend', icon: '👑', name: '분식 왕조',
+      id: 'f_legend', icon: 'fame/fame_crown.png', name: '분식 왕조',
       desc: '모든 수익 ×3 (중첩) — 후반 명성 소비처',
       baseCost: 5000, costGrow: 3.2, max: 25
     },
@@ -157,7 +157,7 @@ var Data = (function () {
       // 상한 없는 명성 소비처 — 명성상점을 다 채운 장기 유저에게 '항상 살 게 있는' 목적지.
       // 효과(×1.05)보다 비용(×1.55)이 빨리 커져 파워 스파이크 없이 끝없이 이어진다.
       // max 는 형식상 큰 값(999) — 비용이 기하급수라 사실상 무한이다.
-      id: 'f_research', icon: '🔬', name: '끝없는 연구',
+      id: 'f_research', icon: 'fame/fame_research.png', name: '끝없는 연구',
       desc: '모든 수익 ×1.05 (중첩 · 상한 없음 ∞)',
       baseCost: 50, costGrow: 1.55, max: 999, infinite: true
     }
