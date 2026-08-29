@@ -1215,16 +1215,19 @@ var Game = (function () {
     return { rank: rank, total: N, pct: pct };
   }
 
-  /** 지역 순위 — 전국 순위를 지역 몫으로 좁힌다 */
+  /** 지역 순위 — '작은 연못'. 전국보다 낮은 점수에서 지역 1위에 닿아
+      "전국 수백 위인데 우리 지역 1위" 가 가능하다. total 은 지역 몫(작음). */
   function regionRank() {
     var r = region();
-    var total = 0;
-    var mine = 0;
+    var total = 0, mine = 0;
     Data.REGIONS.forEach(function (x) { total += x.weight; if (x.id === r.id) mine = x.weight; });
     var share = mine / total;
-    var nat = nationRank();
-    var regTotal = Math.max(1, Math.round(Data.RANK.nationTotal * share));
-    var rank = Math.max(1, Math.min(regTotal, Math.round(nat.rank * share)));
+    var regTotal = Math.max(Data.RANK.regionMin, Math.round(Data.RANK.nationTotal * share));
+    // 지역은 상한을 낮춰(maxScore×regionTopFrac) 더 일찍 1위에 닿게 한다
+    var lv = Math.log(popScore() + 1) / Math.LN10;
+    var t = Math.min(1, lv / (Data.RANK.maxScore * Data.RANK.regionTopFrac));
+    var rank = Math.round(regTotal * Math.pow(1 - t, 3));
+    rank = Math.max(1, Math.min(regTotal, rank));
     return { rank: rank, total: regTotal, region: r };
   }
 

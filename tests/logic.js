@@ -675,6 +675,14 @@ console.log('\n[15] 전국 맛집 랭킹');
   State.get().bestPerSec = 1e15; Game.invalidate();
   ok(Game.nationRank().rank <= 5, '벌이가 아주 크면 전국 최상위권', Game.nationRank().rank);
 
+  // 지역은 '작은 연못' — 전국보다 먼저 1위에 닿는다 ("전국 수백 위인데 지역 1위")
+  State.get().bestPerSec = 1e11; Game.invalidate();
+  ok(Game.regionRank().rank < Game.nationRank().rank, '지역 순위가 전국보다 앞선다',
+     '지역 ' + Game.regionRank().rank + ' < 전국 ' + Game.nationRank().rank);
+  ok(Game.regionRank().rank === 1 && Game.nationRank().rank > 1,
+     '전국은 아직인데 지역은 1위가 될 수 있다', '전국 ' + Game.nationRank().rank + '위');
+  ok(Game.regionRank().rank <= Game.regionRank().total, '지역 순위는 지역 가게 수 이내');
+
   // 리더보드 — 이름이 (지역·순위)로 고정
   State.get().bestPerSec = 5e7; Game.invalidate();
   const board = Game.rankBoard();

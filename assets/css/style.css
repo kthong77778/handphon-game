@@ -562,6 +562,9 @@ body{
 .rh-rank b{font-size:26px;font-weight:900;color:var(--gold)}
 .rh-rank span{font-size:13px;color:var(--dim);margin-left:2px}
 .rh-sub{font-size:10.5px;color:var(--dim)}
+/* 지역 상위권일 때 강조 (작은 연못에서 1위/상위권에 닿았을 때) */
+.rank-head.hot{background:linear-gradient(180deg,rgba(255,204,68,.12),transparent)}
+.rank-head.hot .rh-sub{color:var(--gold);font-weight:800}
 
 .rank-board{padding:6px 8px 8px}
 .rb-row{

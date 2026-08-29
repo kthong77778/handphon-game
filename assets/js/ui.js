@@ -598,13 +598,16 @@ var UI = (function () {
 
     el.rankRegion.textContent = reg.region.name;
 
-    // 위쪽 요약 — 전국 / 지역 순위
+    // 위쪽 요약 — 전국 / 지역 순위. 지역은 '작은 연못'이라 1위·상위권에 먼저 닿는다.
+    var regSub = reg.rank === 1 ? '🥇 우리 지역 1위'
+               : reg.rank <= 3 ? '🏅 지역 상위권'
+               : reg.region.name + ' 안에서';
     el.rankHeads.innerHTML =
-      head('전국', '🇰🇷', nat.rank, nat.total, '상위 ' + nat.pct + '%') +
-      head(reg.region.name, '📍', reg.rank, reg.total, reg.region.name + ' 안에서');
+      head('전국', '🇰🇷', nat.rank, nat.total, '상위 ' + nat.pct + '%', false) +
+      head(reg.region.name, '📍', reg.rank, reg.total, regSub, reg.rank <= 3);
 
-    function head(label, ic, rank, total, sub) {
-      return '<div class="rank-head">' +
+    function head(label, ic, rank, total, sub, hot) {
+      return '<div class="rank-head' + (hot ? ' hot' : '') + '">' +
         '<div class="rh-top">' + ic + ' ' + label + '</div>' +
         '<div class="rh-rank"><b>' + Fmt.comma(rank) + '</b><span>위</span></div>' +
         '<div class="rh-sub">' + sub + ' · ' + Fmt.comma(total) + '곳</div>' +
