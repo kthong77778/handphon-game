@@ -1407,7 +1407,8 @@ var UI = (function () {
     var c = Game.couponState();
     if (c.count <= 0) { el.couponChip.hidden = true; return; }   // 없으면 숨긴다
     el.couponChip.hidden = false;
-    el.couponChip.textContent = '🎟️ ×' + c.count;
+    // 총 보유 가능량까지 보여준다: 🎟️ 2/3. 첫 환생 예외로 3장을 넘으면 🎟️ 4.
+    el.couponChip.textContent = '🎟️ ' + (c.count > c.max ? c.count : c.count + '/' + c.max);
     el.couponChip.classList.toggle('armed', c.armed);           // 켜면 금색 강조
     var pct = Math.round(c.discount * 100);
     el.couponChip.title = c.armed
