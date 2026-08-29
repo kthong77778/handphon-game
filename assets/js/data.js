@@ -568,6 +568,8 @@ var Data = (function () {
               'skin_rice_curry', 'skin_rice_salmon', 'skin_rice_golden'].map(simg);
   var DESS = ['skin_dess_cupcake', 'skin_dess_pudding', 'skin_dess_mooncake', 'skin_dess_bingsu',
               'skin_dess_icecream', 'skin_dess_cake'].map(simg);
+  var NOODLE = ['skin_noodle_janchi', 'skin_noodle_jjajang', 'skin_noodle_pasta',
+                'skin_noodle_seafood', 'skin_noodle_lobster'].map(simg);
 
   var TAP_SKINS = [
     {
@@ -603,12 +605,12 @@ var Data = (function () {
       ], DESS)
     },
     {
-      id: 'noodle', sign: '면집', icon: '🍜', name: '면 요리',
-      desc: '국물부터 볶음까지',
+      id: 'noodle', sign: '면집', icon: '🍜', svg: NOODLE[4], name: '면 요리',
+      desc: '손그림 면 요리 — 잔치국수에서 랍스터 라면까지',
       steps: ladder([
-        ['🍜', '라면'], ['🥢', '잔치국수'], ['🍝', '파스타'], ['🥡', '짜장면'],
-        ['🍲', '전골'], ['🥘', '해물찜'], ['🍛', '카레우동'], ['🦞', '랍스터 라면']
-      ])
+        ['🥢', '잔치국수'], ['🥡', '짜장면'], ['🍝', '파스타'],
+        ['🥘', '해물찜'], ['🦞', '랍스터 라면']
+      ], NOODLE)
     },
     {
       id: 'chicken', sign: '치킨', icon: '🍗', name: '치킨 야식집',
