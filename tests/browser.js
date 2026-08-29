@@ -1216,6 +1216,17 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     if (!await p.isHidden('#dailyModal')) await p.click('#dailyOk');
     await p.waitForTimeout(200);
 
+    console.log('\n[1-2] 온보딩 — 처음엔 탭이 몇 개만 열림');
+    ok(!await p.isHidden('#tabbar .tab[data-tab="shop"]'), '가게 탭은 처음부터 열림');
+    ok(await p.isHidden('#tabbar .tab[data-tab="prestige"]'), '환생 탭은 처음엔 숨김(진행 전)');
+    // 이후 검사를 위해 남은 탭을 전부 연다
+    await p.evaluate(() => {
+      State.get().tabsSeen = ['shop', 'upgrade', 'kitchen', 'prestige', 'achv', 'settings'];
+      State.save(); UI.refresh(true);
+    });
+    await p.waitForTimeout(150);
+    ok(!await p.isHidden('#tabbar .tab[data-tab="prestige"]'), '열어주면 환생 탭이 보인다');
+
     // 보다 말고 나가도 다시 뜨면 안 된다 — 처음 상태로 되돌려 확인한다
     await p.evaluate(()=>{ State.get().sawTour = 0; State.save(); });
     await p.reload(); await p.waitForTimeout(800);
@@ -1461,7 +1472,9 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
       await ctx.addInitScript(() => {
         try {
           if (!localStorage.getItem('bunsik_idle_save_v1')) {
-            localStorage.setItem('bunsik_idle_save_v1', JSON.stringify({ sawTour: 1 }));
+            // 온보딩 탭 잠금 때문에 탭 클릭 검사가 막히지 않게, 테스트는 모든 탭을 열어둔다
+            localStorage.setItem('bunsik_idle_save_v1', JSON.stringify({
+              sawTour: 1, tabsSeen: ['shop', 'upgrade', 'kitchen', 'prestige', 'achv', 'settings'] }));
           }
         } catch (e) {}
       });

@@ -91,6 +91,7 @@ var State = (function () {
       specialTaken: 0,   // 단골 주문 보상을 받았는가 (0/1)
       adDate: '',        // 🎁 무료 보상(광고) 시청 횟수가 속한 날짜 (YYYY-MM-DD)
       adUsed: {},        // 광고 슬롯id -> 오늘 시청한 횟수 (자정 리셋)
+      tabsSeen: [],      // 온보딩 — 이미 열린(연출을 본) 하단 탭 id 들. 다시 안 잠긴다.
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
       theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
@@ -261,6 +262,14 @@ var State = (function () {
     // 🎁 무료 보상(광고) 시청 횟수의 날짜. 날짜가 없거나 어제 것이면 game.js 의 adRoll() 이 오늘로 리셋한다.
     if (typeof raw.adDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.adDate)) {
       s.adDate = raw.adDate;
+    }
+
+    // 온보딩 — 이미 본 탭 목록 (알려진 탭 id 만, 중복 제거)
+    if (Array.isArray(raw.tabsSeen)) {
+      var TABS = ['shop', 'upgrade', 'kitchen', 'prestige', 'achv', 'settings'];
+      s.tabsSeen = raw.tabsSeen.filter(function (id, i) {
+        return TABS.indexOf(id) >= 0 && raw.tabsSeen.indexOf(id) === i;
+      });
     }
 
     // 퀘스트 — 네 배열의 길이가 어긋나면 통째로 버린다.

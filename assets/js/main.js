@@ -380,6 +380,7 @@
     Game.invalidate();
     Game.questRoll();          // 오늘 퀘스트가 없으면 여기서 깔린다
     Game.michSeasonRoll();     // 달이 바뀌었으면 새 시즌으로
+    Game.seedTabsSeen();       // 지금 열린 탭은 조용히 '봤다'로 — 기존 유저에겐 연출을 안 띄운다
     UI.init(handlers);
     if (State.get().sawTour) settleReturn();
     else maybeTour();          // 처음이면 정산 모달과 겹치지 않게 안내부터

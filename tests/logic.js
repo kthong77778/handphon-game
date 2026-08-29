@@ -1148,5 +1148,27 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   Game.setClock(null);
 })();
 
+console.log('\n[24] 온보딩 — 탭 점진적 잠금');
+(function () {
+  // 완전 신규: 가게·설정만 열림
+  State.set({}); Game.invalidate();
+  ok(Game.tabUnlocked('shop') && Game.tabUnlocked('settings'), '가게·설정은 처음부터 열림');
+  ok(!Game.tabUnlocked('kitchen') && !Game.tabUnlocked('prestige'), '주방·환생은 처음엔 잠김');
+  // 진행하면 하나씩 열린다
+  var s = State.get();
+  s.totalEarned = 1500; Game.invalidate();          // 사장 Lv.1 = 첫 레시피
+  ok(Game.tabUnlocked('kitchen'), '레벨이 오르면 주방 탭이 열림');
+  s.runEarned = 2e6; Game.invalidate();             // 환생 가능
+  ok(Game.tabUnlocked('prestige'), '환생 가능해지면 환생 탭이 열림');
+  // 한 번 본 탭은 조건이 사라져도 계속 보인다
+  State.set({ tabsSeen: ['shop', 'settings', 'kitchen'] }); Game.invalidate();
+  ok(Game.visibleTabs().indexOf('kitchen') >= 0, '한 번 열린 탭은 다시 안 잠긴다');
+  ok(Game.visibleTabs().indexOf('prestige') < 0, '아직 안 본 잠긴 탭은 안 보인다');
+  // 기존(진행된) 유저는 부팅 시 조용히 다 열림 → 새 연출 없음
+  State.set({ totalEarned: 1e12, runEarned: 1e12, prestiges: 3 }); Game.invalidate();
+  Game.seedTabsSeen();
+  ok(Game.tabsToReveal().length === 0, '기존 유저는 부팅 후 새로 뜰(연출할) 탭이 없다');
+})();
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);

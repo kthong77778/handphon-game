@@ -1283,6 +1283,46 @@ var Game = (function () {
     return '우리 ' + sign + '집';
   }
 
+  /* ---------- 온보딩 — 탭 점진적 잠금 ----------
+     신규 유저에게 화면을 한꺼번에 안 쏟아붓는다. 진행에 따라 탭을 하나씩 연다.
+     조건은 전부 세이브 상태에서 파생 → 기존 유저는 처음 켜자마자 다 열려 있다.
+     한 번 열린(본) 탭은 s.tabsSeen 에 적혀 다시 잠기지 않는다. */
+  var ALL_TABS = ['shop', 'upgrade', 'kitchen', 'prestige', 'achv', 'settings'];
+  var TAB_NAME = { shop: '가게', upgrade: '업그레이드', kitchen: '주방', prestige: '환생', achv: '기록', settings: '설정' };
+
+  function genTotal() { var s = S(), n = 0; for (var k in s.gens) n += s.gens[k] || 0; return n; }
+
+  /** 진행도로 '지금 열려 있어야 하는' 탭들 */
+  function unlockedTabs() {
+    var s = S(), out = ['shop', 'settings'];              // 가게·설정은 늘 열림
+    if (genTotal() >= 3 || s.totalEarned >= 300) out.push('upgrade');   // 설비 몇 개 사면
+    if (bossLevel() >= 1) out.push('kitchen');            // 사장 Lv.1 = 첫 레시피
+    if (bossLevel() >= 2 || s.prestiges >= 1) out.push('achv');         // 퀘스트·무료보상·랭킹
+    if (s.runEarned >= PRESTIGE_BASE || s.prestiges >= 1) out.push('prestige'); // 환생 가능
+    return out;
+  }
+  function tabUnlocked(id) { return unlockedTabs().indexOf(id) >= 0; }
+  function tabName(id) { return TAB_NAME[id] || id; }
+
+  /** 아직 '봤다'고 안 적힌 새 잠금 해제 (연출용) */
+  function tabsToReveal() {
+    var seen = S().tabsSeen || [];
+    return unlockedTabs().filter(function (id) { return seen.indexOf(id) < 0; });
+  }
+  /** 탭을 봤다고 적는다 (다시 연출 안 함) */
+  function markTabsSeen(ids) {
+    var s = S();
+    if (!Array.isArray(s.tabsSeen)) s.tabsSeen = [];
+    ids.forEach(function (id) { if (ALL_TABS.indexOf(id) >= 0 && s.tabsSeen.indexOf(id) < 0) s.tabsSeen.push(id); });
+  }
+  /** 부팅 시 지금 열린 탭을 조용히 '봤다'고 적는다 — 기존 진행분엔 연출을 안 띄운다 */
+  function seedTabsSeen() { markTabsSeen(unlockedTabs()); }
+  /** 화면에 실제로 보일 탭 = 열렸거나 이미 본 것 (탭바 순서 유지) */
+  function visibleTabs() {
+    var seen = S().tabsSeen || [], un = unlockedTabs();
+    return ALL_TABS.filter(function (id) { return seen.indexOf(id) >= 0 || un.indexOf(id) >= 0; });
+  }
+
   /* ---------- 오프라인 ---------- */
   function offlineCapSeconds() {
     return (4 + 2 * fameLv('f_offtime')) * 3600;
@@ -1723,6 +1763,12 @@ var Game = (function () {
     regionRank: regionRank,
     rankBoard: rankBoard,
     myShopName: myShopName,
+    visibleTabs: visibleTabs,
+    tabsToReveal: tabsToReveal,
+    markTabsSeen: markTabsSeen,
+    seedTabsSeen: seedTabsSeen,
+    tabUnlocked: tabUnlocked,
+    tabName: tabName,
     projectedRank: projectedRank,
     records: records,
     offlineCapSeconds: offlineCapSeconds,

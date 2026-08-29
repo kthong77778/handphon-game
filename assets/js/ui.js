@@ -1830,6 +1830,7 @@ var UI = (function () {
   /* ---------- 탭 전환 ---------- */
 
   function showTab(name) {
+    if (Game.visibleTabs().indexOf(name) < 0) name = 'shop';   // 아직 안 열린 탭이면 가게로
     currentTab = name;
     Array.prototype.forEach.call(document.querySelectorAll('.tab-page'), function (p) {
       p.hidden = p.dataset.page !== name;
@@ -1845,8 +1846,27 @@ var UI = (function () {
 
   /* ---------- 전체 갱신 ---------- */
 
+  /** 온보딩 — 진행에 따라 하단 탭을 하나씩 연다. 새로 열리면 알린다. */
+  function renderTabs() {
+    var reveal = Game.tabsToReveal();
+    if (reveal.length) {
+      Game.markTabsSeen(reveal);
+      reveal.forEach(function (id) { toast('🎉 새 기능 열림 — ' + Game.tabName(id) + '!'); });
+      Sound.play('levelup');
+    }
+    var vis = Game.visibleTabs();
+    Array.prototype.forEach.call(document.querySelectorAll('#tabbar .tab'), function (b) {
+      b.hidden = vis.indexOf(b.dataset.tab) < 0;
+      if (reveal.indexOf(b.dataset.tab) >= 0) {
+        b.classList.add('just-open');
+        setTimeout(function () { b.classList.remove('just-open'); }, 2600);
+      }
+    });
+  }
+
   function refresh(force) {
     updateHud();
+    renderTabs();
     if (currentTab === 'shop') { updateGenList(); updateReco(); }
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'kitchen') renderKitchen();

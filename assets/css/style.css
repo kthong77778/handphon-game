@@ -306,6 +306,17 @@ body{
   filter:drop-shadow(0 0 6px rgba(139,92,246,.85));
 }
 .tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px;border-radius:12px}
+/* 온보딩 — 방금 열린 탭이 눈에 띄게 (잠깐만) */
+.tab.just-open{animation:tabpop 2.6s ease}
+@keyframes tabpop{
+  0%{transform:scale(.6);opacity:0}
+  14%{transform:scale(1.18);opacity:1}
+  28%{transform:scale(1)}
+  40%,70%{filter:drop-shadow(0 0 8px var(--accent))}
+  55%{filter:drop-shadow(0 0 12px var(--accent))}
+  100%{filter:none}
+}
+@media (prefers-reduced-motion:reduce){ .tab.just-open{animation:none} }
 .tab .dot{
   position:absolute;top:5px;right:calc(50% - 22px);z-index:2;
   width:8px;height:8px;border-radius:50%;
