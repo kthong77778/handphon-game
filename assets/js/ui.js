@@ -21,7 +21,7 @@ var UI = (function () {
      'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
      'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
-     'couponBar', 'couponTitle', 'couponSub', 'couponAct',
+     'couponChip',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
@@ -1403,21 +1403,16 @@ var UI = (function () {
   }
 
   function updateCoupon() {
-    if (!el.couponBar) return;
+    if (!el.couponChip) return;
     var c = Game.couponState();
-    if (c.count <= 0) { el.couponBar.hidden = true; return; }   // 없으면 숨긴다
-    el.couponBar.hidden = false;
+    if (c.count <= 0) { el.couponChip.hidden = true; return; }   // 없으면 숨긴다
+    el.couponChip.hidden = false;
+    el.couponChip.textContent = '🎟️ ×' + c.count;
+    el.couponChip.classList.toggle('armed', c.armed);           // 켜면 금색 강조
     var pct = Math.round(c.discount * 100);
-    el.couponTitle.textContent = '할인 쿠폰 ×' + c.count;
-    if (c.armed) {
-      el.couponBar.classList.add('armed');
-      el.couponSub.textContent = '다음 구매 −' + pct + '% 적용! (다시 눌러 끄기)';
-      el.couponAct.textContent = '켜짐';
-    } else {
-      el.couponBar.classList.remove('armed');
-      el.couponSub.textContent = '켜면 다음 구매 −' + pct + '%';
-      el.couponAct.textContent = '쓰기';
-    }
+    el.couponChip.title = c.armed
+      ? '다음 구매 −' + pct + '% 적용 중 (눌러서 끄기)'
+      : '눌러서 다음 구매 −' + pct + '%';
   }
 
   /* ---------- 황금 손님 ---------- */
@@ -1995,10 +1990,11 @@ var UI = (function () {
 
     el.recoBar.addEventListener('click', onBuyBest);
 
-    el.couponBar.addEventListener('click', function () {
+    el.couponChip.addEventListener('click', function () {
       var c = Game.couponState();
-      Game.setCouponArmed(!c.armed);
+      var on = Game.setCouponArmed(!c.armed);
       buzz(8);
+      toast(on ? ('🎟️ 다음 구매 −' + Math.round(c.discount * 100) + '%!') : '쿠폰 사용을 껐어요');
       refresh(true);   // 무장 상태 + 할인가 미리보기를 다시 그린다
     });
 
