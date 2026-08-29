@@ -1337,11 +1337,12 @@ body{
 }
 
 /* ===== 그림으로 그린 음식(주먹밥 캐릭터 등) ===== */
-.tap-emoji svg,.skin-ic svg,.rung svg{
-  display:block;width:1em;height:1em;
+.tap-emoji svg,.skin-ic svg,.rung svg,
+.tap-emoji .tap-img,.skin-ic .tap-img,.rung .tap-img{
+  display:block;width:1em;height:1em;object-fit:contain;
 }
-.tap-emoji svg{filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
-.rung svg{width:1.05em;height:1.05em}
+.tap-emoji svg,.tap-emoji .tap-img{filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+.rung svg,.rung .tap-img{width:1.05em;height:1.05em}
 
 /* ===== 명예의 전당 ===== */
 .records{gap:0;padding:4px 14px}

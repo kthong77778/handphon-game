@@ -559,6 +559,16 @@ var Data = (function () {
     });
   }
 
+  // 그림 스킨 — svg 자리(=innerHTML 로 그려지는 곳)에 <img> 를 넣는다.
+  // 손그림 PNG 는 assets/img/skin/ 에 있다. SVG 문자열과 같은 자리를 그대로 쓴다.
+  function simg(file) {
+    return '<img class="tap-img" src="assets/img/skin/' + file + '.png" alt="">';
+  }
+  var RICE = ['skin_rice_plain', 'skin_rice_grilled', 'skin_rice_sesame', 'skin_rice_veggie',
+              'skin_rice_curry', 'skin_rice_salmon', 'skin_rice_golden'].map(simg);
+  var DESS = ['skin_dess_cupcake', 'skin_dess_pudding', 'skin_dess_mooncake', 'skin_dess_bingsu',
+              'skin_dess_icecream', 'skin_dess_cake'].map(simg);
+
   var TAP_SKINS = [
     {
       id: 'auto', sign: '분식', icon: '🍢', svg: SNACKS[0], name: '분식 성장형',
@@ -577,20 +587,20 @@ var Data = (function () {
       ])
     },
     {
-      id: 'jumeok', sign: '주먹밥', icon: '🍙', svg: ONIGIRI[3], name: '주먹밥 부락',
-      desc: '얼굴 달린 주먹밥 친구들',
+      id: 'jumeok', sign: '주먹밥', icon: '🍙', svg: RICE[0], name: '주먹밥 부락',
+      desc: '손그림 주먹밥 — 김밥용 김부터 황금 주먹밥까지',
       steps: ladder([
         ['🍙', '주먹밥'], ['🍘', '구운 주먹밥'], ['🍚', '깨 주먹밥'], ['🥗', '야채 주먹밥'],
-        ['🍛', '카레 주먹밥'], ['🍣', '연어 주먹밥'], ['🍱', '도시락 주먹밥'], ['🏆', '황금 주먹밥']
-      ], ONIGIRI)
+        ['🍛', '카레 주먹밥'], ['🍣', '연어 주먹밥'], ['🏆', '황금 주먹밥']
+      ], RICE)
     },
     {
-      id: 'tteok', sign: '떡집', icon: '🍡', name: '떡·디저트',
-      desc: '달달한 것만 골라서',
+      id: 'tteok', sign: '디저트', icon: '🎂', svg: DESS[5], name: '디저트 가게',
+      desc: '손그림 디저트 — 컵케이크에서 홀케이크까지',
       steps: ladder([
-        ['🍡', '경단'], ['🧁', '컵케이크'], ['🍮', '푸딩'], ['🥮', '월병'],
-        ['🍧', '빙수'], ['🍨', '아이스크림'], ['🍰', '조각 케이크'], ['🎂', '홀 케이크']
-      ])
+        ['🧁', '컵케이크'], ['🍮', '푸딩'], ['🥮', '월병'],
+        ['🍧', '빙수'], ['🍨', '아이스크림'], ['🎂', '케이크']
+      ], DESS)
     },
     {
       id: 'noodle', sign: '면집', icon: '🍜', name: '면 요리',

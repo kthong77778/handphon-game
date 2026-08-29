@@ -277,7 +277,8 @@ console.log('\n[6.7] 스킨 & 등급');
   // 모든 스킨이 형태를 갖췄는가
   let bad = [];
   Data.TAP_SKINS.forEach(k => {
-    if (k.steps.length !== 8) bad.push(k.id + ' 단계수');
+    // 단계 수는 스킨마다 다를 수 있다(그림 스킨은 확보한 그림만큼). 1~8 사이면 온전하다 — TAP_STEP_AT 가 8칸.
+    if (k.steps.length < 1 || k.steps.length > 8) bad.push(k.id + ' 단계수');
     k.steps.forEach((st, i) => {
       if (!st.icon || !st.name) bad.push(k.id + ' 빈 항목');
       if (i > 0 && st.at <= k.steps[i-1].at) bad.push(k.id + ' 문턱 역전');
