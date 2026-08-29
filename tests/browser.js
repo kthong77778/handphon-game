@@ -1273,9 +1273,10 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     console.log('\n[3-3] 🍳 주방 (재료·합성·레시피·도감)');
     // 레벨을 올리고 재료를 채운 뒤 주방 탭으로
     await p.evaluate(()=>{ const s=State.get(); s.totalEarned=1e12;
-      s.ings={fl:9,gj:9,eg:9,om:9,vg:9,rc:9,ch:9,mt:9}; Game.invalidate(); UI.refresh(true); });
+      Data.KITCHEN.ings.forEach(g=>{ s.ings[g.id]=9; }); Game.invalidate(); UI.refresh(true); });
     await p.click('#tabbar .tab[data-tab="kitchen"]'); await p.waitForTimeout(300);
-    ok(await p.locator('#ingStore .ing').count() === 8, '재료 창고에 재료 8종');
+    ok(await p.locator('#ingStore .ing').count() === (await p.evaluate(()=>Data.KITCHEN.ings.length)),
+       '재료 창고에 재료 전종');
     ok(await p.locator('#kitchenGrid .kfood').count() > 0, '초급 레시피 셀이 있음');
     // 합성 → 재료 소모 + 도감 등록
     const om0 = await p.evaluate(()=>Game.ingCount('om'));

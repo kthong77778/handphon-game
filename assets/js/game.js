@@ -695,10 +695,29 @@ var Game = (function () {
   var FOOD_BY_ID = {};
   Data.KITCHEN.foods.forEach(function (f) { FOOD_BY_ID[f.id] = f; });
 
-  /** 만든 음식(도감) 등급별 영구 배율의 합 (calc 에 곱해진다) */
+  /* 음식 숙련도 — 같은 음식을 누적으로 만들수록 그 음식의 도감 배율이 커진다.
+     steps 문턱을 넘을 때마다 별(★)이 하나씩 오르고, mult 로 배율을 교체한다(합이 아니라). */
+  function masteryTier(count) {
+    var st = Data.KITCHEN.mastery.steps, t = 0;
+    for (var i = 0; i < st.length; i++) if (count >= st[i]) t = i + 1;
+    return t;   // 0 = 아직 없음, 1~3 = ★~★★★
+  }
+  function masteryMult(count) {
+    var t = masteryTier(count);
+    return t === 0 ? 1 : Data.KITCHEN.mastery.mult[t - 1];
+  }
+  /** 그 음식의 지금 도감 배율 (기본 bonus × 숙련 배율). 1개 이상 만들었을 때만 유효 */
+  function foodEffBonus(f) {
+    if (typeof f === 'string') f = FOOD_BY_ID[f];
+    if (!f) return 0;
+    var c = S().kfoods[f.id] || 0;
+    return c >= 1 ? f.bonus * masteryMult(c) : 0;
+  }
+
+  /** 만든 음식(도감) 영구 배율의 합 (calc 에 곱해진다) — 숙련도까지 반영한다 */
   function foodBonus() {
-    var s = S(), sum = 0;
-    Data.KITCHEN.foods.forEach(function (f) { if (s.kfoods[f.id] >= 1) sum += f.bonus; });
+    var sum = 0;
+    Data.KITCHEN.foods.forEach(function (f) { sum += foodEffBonus(f); });
     return sum;
   }
 
@@ -722,19 +741,68 @@ var Game = (function () {
 
   /**
    * 합성: 레시피대로 재료를 소모해 음식을 만든다.
-   * 처음 만들면 도감에 등록되며 영구 배율이 붙고(캐시 무효화), 만들 때마다 목돈(초당×sec)을 준다.
-   * @returns {{food:Object, first:boolean, gain:number}|null}
+   * 처음 만들면 도감에 등록되며 영구 배율이 붙고, 누적 제작이 숙련 문턱을 넘으면 배율이 더 커진다(둘 다 캐시 무효화).
+   * 오늘의 특선 음식이면 목돈이 ×특선배율이고 단골 주문 진행도가 오른다.
+   * @returns {{food:Object, first:boolean, gain:number, special:boolean, tier:number, tierUp:boolean}|null}
    */
   function craftFood(id) {
     var f = FOOD_BY_ID[id];
     if (!canCraft(id)) return null;
     var s = S();
     for (var k in f.need) { s.ings[k] -= f.need[k]; }
-    var first = !(s.kfoods[id] >= 1);
-    s.kfoods[id] = foodMade(id) + 1;
-    if (first) bump();   // 도감 배율이 바뀌므로 캐시를 무효화한다
-    var gain = earn(s, Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade));
-    return { food: f, first: first, gain: gain };
+    var before = foodMade(id);
+    var first = !(before >= 1);
+    s.kfoods[id] = before + 1;
+    var tierUp = masteryTier(before + 1) > masteryTier(before);
+    if (first || tierUp) bump();   // 도감 등록·숙련 상승으로 배율이 바뀌면 캐시 무효화
+
+    // 오늘의 특선이면 목돈 ×배율 + 단골 주문 진행
+    var sp = specialToday();
+    var special = !!(sp && sp.food.id === id);
+    var mult = special ? Data.KITCHEN.special.mult : 1;
+    var gain = earn(s, Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade) * mult);
+    if (special) s.specialProg = (s.specialProg || 0) + 1;
+
+    return { food: f, first: first, gain: gain, special: special,
+             tier: masteryTier(before + 1), tierUp: tierUp };
+  }
+
+  /* ---- ⭐ 오늘의 특선 / 단골 주문 ----
+     매일 '해금된 레시피 중 하나'가 특선이 된다. 무엇인지는 날짜가 정하므로 새로고침으로 바꿀 수 없다.
+     특선을 만들면 목돈이 ×배율이고, 하루 orderGoal 번 만들면 단골 주문 보상을 받는다. */
+  function specialRoll() {
+    var s = S(), t = today();
+    if (s.specialDate === t && s.specialFood && FOOD_BY_ID[s.specialFood]) return false;
+    // 해금된 레시피 중에서 날짜 시드로 하나 고른다 (없으면 오늘은 특선 없음)
+    var pool = Data.KITCHEN.foods.filter(recipeUnlocked);
+    var pick = pool.length ? pool[daySeed(t + '#special') % pool.length].id : '';
+    s.specialDate = t;
+    s.specialFood = pick;
+    s.specialProg = 0;
+    s.specialTaken = 0;
+    return true;
+  }
+
+  /** 화면에 뿌릴 오늘의 특선 (해금된 레시피가 없으면 null) */
+  function specialToday() {
+    specialRoll();
+    var s = S();
+    var f = s.specialFood && FOOD_BY_ID[s.specialFood];
+    if (!f) return null;
+    var goal = Data.KITCHEN.special.orderGoal;
+    var prog = Math.min(s.specialProg || 0, goal);
+    return { food: f, mult: Data.KITCHEN.special.mult, goal: goal, prog: prog,
+             done: prog >= goal, taken: !!s.specialTaken };
+  }
+
+  /** 단골 주문 보상 수령 (완료했고 아직 안 받았을 때만) */
+  function claimSpecialOrder() {
+    var sp = specialToday();
+    if (!sp || !sp.done || sp.taken) return null;
+    var s = S();
+    var gain = earn(s, Math.max(perSec(true) * Data.KITCHEN.special.orderSec, Data.KITCHEN.special.minOrder));
+    s.specialTaken = 1;
+    return { food: sp.food, gain: gain };
   }
 
   /* ---- 재료 트럭 ----
@@ -1209,7 +1277,7 @@ var Game = (function () {
     // 자정을 넘기면 퀘스트가 새로 깔린다.
     // 매 프레임 Date 를 새로 만들 이유가 없어 10초에 한 번만 본다.
     questCheckLeft -= dt;
-    if (questCheckLeft <= 0) { questCheckLeft = 10; questRoll(); }
+    if (questCheckLeft <= 0) { questCheckLeft = 10; questRoll(); specialRoll(); }
 
     var rate = perSec();
     var gain = earn(s, rate * dt);
@@ -1620,11 +1688,16 @@ var Game = (function () {
     bossXpRatio: bossXpRatio,
     bossTitle: bossTitle,
     foodBonus: foodBonus,
+    foodEffBonus: foodEffBonus,
+    masteryTier: masteryTier,
+    masteryMult: masteryMult,
     ingCount: ingCount,
     foodMade: foodMade,
     recipeUnlocked: recipeUnlocked,
     canCraft: canCraft,
     craftFood: craftFood,
+    specialToday: specialToday,
+    claimSpecialOrder: claimSpecialOrder,
     grabTruck: grabTruck,
     truckState: truckState,
     resetTruck: resetTruck,

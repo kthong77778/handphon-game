@@ -84,6 +84,10 @@ var State = (function () {
       kfoods: {},        // 🍳 주방 음식 도감 (음식id -> 만든 횟수, 1 이상이면 도감 등록)
       truckCount: 0,     // 오늘 온 재료 트럭 수 — 올수록 다음 트럭 간격이 30초씩 늘고, 자정에 0으로 리셋
       truckDay: '',      // truckCount 가 속한 날짜 (YYYY-MM-DD)
+      specialDate: '',   // ⭐ 오늘의 특선/단골 주문이 어느 날 것인가 (YYYY-MM-DD)
+      specialFood: '',   // 오늘의 특선 음식 id (game.js 가 날짜로 정한다)
+      specialProg: 0,    // 오늘 특선을 만든 횟수 (단골 주문 진행)
+      specialTaken: 0,   // 단골 주문 보상을 받았는가 (0/1)
       tapSkin: 'auto',   // 조리 음식 스킨 id
       crowdSkin: 'auto', // 손님 스킨 id
       theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
@@ -131,7 +135,7 @@ var State = (function () {
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup', 'sawPrestigeIntro',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
-                   'coupons', 'truckCount'];
+                   'coupons', 'truckCount', 'specialProg', 'specialTaken'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
     // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
     var CAPV = Number.MAX_VALUE;
@@ -242,6 +246,13 @@ var State = (function () {
 
     if (typeof raw.dailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.dailyDate)) {
       s.dailyDate = raw.dailyDate;
+    }
+
+    // ⭐ 오늘의 특선 — 날짜와 음식 id 가 둘 다 성해야 이어받는다. 하나라도 깨지면 game.js 가 다시 뽑는다.
+    if (typeof raw.specialDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.specialDate) &&
+        typeof raw.specialFood === 'string' && VALID.kfoods[raw.specialFood]) {
+      s.specialDate = raw.specialDate;
+      s.specialFood = raw.specialFood;
     }
 
     // 퀘스트 — 네 배열의 길이가 어긋나면 통째로 버린다.

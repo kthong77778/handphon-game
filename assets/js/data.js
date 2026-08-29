@@ -786,7 +786,8 @@ var Data = (function () {
     tapDrop: 4,         // 탭해서 받으면 재료 이만큼 (탭이 자동수거의 2배 — 손을 대는 보람)
     missDrop: 2,        // 못 잡고 지나가면 이만큼만 자동 수거 (방치 배려 · 오프라인 트럭도 이 값)
 
-    // 재료 8종
+    // 재료 12종 — 종류가 늘면 랜덤 드롭이 얕아지므로 위 tapDrop·missDrop 을 함께 키웠다.
+    // 새 재료(새우·감자·버섯·옥수수)는 중·고급 레시피에서 주로 쓴다.
     ings: [
       { id: 'fl', icon: '🌾', name: '밀가루' },
       { id: 'gj', icon: '🌶️', name: '고추장' },
@@ -795,30 +796,56 @@ var Data = (function () {
       { id: 'vg', icon: '🧅', name: '야채' },
       { id: 'rc', icon: '🍚', name: '쌀' },
       { id: 'ch', icon: '🧀', name: '치즈' },
-      { id: 'mt', icon: '🥩', name: '고기' }
+      { id: 'mt', icon: '🥩', name: '고기' },
+      { id: 'sh', icon: '🦐', name: '새우' },
+      { id: 'pt', icon: '🥔', name: '감자' },
+      { id: 'ms', icon: '🍄', name: '버섯' },
+      { id: 'cn', icon: '🌽', name: '옥수수' }
     ],
+
+    // 🍳 음식 숙련도 — 같은 음식을 누적으로 만들수록 그 음식의 도감 배율이 커진다.
+    // s.kfoods[id] 에 이미 '만든 횟수' 가 쌓이므로 세이브 필드를 새로 만들지 않는다.
+    // steps 문턱을 넘을 때마다 별(★)이 오르고, 그 음식 bonus 에 mult 를 곱한다(합이 아니라 교체).
+    mastery: {
+      steps: [10, 50, 200],   // ★ · ★★ · ★★★ 누적 제작 문턱
+      mult:  [1.5, 2, 3]      // 그 음식 도감 배율 ×
+    },
+
+    // ⭐ 오늘의 특선 / 단골 주문 — 매일 해금된 레시피 중 하나가 특선이 된다(날짜로 고정).
+    // 특선 음식은 만들 때 목돈이 ×mult. 하루 orderGoal 번 만들면 단골 주문 보상을 받는다.
+    special: {
+      mult: 3,          // 특선 음식 목돈 배율
+      orderGoal: 3,     // 단골 주문: 특선을 이만큼 만들면 완료
+      orderSec: 1800,   // 완료 보상 = 초당 수익 × 이만큼
+      minOrder: 1000    // 아직 수익이 없을 때의 최소 보상
+    },
 
     // 음식 = 레시피. grade 1 초급 / 2 중급 / 3 고급.
     // at: 이 사장 레벨이 되면 레시피가 해금된다. need: 재료 소모량. bonus: 도감 영구 배율(+). sec: 만들 때 목돈(초당×sec).
     foods: [
-      // 초급
-      { id: 'k1',  icon: '🍢', name: '어묵탕',    grade: 1, at: 1,  bonus: 0.01, sec: 60,   need: { om: 2, vg: 2 } },
-      { id: 'k2',  icon: '🥘', name: '떡볶이',    grade: 1, at: 2,  bonus: 0.01, sec: 90,   need: { gj: 2, fl: 2, om: 1 } },
-      { id: 'k3',  icon: '🍙', name: '김밥',      grade: 1, at: 3,  bonus: 0.01, sec: 120,  need: { rc: 2, eg: 1, vg: 2 } },
-      { id: 'k10', icon: '🍳', name: '계란말이',  grade: 1, at: 4,  bonus: 0.01, sec: 150,  need: { eg: 3, vg: 1 } },
-      // 중급
-      { id: 'k4',  icon: '🍜', name: '라면',      grade: 2, at: 5,  bonus: 0.02, sec: 300,  need: { fl: 3, vg: 2, eg: 2 } },
-      { id: 'k5',  icon: '🌭', name: '핫도그',    grade: 2, at: 6,  bonus: 0.02, sec: 420,  need: { fl: 3, mt: 3 } },
-      { id: 'k11', icon: '🍛', name: '김치볶음밥', grade: 2, at: 7,  bonus: 0.02, sec: 540,  need: { rc: 3, gj: 2, eg: 1 } },
-      { id: 'k6',  icon: '🥟', name: '만두',      grade: 2, at: 8,  bonus: 0.02, sec: 600,  need: { fl: 3, mt: 2, vg: 2 } },
-      { id: 'k12', icon: '🫕', name: '치즈라볶이', grade: 2, at: 9,  bonus: 0.02, sec: 720,  need: { fl: 3, gj: 2, ch: 2 } },
-      // 고급
-      { id: 'k7',  icon: '🧀', name: '치즈김밥',  grade: 3, at: 10, bonus: 0.03, sec: 1200, need: { rc: 3, ch: 3, eg: 2 } },
-      { id: 'k13', icon: '🥞', name: '해물파전',  grade: 3, at: 11, bonus: 0.03, sec: 1500, need: { fl: 3, om: 2, eg: 2, vg: 2 } },
-      { id: 'k8',  icon: '🍲', name: '부대찌개',  grade: 3, at: 12, bonus: 0.03, sec: 1800, need: { mt: 4, ch: 2, gj: 2 } },
-      { id: 'k14', icon: '🍖', name: '갈비탕',    grade: 3, at: 13, bonus: 0.03, sec: 2400, need: { mt: 5, vg: 2, rc: 2 } },
-      { id: 'k9',  icon: '🍱', name: '모둠 한상', grade: 3, at: 14, bonus: 0.03, sec: 3600, need: { om: 3, rc: 3, mt: 3, ch: 2 } },
-      { id: 'k15', icon: '🍤', name: '해물 모둠튀김', grade: 3, at: 16, bonus: 0.04, sec: 4800, need: { fl: 4, om: 3, vg: 3, mt: 2 } }
+      // 초급 (7종)
+      { id: 'k1',  icon: '🍢', name: '어묵탕',    grade: 1, at: 1,  bonus: 0.01,  sec: 60,   need: { om: 2, vg: 2 } },
+      { id: 'k2',  icon: '🥘', name: '떡볶이',    grade: 1, at: 2,  bonus: 0.01,  sec: 90,   need: { gj: 2, fl: 2, om: 1 } },
+      { id: 'k3',  icon: '🍙', name: '김밥',      grade: 1, at: 3,  bonus: 0.01,  sec: 120,  need: { rc: 2, eg: 1, vg: 2 } },
+      { id: 'k10', icon: '🍳', name: '계란말이',  grade: 1, at: 4,  bonus: 0.01,  sec: 150,  need: { eg: 3, vg: 1 } },
+      { id: 'k16', icon: '🍟', name: '감자튀김',  grade: 1, at: 5,  bonus: 0.01,  sec: 190,  need: { pt: 3, cn: 1 } },
+      { id: 'k17', icon: '🍤', name: '새우튀김',  grade: 1, at: 6,  bonus: 0.015, sec: 240,  need: { sh: 3, fl: 2 } },
+      { id: 'k21', icon: '🥪', name: '토스트',    grade: 1, at: 7,  bonus: 0.015, sec: 300,  need: { fl: 2, eg: 2, ch: 1 } },
+      // 중급 (7종)
+      { id: 'k4',  icon: '🍜', name: '라면',      grade: 2, at: 8,  bonus: 0.02,  sec: 360,  need: { fl: 3, vg: 2, eg: 2 } },
+      { id: 'k5',  icon: '🌭', name: '핫도그',    grade: 2, at: 9,  bonus: 0.02,  sec: 460,  need: { fl: 3, mt: 3 } },
+      { id: 'k11', icon: '🍛', name: '김치볶음밥', grade: 2, at: 10, bonus: 0.02,  sec: 580,  need: { rc: 3, gj: 2, eg: 1 } },
+      { id: 'k6',  icon: '🥟', name: '만두',      grade: 2, at: 11, bonus: 0.02,  sec: 660,  need: { fl: 3, mt: 2, vg: 2, ms: 1 } },
+      { id: 'k12', icon: '🫕', name: '치즈라볶이', grade: 2, at: 12, bonus: 0.025, sec: 780,  need: { fl: 3, gj: 2, ch: 2 } },
+      { id: 'k18', icon: '🍥', name: '버섯전골',  grade: 2, at: 13, bonus: 0.025, sec: 920,  need: { ms: 3, vg: 2, mt: 2 } },
+      { id: 'k19', icon: '🥗', name: '옥수수치즈범벅', grade: 2, at: 14, bonus: 0.025, sec: 1100, need: { cn: 3, ch: 3 } },
+      // 고급 (6종)
+      { id: 'k7',  icon: '🧀', name: '치즈김밥',  grade: 3, at: 15, bonus: 0.03,  sec: 1300, need: { rc: 3, ch: 3, eg: 2 } },
+      { id: 'k13', icon: '🥞', name: '해물파전',  grade: 3, at: 16, bonus: 0.03,  sec: 1600, need: { fl: 3, om: 2, sh: 2, vg: 2 } },
+      { id: 'k8',  icon: '🍲', name: '부대찌개',  grade: 3, at: 17, bonus: 0.03,  sec: 1900, need: { mt: 4, ch: 2, gj: 2, ms: 1 } },
+      { id: 'k14', icon: '🍖', name: '갈비탕',    grade: 3, at: 18, bonus: 0.035, sec: 2500, need: { mt: 5, vg: 2, pt: 2 } },
+      { id: 'k9',  icon: '🍱', name: '모둠 한상', grade: 3, at: 19, bonus: 0.035, sec: 3600, need: { om: 3, rc: 3, mt: 3, ch: 2 } },
+      { id: 'k20', icon: '🧆', name: '왕특선 정식', grade: 3, at: 20, bonus: 0.04,  sec: 5200, need: { mt: 4, sh: 3, ch: 3, cn: 2, pt: 2 } }
     ],
     grades: [
       { g: 1, name: '초급' },

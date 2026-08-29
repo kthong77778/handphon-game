@@ -982,12 +982,12 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
 (function () {
   var K = Data.KITCHEN;
   var k1 = K.foods.find(function (f) { return f.id === 'k1'; });   // at:1
-  var k9 = K.foods.find(function (f) { return f.id === 'k9'; });   // at:14
+  var k9 = K.foods.find(function (f) { return f.id === 'k9'; });   // 고급 레시피(높은 at)
 
   // 레시피 해금 = 사장 레벨
   State.set({ totalEarned: 500 }); Game.invalidate();
   ok(Game.bossLevel() === 0 && !Game.recipeUnlocked('k1'), '레벨 낮으면 레시피 잠김(???)');
-  State.set({ totalEarned: 1e12 }); Game.invalidate();
+  State.set({ totalEarned: 1e15 }); Game.invalidate();   // 최고급까지 다 열릴 만큼 높게
   ok(Game.recipeUnlocked('k1') && Game.recipeUnlocked('k9'), '레벨 높으면 레시피 해금');
 
   // 재료 없으면 합성 불가
@@ -1017,6 +1017,53 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   s2.kfoods = {}; Game.invalidate(); var noDex = Game.perSec(true);
   s2.kfoods = { k1: 1, k4: 1 }; Game.invalidate();
   ok(Game.perSec(true) > noDex, '도감이 차면 초당 수익이 오름');
+
+  // 음식 숙련도 — 누적 제작이 문턱을 넘으면 그 음식 배율이 커진다
+  var mstep = Data.KITCHEN.mastery.steps[0], mmult = Data.KITCHEN.mastery.mult[0];
+  State.set({ totalEarned: 1e15 }); var sm = State.get(); sm.kfoods = {}; Game.invalidate();
+  ok(Game.masteryTier(0) === 0 && Game.masteryTier(mstep) === 1, '숙련 문턱을 넘으면 별이 오른다');
+  ok(near(Game.foodEffBonus('k1'), 0), '안 만든 음식은 도감 배율 0');
+  sm.kfoods = { k1: 1 }; Game.invalidate();
+  ok(near(Game.foodEffBonus('k1'), k1.bonus), '1개 만들면 기본 배율');
+  sm.kfoods = { k1: mstep }; Game.invalidate();
+  ok(near(Game.foodEffBonus('k1'), k1.bonus * mmult), '★ 달성하면 배율 = 기본 × mult');
+  ok(Game.foodBonus() > k1.bonus, '숙련이 오르면 도감 합도 커진다');
+  // craftFood 가 문턱을 넘는 순간 tierUp 을 알린다
+  sm.kfoods = {}; Object.keys(k1.need).forEach(function (ing) { sm.ings[ing] = 99999; }); Game.invalidate();
+  var sawTierUp = false;
+  for (var mc = 0; mc < mstep; mc++) { var rm = Game.craftFood('k1'); if (rm && rm.tierUp) sawTierUp = true; }
+  ok(sawTierUp && Game.masteryTier(Game.foodMade('k1')) === 1, '문턱을 넘는 합성은 tierUp=true');
+
+  // ⭐ 오늘의 특선 / 단골 주문 — 날짜로 정해지고, 만들면 진행·보상
+  Game.setClock(function () { return new Date(2026, 0, 10, 12, 0, 0); });
+  State.set({ totalEarned: 1e15 }); var sp = State.get();
+  sp.specialDate = ''; sp.specialFood = ''; sp.kfoods = {}; Game.invalidate();
+  var spTop = Game.specialToday();
+  ok(spTop && spTop.food, '해금된 레시피가 있으면 오늘의 특선이 정해진다');
+  var spId = spTop.food.id;
+  ok(Game.specialToday().food.id === spId, '같은 날이면 특선이 고정된다');
+  var spf = Data.KITCHEN.foods.find(function (f) { return f.id === spId; });
+  var goal = Data.KITCHEN.special.orderGoal;
+  sp.ings = {}; Object.keys(spf.need).forEach(function (k) { sp.ings[k] = spf.need[k] * (goal + 2); });
+  Game.invalidate();
+  var sawSpecial = false;
+  for (var sc = 0; sc < goal; sc++) { var rs = Game.craftFood(spId); if (rs && rs.special) sawSpecial = true; }
+  ok(sawSpecial, '특선 음식 합성은 special=true');
+  var spDone = Game.specialToday();
+  ok(spDone.done && spDone.prog === goal, '특선을 goal 번 만들면 단골 주문 완료');
+  var spClaim = Game.claimSpecialOrder();
+  ok(spClaim && spClaim.gain > 0, '단골 주문 보상 수령');
+  ok(Game.claimSpecialOrder() === null && Game.specialToday().taken, '단골 보상은 하루 한 번만');
+  Game.setClock(null);
+
+  // 오프라인에도 재료 트럭이 지나간 만큼 재료를 준다 (돈·쿠폰과 별개)
+  State.set({}); var so = State.get(); so.ings = {}; Game.invalidate(); Game.resetTruck();
+  var rw = Game.offlineReward(2 * 3600);
+  ok(rw.trucks > 0 && rw.ings === rw.trucks * Data.KITCHEN.missDrop, '오프라인 보상에 트럭·재료 수가 실린다');
+  var ib = 0; Data.KITCHEN.ings.forEach(function (g) { ib += Game.ingCount(g.id); });
+  Game.claimOffline(rw.gain, rw.trucks);
+  var ia = 0; Data.KITCHEN.ings.forEach(function (g) { ia += Game.ingCount(g.id); });
+  ok(ia - ib === rw.trucks * Data.KITCHEN.missDrop, '수령하면 재료가 그만큼 늘어난다');
 
   // 재료 트럭: 틱을 돌리면 재료가 쌓인다 (탭 or 자동수거)
   State.set({}); var s3 = State.get(); s3.ings = {}; Game.invalidate(); Game.resetTruck();

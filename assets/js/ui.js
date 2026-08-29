@@ -19,7 +19,7 @@ var UI = (function () {
      'offlineModal', 'offlineText', 'offlineOk',
      'buffBar', 'partyBanner', 'partyHint', 'partyDex', 'combo', 'comboX', 'comboN', 'comboFill',
      'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
-     'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen',
+     'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen', 'specialCard',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'couponChip',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
@@ -849,14 +849,28 @@ var UI = (function () {
     });
   }
 
+  /** 도감 배율 % 를 보기 좋게 (정수면 정수, 아니면 소수 첫째 자리) */
+  function foodPctStr(x) { var v = Math.round(x * 1000) / 10; return v % 1 === 0 ? v.toFixed(0) : v.toFixed(1); }
+  function starStr(tier) { return '★★★'.slice(0, tier) + '☆☆☆'.slice(0, 3 - tier); }
+  /** 누적 제작 안내: '제작 52 · ★★★까지 200' / 최고면 '제작 250 · 숙련 최고 ★★★' */
+  function masteryHint(count) {
+    var steps = Data.KITCHEN.mastery.steps, tier = Game.masteryTier(count);
+    if (tier >= steps.length) return '제작 ' + Fmt.comma(count) + ' · 숙련 최고 ★★★';
+    return '제작 ' + Fmt.comma(count) + ' · ' + starStr(tier + 1) + '까지 ' + Fmt.comma(steps[tier]);
+  }
+
   function buildKitchenGrid() {
     el.kitchenGrid.innerHTML = '';
     kitchenCells = {};
+    var sp = Game.specialToday();
+    var specialId = sp ? sp.food.id : '';
     Data.KITCHEN.foods.filter(function (f) { return f.grade === currentGrade; }).forEach(function (f) {
       var unlocked = Game.recipeUnlocked(f);
-      var made = Game.foodMade(f.id) >= 1;
+      var count = Game.foodMade(f.id);
+      var made = count >= 1;
+      var isSpecial = f.id === specialId;
       var cell = document.createElement('div');
-      cell.className = 'kfood' + (unlocked ? '' : ' locked') + (made ? ' done' : '');
+      cell.className = 'kfood' + (unlocked ? '' : ' locked') + (made ? ' done' : '') + (isSpecial ? ' special' : '');
       if (!unlocked) {
         cell.innerHTML = '<div class="kf-head"><span class="kf-icon">❓</span>' +
           '<span class="kf-name">??? 미발견</span></div>' +
@@ -866,12 +880,17 @@ var UI = (function () {
           return '<span class="need" data-need="' + k + '"><span class="need-ic">' + ING_BY_ID[k].icon +
                  '</span><b class="need-c">0</b><span class="need-max">/' + f.need[k] + '</span></span>';
         }).join('');
+        var tier = Game.masteryTier(count);
         cell.innerHTML =
           '<div class="kf-head"><span class="kf-icon">' + f.icon + '</span>' +
             '<span class="kf-name">' + f.name + '</span>' +
-            (made ? '<span class="kf-badge">✔ +' + Math.round(f.bonus * 100) + '%</span>' : '') + '</div>' +
+            (isSpecial ? '<span class="kf-special">⭐특선</span>' : '') +
+            (made ? '<span class="kf-badge">' + (tier > 0 ? starStr(tier) + ' ' : '✔ ') +
+                    '+' + foodPctStr(Game.foodEffBonus(f)) + '%</span>' : '') + '</div>' +
           '<div class="kf-need">' + needHtml + '</div>' +
-          '<button type="button" class="kf-craft" data-food="' + f.id + '">합성</button>';
+          (made ? '<div class="kf-mastery">' + masteryHint(count) + '</div>' : '') +
+          '<button type="button" class="kf-craft" data-food="' + f.id + '">합성' +
+            (isSpecial ? ' <b>×' + sp.mult + '</b>' : '') + '</button>';
         cell.querySelector('.kf-craft').addEventListener('click', function () { onCraft(f.id); });
       }
       el.kitchenGrid.appendChild(cell);
@@ -891,15 +910,39 @@ var UI = (function () {
         wrap.querySelector('.need-c').textContent = have;
         wrap.classList.toggle('short', have < f.need[k]);
       });
+      // 누적 제작 안내는 만들 때마다 바뀌므로 매번 갱신 (별 등급 상승은 sig 로 다시 그린다)
+      var mel = cell.querySelector('.kf-mastery');
+      if (mel) mel.textContent = masteryHint(Game.foodMade(id));
       var btn = cell.querySelector('.kf-craft');
       if (btn) { var ok = Game.canCraft(id); btn.disabled = !ok; btn.classList.toggle('ready', ok); }
     });
   }
 
+  function renderSpecial() {
+    var sp = Game.specialToday();
+    // 매 프레임 innerHTML 을 다시 쓰지 않는다 — 바뀐 게 있을 때만 그린다(DOM churn 방지)
+    var ssig = sp ? (sp.food.id + '|' + sp.prog + '|' + (sp.taken ? 't' : sp.done ? 'd' : 'p')) : 'none';
+    if (sig.special === ssig) return;
+    sig.special = ssig;
+    if (!sp) { el.specialCard.hidden = true; return; }
+    el.specialCard.hidden = false;
+    el.specialCard.classList.toggle('ready', sp.done && !sp.taken);
+    var right = sp.taken ? '<span class="sp-done">보상 완료 ✔</span>'
+              : sp.done ? '<span class="sp-claim">단골 보상 받기</span>'
+              : '<span class="sp-prog">단골 주문 ' + sp.prog + '/' + sp.goal + '</span>';
+    el.specialCard.innerHTML =
+      '<div class="sp-left"><span class="sp-ic">' + sp.food.icon + '</span>' +
+        '<div class="sp-txt"><b>오늘의 특선 · ' + sp.food.name + '</b>' +
+        '<span>만들 때 목돈 ×' + sp.mult + ' · ' + sp.goal + '번 만들면 단골 보상</span></div></div>' +
+      '<div class="sp-right">' + right + '</div>';
+  }
+
   function renderKitchen() {
     renderIngStore();
-    var madeSet = Data.KITCHEN.foods.map(function (f) { return Game.foodMade(f.id) >= 1 ? 1 : 0; }).join('');
-    var gsig = currentGrade + '|' + Game.bossLevel() + '|' + madeSet;
+    renderSpecial();
+    var sp = Game.specialToday();
+    var tiers = Data.KITCHEN.foods.map(function (f) { return Game.masteryTier(Game.foodMade(f.id)); }).join('');
+    var gsig = currentGrade + '|' + Game.bossLevel() + '|' + tiers + '|' + (sp ? sp.food.id : '');
     if (sig.kitchen !== gsig) { sig.kitchen = gsig; buildKitchenGrid(); }
     updateKitchenGrid();
   }
@@ -907,21 +950,36 @@ var UI = (function () {
   function onCraft(id) {
     var r = Game.craftFood(id);
     if (!r) { toast('재료가 부족해요'); return; }
-    Sound.play(r.first ? 'levelup' : 'buy');
-    buzz(12);
-    toast((r.first ? '🎉 새 음식 발견! ' : '🍳 ') + r.food.name + '  +' + Fmt.won(r.gain));
-    if (r.first) sig.kitchen = '';   // 도감 등록 → 구조 다시 그림
+    Sound.play(r.first || r.tierUp ? 'levelup' : 'buy');
+    buzz(r.tierUp ? 16 : 12);
+    if (r.tierUp) {
+      toast('🌟 ' + r.food.name + ' 숙련 ' + starStr(r.tier) + ' 달성! +' + Fmt.won(r.gain));
+    } else {
+      toast((r.first ? '🎉 새 음식 발견! ' : (r.special ? '⭐ ' : '🍳 ')) + r.food.name + '  +' + Fmt.won(r.gain));
+    }
+    if (r.first || r.tierUp) sig.kitchen = '';   // 도감 등록·숙련 상승 → 구조 다시 그림
+    refresh(true);
+  }
+
+  /** 단골 주문 보상 수령 (특선 배너 탭) */
+  function onSpecialClaim() {
+    var r = Game.claimSpecialOrder();
+    if (!r) return;
+    Sound.play('reward');
+    buzz(14);
+    toast('🧑‍🍳 단골 주문 완료! ' + r.food.name + '  +' + Fmt.won(r.gain));
     refresh(true);
   }
 
   function updateTruck() {
     var here = Game.truckState().here;
     if (el.truckPop.hidden !== !here) el.truckPop.hidden = !here;
-    // 주방 탭 점: 트럭이 왔거나 합성 가능한 게 있으면
+    // 주방 탭 점: 트럭이 왔거나 · 합성 가능한 게 있거나 · 단골 주문 보상이 대기 중이면
     var any = here;
     if (!any) for (var i = 0; i < Data.KITCHEN.foods.length; i++) {
       if (Game.canCraft(Data.KITCHEN.foods[i].id)) { any = true; break; }
     }
+    if (!any) { var sp = Game.specialToday(); if (sp && sp.done && !sp.taken) any = true; }
     el.dotKitchen.hidden = !any;
   }
 
@@ -2030,6 +2088,7 @@ var UI = (function () {
     });
 
     el.truckPop.addEventListener('click', grabTruckUI);
+    el.specialCard.addEventListener('click', onSpecialClaim);
     el.gradeTabs.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-grade]');
       if (!b) return;
