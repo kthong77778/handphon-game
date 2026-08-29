@@ -185,6 +185,9 @@ body{
   display:flex;align-items:center;justify-content:center;
   font-size:24px;
 }
+/* 그림 아이콘(설비·레시피) — 이모지 자리에 들어간다 */
+.ico-img{width:84%;height:84%;object-fit:contain;display:block}
+.kf-icon .ico-img,.sp-ic .ico-img{width:100%;height:100%}
 .item-body{flex:1 1 auto;min-width:0}
 .item-name{
   font-size:14px;font-weight:700;

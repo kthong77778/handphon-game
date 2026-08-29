@@ -7,7 +7,7 @@ var Data = (function () {
 
   var GENERATORS = [
     { id: 'g1',  icon: '🧑‍🍳', name: '알바생',          desc: '떡볶이를 대신 저어줍니다',        baseCost: 15,     rate: 0.1 },
-    { id: 'g2',  icon: '🍲',  name: '떡볶이 냄비',      desc: '쉬지 않고 보글보글',              baseCost: 100,    rate: 1 },
+    { id: 'g2',  icon: 'equip_tteokbokki.png', name: '떡볶이 냄비', desc: '쉬지 않고 보글보글',       baseCost: 100,    rate: 1 },
     { id: 'g3',  icon: '🍤',  name: '튀김기',           desc: '바삭함은 돈이 됩니다',            baseCost: 1100,   rate: 8 },
     { id: 'g4',  icon: '🥟',  name: '만두 찜기',        desc: '김이 모락모락 찐만두',            baseCost: 12000,  rate: 47 },
     { id: 'g5',  icon: '🍙',  name: '김밥 장인',        desc: '1초에 한 줄을 맙니다',            baseCost: 130000, rate: 260 },
@@ -850,7 +850,7 @@ var Data = (function () {
     // at: 이 사장 레벨이 되면 레시피가 해금된다. need: 재료 소모량. bonus: 도감 영구 배율(+). sec: 만들 때 목돈(초당×sec).
     foods: [
       // 초급 (7종)
-      { id: 'k1',  icon: '🍢', name: '어묵탕',    grade: 1, at: 1,  bonus: 0.01,  sec: 60,   need: { om: 2, vg: 2 } },
+      { id: 'k1',  icon: 'equip_odeng.png', name: '어묵탕', grade: 1, at: 1, bonus: 0.01, sec: 60, need: { om: 2, vg: 2 } },
       { id: 'k2',  icon: '🥘', name: '떡볶이',    grade: 1, at: 2,  bonus: 0.01,  sec: 90,   need: { gj: 2, fl: 2, om: 1 } },
       { id: 'k3',  icon: '🍙', name: '김밥',      grade: 1, at: 3,  bonus: 0.01,  sec: 120,  need: { rc: 2, eg: 1, vg: 2 } },
       { id: 'k10', icon: '🍳', name: '계란말이',  grade: 1, at: 4,  bonus: 0.01,  sec: 150,  need: { eg: 3, vg: 1 } },

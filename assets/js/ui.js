@@ -77,6 +77,18 @@ var UI = (function () {
         ' fill="#8a6212" font-family="system-ui,-apple-system,sans-serif">₩</text>' +
     '</svg>';
 
+  // 아이콘 값에 '.png' 가 들어 있으면 그림(assets/img/), 아니면 이모지 텍스트.
+  function iconIsImg(icon) { return typeof icon === 'string' && icon.indexOf('.png') >= 0; }
+  function iconHtml(icon, cls) {
+    return iconIsImg(icon)
+      ? '<img class="' + (cls || 'ico-img') + '" src="assets/img/' + icon + '" alt="">'
+      : (icon || '');
+  }
+  function setIcon(elm, icon) {
+    if (iconIsImg(icon)) elm.innerHTML = iconHtml(icon);
+    else elm.textContent = icon;
+  }
+
   function makeItem(iconText, opts) {
     // div + click 이면 키보드로 살 수 없고 스크린리더가 버튼으로 읽지 않는다.
     // 누를 수 있는 행은 button, 보여주기만 하는 행(도전과제)은 div 로 만든다.
@@ -90,7 +102,7 @@ var UI = (function () {
         '<div class="item-desc"></div>' +
       '</div>' +
       '<div class="item-cost"></div>';
-    row.querySelector('.item-icon').textContent = iconText;
+    setIcon(row.querySelector('.item-icon'), iconText);
     return row;
   }
 
@@ -200,7 +212,7 @@ var UI = (function () {
     var b = Game.bestGen();
     if (!b) { el.recoBar.hidden = true; return; }
     el.recoBar.hidden = false;
-    el.recoIcon.textContent = b.icon;
+    setIcon(el.recoIcon, b.icon);
     el.recoName.textContent = b.name;
     el.recoDesc.textContent = '초당 +' + Fmt.num(b.gain);
     el.recoCost.textContent = Fmt.num(b.cost);
@@ -961,7 +973,7 @@ var UI = (function () {
         }).join('');
         var tier = Game.masteryTier(count);
         cell.innerHTML =
-          '<div class="kf-head"><span class="kf-icon">' + f.icon + '</span>' +
+          '<div class="kf-head"><span class="kf-icon">' + iconHtml(f.icon) + '</span>' +
             '<span class="kf-name">' + f.name + '</span>' +
             (isSpecial ? '<span class="kf-special">⭐특선</span>' : '') +
             (made ? '<span class="kf-badge">' + (tier > 0 ? starStr(tier) + ' ' : '✔ ') +
@@ -1010,7 +1022,7 @@ var UI = (function () {
               : sp.done ? '<span class="sp-claim">단골 보상 받기</span>'
               : '<span class="sp-prog">단골 주문 ' + sp.prog + '/' + sp.goal + '</span>';
     el.specialCard.innerHTML =
-      '<div class="sp-left"><span class="sp-ic">' + sp.food.icon + '</span>' +
+      '<div class="sp-left"><span class="sp-ic">' + iconHtml(sp.food.icon) + '</span>' +
         '<div class="sp-txt"><b>오늘의 특선 · ' + sp.food.name + '</b>' +
         '<span>만들 때 목돈 ×' + sp.mult + ' · ' + sp.goal + '번 만들면 단골 보상</span></div></div>' +
       '<div class="sp-right">' + right + '</div>';
