@@ -6,16 +6,16 @@ var Data = (function () {
   var COST_GROWTH = 1.15;
 
   var GENERATORS = [
-    { id: 'g1',  icon: '🧑‍🍳', name: '알바생',          desc: '떡볶이를 대신 저어줍니다',        baseCost: 15,     rate: 0.1 },
+    { id: 'g1',  icon: 'gen/gen_alba.png', name: '알바생',          desc: '떡볶이를 대신 저어줍니다',        baseCost: 15,     rate: 0.1 },
     { id: 'g2',  icon: 'equip_tteokbokki.png', name: '떡볶이 냄비', desc: '쉬지 않고 보글보글',       baseCost: 100,    rate: 1 },
-    { id: 'g3',  icon: '🍤',  name: '튀김기',           desc: '바삭함은 돈이 됩니다',            baseCost: 1100,   rate: 8 },
-    { id: 'g4',  icon: '🥟',  name: '만두 찜기',        desc: '김이 모락모락 찐만두',            baseCost: 12000,  rate: 47 },
-    { id: 'g5',  icon: '🍙',  name: '김밥 장인',        desc: '1초에 한 줄을 맙니다',            baseCost: 130000, rate: 260 },
-    { id: 'g6',  icon: '🛵',  name: '배달 오토바이',    desc: '동네를 통째로 배달권으로',        baseCost: 1.4e6,  rate: 1400 },
-    { id: 'g7',  icon: '🏬',  name: '프랜차이즈 지점',  desc: '내 이름을 건 2호점',              baseCost: 2e7,    rate: 7800 },
-    { id: 'g8',  icon: '🏭',  name: '중앙 주방 공장',   desc: '떡을 톤 단위로 뽑아냅니다',       baseCost: 3.3e8,  rate: 44000 },
-    { id: 'g9',  icon: '✈️',  name: '해외 진출 본부',   desc: 'K-분식의 세계화',                 baseCost: 5.1e9,  rate: 260000 },
-    { id: 'g10', icon: '🚀',  name: '우주 분식 스테이션', desc: '무중력 떡볶이, 특허 출원 중',   baseCost: 7.5e10, rate: 1.6e6 }
+    { id: 'g3',  icon: 'gen/gen_fryer.png',  name: '튀김기',           desc: '바삭함은 돈이 됩니다',            baseCost: 1100,   rate: 8 },
+    { id: 'g4',  icon: 'gen/gen_steamer.png',  name: '만두 찜기',        desc: '김이 모락모락 찐만두',            baseCost: 12000,  rate: 47 },
+    { id: 'g5',  icon: 'gen/gen_gimbap_master.png',  name: '김밥 장인',        desc: '1초에 한 줄을 맙니다',            baseCost: 130000, rate: 260 },
+    { id: 'g6',  icon: 'gen/gen_delivery.png',  name: '배달 오토바이',    desc: '동네를 통째로 배달권으로',        baseCost: 1.4e6,  rate: 1400 },
+    { id: 'g7',  icon: 'gen/gen_franchise.png',  name: '프랜차이즈 지점',  desc: '내 이름을 건 2호점',              baseCost: 2e7,    rate: 7800 },
+    { id: 'g8',  icon: 'gen/gen_factory.png',  name: '중앙 주방 공장',   desc: '떡을 톤 단위로 뽑아냅니다',       baseCost: 3.3e8,  rate: 44000 },
+    { id: 'g9',  icon: 'gen/gen_overseas.png',  name: '해외 진출 본부',   desc: 'K-분식의 세계화',                 baseCost: 5.1e9,  rate: 260000 },
+    { id: 'g10', icon: 'gen/gen_space.png',  name: '우주 분식 스테이션', desc: '무중력 떡볶이, 특허 출원 중',   baseCost: 7.5e10, rate: 1.6e6 }
   ];
 
   /* ---------- 업그레이드 ---------- */
