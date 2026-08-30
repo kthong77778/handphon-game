@@ -29,19 +29,18 @@ var Sky = (function () {
   function hex(c) {
     return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
   }
+  // 두 hex 색을 t 비율로 섞어 [r,g,b] 숫자 배열로 돌려준다 (문자열로 두 번 변환하지 않는다)
   function mix(a, b, t) {
     var x = hex(a), y = hex(b);
-    return 'rgb(' + Math.round(x[0] + (y[0] - x[0]) * t) + ',' +
-                    Math.round(x[1] + (y[1] - x[1]) * t) + ',' +
-                    Math.round(x[2] + (y[2] - x[2]) * t) + ')';
+    return [Math.round(x[0] + (y[0] - x[0]) * t),
+            Math.round(x[1] + (y[1] - x[1]) * t),
+            Math.round(x[2] + (y[2] - x[2]) * t)];
   }
-  function rgba(c, a) {
-    var x = hex(c);
-    return 'rgba(' + x[0] + ',' + x[1] + ',' + x[2] + ',' + a + ')';
-  }
+  function rgb(v) { return 'rgb(' + v[0] + ',' + v[1] + ',' + v[2] + ')'; }
+  function rgba(v, a) { return 'rgba(' + v[0] + ',' + v[1] + ',' + v[2] + ',' + a + ')'; }
   function lerp(a, b, t) { return a + (b - a) * t; }
 
-  // 두 마디 사이를 시간 비율로 섞은 한 프레임을 만든다
+  // 두 마디 사이를 시간 비율로 섞은 한 프레임을 만든다 (색은 [r,g,b] 배열로 보관)
   function frame(h) {
     var a = STOPS[0], b = STOPS[STOPS.length - 1];
     for (var i = 0; i < STOPS.length - 1; i++) {
@@ -51,28 +50,31 @@ var Sky = (function () {
     var t = span > 0 ? (h - a.h) / span : 0;
     return {
       sky: [mix(a.sky[0], b.sky[0], t), mix(a.sky[1], b.sky[1], t), mix(a.sky[2], b.sky[2], t)],
-      core: a.orb[0], glow: a.orb[1], core2: b.orb[0], glow2: b.orb[1], t: t,
+      core: mix(a.orb[0], b.orb[0], t), glow: mix(a.orb[1], b.orb[1], t),
       x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), r: lerp(a.r, b.r, t), inten: lerp(a.i, b.i, t)
     };
   }
 
   // 프레임을 --appbg 문자열로: [해/달 방사형] 위에 [하늘 세로 그라데이션]
   function toBg(f) {
-    var core = mix(f.core, f.core2, f.t), glow = mix(f.glow, f.glow2, f.t);
     // 또렷한 원반(속) → 번짐 → 사라짐. 살짝 뚜렷한 해/달이 보이도록 속을 좁게 밝힌다.
     var orb = 'radial-gradient(' + Math.round(f.r) + 'px ' + Math.round(f.r) + 'px at ' +
       f.x.toFixed(1) + '% ' + f.y.toFixed(1) + '%, ' +
-      rgba(core, 0.98 * f.inten) + ' 0%, ' +
-      rgba(core, 0.9 * f.inten) + ' 13%, ' +
-      rgba(glow, 0.5 * f.inten) + ' 38%, ' +
-      rgba(glow, 0) + ' 70%)';
-    var sky = 'linear-gradient(180deg, ' + f.sky[0] + ' 0%, ' + f.sky[1] + ' 46%, ' + f.sky[2] + ' 100%)';
+      rgba(f.core, 0.98 * f.inten) + ' 0%, ' +
+      rgba(f.core, 0.9 * f.inten) + ' 13%, ' +
+      rgba(f.glow, 0.5 * f.inten) + ' 38%, ' +
+      rgba(f.glow, 0) + ' 70%)';
+    var sky = 'linear-gradient(180deg, ' + rgb(f.sky[0]) + ' 0%, ' + rgb(f.sky[1]) + ' 46%, ' + rgb(f.sky[2]) + ' 100%)';
     return orb + ', ' + sky;
   }
 
+  // 게임 안의 하루 — 현실 시각이 아니라 자체 시계로 돈다.
+  // 하루 한 바퀴 = DAY_MIN 분. 플레이하는 동안 해가 실제로 움직여 노을·밤이 흐른다.
+  // 벽시계(Date.now)를 그대로 접어 쓰므로 저장할 게 없다 — 껐다 켜도 계속 이어진다.
+  var DAY_MIN = 12;                       // 하루 길이(분). 여기만 바꾸면 빨라지고 느려진다.
+  var DAY_MS = DAY_MIN * 60000;
   function nowHour() {
-    var d = new Date();
-    return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+    return ((Date.now() % DAY_MS) / DAY_MS) * 24;   // 0~24 (게임 시각)
   }
 
   function isAuto() {
@@ -95,7 +97,7 @@ var Sky = (function () {
   function init() {
     refresh();
     if (timer) clearInterval(timer);
-    timer = setInterval(refresh, 30000);   // 30초마다 (분 단위로 충분히 부드럽다)
+    timer = setInterval(refresh, 2000);    // 2초마다 — 빨라진 하루라 해가 스르르 움직인다
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) refresh();     // 앱으로 돌아오면 즉시 맞춘다
     });
