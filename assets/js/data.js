@@ -555,41 +555,86 @@ var Data = (function () {
   // 손님(z:2)·가게(z:1) 뒤(z:0)에 깔린다. 나중에 손그림 PNG/애니메이션으로 갈아끼우기 쉽게
   // 독립 레이어(.street-back)로 둔다. 수치와는 무관한 순수 배경.
   function alleyBack() {
-    var p = [];
-    var BASE = 58;   // 건물이 서는 바닥선 (viewBox 84 기준, 거리 바닥과 맞물린다)
+    var p = [], BASE = 58;   // 바닥선 (viewBox 84, 거리 바닥과 맞물린다)
+
+    // 창문 한 칸. st: warm/cool/off/flick. flick 은 은은히 깜빡인다.
+    function win(x, y, st, idx) {
+      var col = st === 'cool' ? '#bcd0ff' : (st === 'off' ? '#3a2f45' : '#ffcf7a');
+      var op = st === 'off' ? '.5' : '.95';
+      var fl = st === 'flick';
+      return '<rect class="' + (fl ? 'alley-win' : '') + '" ' +
+        (fl ? 'style="animation-delay:' + ((idx % 7) * 0.5).toFixed(1) + 's" ' : '') +
+        'x="' + x + '" y="' + y + '" width="6" height="7" rx="1" fill="' + col + '" opacity="' + op + '"/>';
+    }
+    // 불 켜진 간판 (뒤에 은은한 후광)
+    function sign(x, y, w, h, col, flick) {
+      return '<rect x="' + (x - 2) + '" y="' + (y - 2) + '" width="' + (w + 4) + '" height="' + (h + 4) + '" rx="2.5" fill="' + col + '" opacity=".22"/>' +
+        '<rect class="' + (flick ? 'alley-win' : '') + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="1.5" fill="' + col + '"/>';
+    }
+
+    /* --- 원경: 흐릿한 뒤 건물 실루엣 (깊이감) --- */
+    var far = [[108, 40, 20], [150, 44, 26], [196, 38, 18], [246, 42, 24], [300, 46, 22], [348, 44, 16]];
+    far.forEach(function (b, i) {
+      var top = BASE - b[2];
+      p.push('<rect x="' + b[0] + '" y="' + top + '" width="' + (b[1] - b[0]) + '" height="' + b[2] + '" fill="#201a32" opacity=".85"/>');
+      p.push(win(b[0] + 5, top + 5, i % 2 ? 'cool' : 'warm', i));   // 창 하나씩만 은은히
+    });
+
+    /* --- 근경: 앞 건물 (디테일 + 옥상 소품 + 간판) --- */
     var blds = [
-      { x: 126, w: 50, h: 42, roof: 'flat' },
-      { x: 180, w: 42, h: 30, roof: 'pitch' },
-      { x: 226, w: 56, h: 46, roof: 'tank' },
-      { x: 286, w: 44, h: 26, roof: 'flat' },
-      { x: 334, w: 52, h: 38, roof: 'pitch' }
+      { x: 122, w: 48, h: 42, roof: 'tank', sign: ['#e0674a', 1] },   // 붉은 간판 (분식집)
+      { x: 176, w: 36, h: 30, roof: 'chimney' },
+      { x: 218, w: 52, h: 46, roof: 'antenna', sign: ['#5cc9d6', 0] }, // 청록 네온
+      { x: 276, w: 38, h: 26, roof: 'ac' },
+      { x: 320, w: 56, h: 38, roof: 'flat', sign: ['#ffcf6a', 0] }     // 노란 간판
     ];
-    blds.forEach(function (b) {
+    blds.forEach(function (b, bi) {
       var top = BASE - b.h;
       p.push('<rect x="' + b.x + '" y="' + top + '" width="' + b.w + '" height="' + b.h + '" fill="#241a30"/>');
-      if (b.roof === 'pitch') p.push('<path d="M' + (b.x - 3) + ' ' + top + ' L' + (b.x + b.w / 2) + ' ' + (top - 9) + ' L' + (b.x + b.w + 3) + ' ' + top + ' Z" fill="#1e1528"/>');
-      if (b.roof === 'tank') p.push('<rect x="' + (b.x + b.w - 16) + '" y="' + (top - 8) + '" width="12" height="8" rx="2" fill="#1e1528"/>');
-      var cols = Math.floor((b.w - 8) / 12), rows = Math.floor((b.h - 10) / 12);
-      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
-        var lit = ((r + c + b.x) % 3) !== 0;   // 몇 칸은 불이 꺼져 자연스럽게
-        // 켜진 창 일부는 은은하게 깜빡인다(alley-win). 서로 다른 딜레이로.
-        var flick = lit && ((r + c + b.x) % 4 === 1);
-        p.push('<rect class="' + (flick ? 'alley-win' : '') + '" ' +
-          (flick ? 'style="animation-delay:' + (((b.x + r * 3 + c) % 7) * 0.5).toFixed(1) + 's" ' : '') +
-          'x="' + (b.x + 6 + c * 12) + '" y="' + (top + 6 + r * 12) + '" width="6" height="7" rx="1" fill="' +
-          (lit ? '#ffcf7a' : '#3a2f45') + '" opacity="' + (lit ? '.95' : '.5') + '"/>');
+      // 옥상 소품
+      if (b.roof === 'chimney') {
+        p.push('<rect x="' + (b.x + b.w - 12) + '" y="' + (top - 9) + '" width="6" height="9" fill="#2a1e34"/>');
+        p.push('<g class="alley-smoke" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.6" stroke-linecap="round"><path d="M' + (b.x + b.w - 9) + ' ' + (top - 10) + 'q4 -4 0 -8"/></g>');
+      } else if (b.roof === 'tank') {
+        p.push('<rect x="' + (b.x + b.w - 18) + '" y="' + (top - 9) + '" width="13" height="9" rx="2.5" fill="#2a1e34"/><rect x="' + (b.x + b.w - 14) + '" y="' + (top - 12) + '" width="2" height="3" fill="#2a1e34"/>');
+      } else if (b.roof === 'antenna') {
+        p.push('<path d="M' + (b.x + 8) + ' ' + top + ' l0 -12 M' + (b.x + 4) + ' ' + (top - 8) + ' l8 3 M' + (b.x + 12) + ' ' + (top - 8) + ' l-8 3" stroke="#2a1e34" stroke-width="1.4" fill="none"/>');
+      } else if (b.roof === 'ac') {
+        p.push('<rect x="' + (b.x + 4) + '" y="' + (top - 6) + '" width="12" height="6" rx="1.5" fill="#2a1e34"/>');
       }
+      // 창문 격자
+      var cols = Math.floor((b.w - 8) / 12), rows = Math.floor((b.h - 12) / 12);
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
+        var k = (r + c + b.x);
+        var st = (k % 5 === 0) ? 'off' : (k % 7 === 1 ? 'flick' : (k % 4 === 0 ? 'cool' : 'warm'));
+        p.push(win(b.x + 6 + c * 12, top + 8 + r * 12, st, k));
+      }
+      // 간판 (건물 아래쪽에 가로로)
+      if (b.sign) p.push(sign(b.x + 4, BASE - 11, b.w - 8, 7, b.sign[0], b.sign[1]));
     });
-    // 가로등 (등불 후광이 은은하게 맥동 — alley-lamp)
-    p.push('<g><rect x="209" y="20" width="3" height="38" fill="#2a2036"/>' +
-      '<rect x="200" y="18" width="21" height="5" rx="2" fill="#2a2036"/>' +
-      '<circle cx="210.5" cy="26" r="6" fill="#ffe6a0"/>' +
-      '<circle class="alley-lamp" cx="210.5" cy="26" r="13" fill="#ffdd88" opacity=".28"/></g>');
-    // 나무
-    p.push('<g><rect x="311" y="46" width="4" height="12" fill="#3a2a1c"/>' +
-      '<ellipse cx="313" cy="42" rx="13" ry="11" fill="#26402a"/>' +
-      '<ellipse cx="305" cy="46" rx="8" ry="7" fill="#223a26"/>' +
-      '<ellipse cx="320" cy="46" rx="8" ry="7" fill="#223a26"/></g>');
+
+    /* --- 앞 소품 --- */
+    // 나무 (풍성하게)
+    p.push('<g><rect x="298" y="47" width="4" height="11" fill="#3a2a1c"/>' +
+      '<ellipse cx="300" cy="41" rx="14" ry="12" fill="#274a2c"/>' +
+      '<ellipse cx="291" cy="45" rx="8" ry="8" fill="#213f26"/>' +
+      '<ellipse cx="309" cy="45" rx="8" ry="8" fill="#213f26"/>' +
+      '<ellipse cx="300" cy="36" rx="7" ry="7" fill="#2c522f"/></g>');
+    // 가로등 (앞, 등불 후광 맥동)
+    p.push('<g><rect x="250" y="16" width="3" height="42" fill="#2a2036"/>' +
+      '<path d="M251.5 18 q10 -2 12 6" fill="none" stroke="#2a2036" stroke-width="3"/>' +
+      '<circle cx="264" cy="26" r="4.5" fill="#ffe6a0"/>' +
+      '<circle class="alley-lamp" cx="264" cy="26" r="11" fill="#ffdd88" opacity=".26"/></g>');
+
+    /* --- 처마 전구 줄 (포장마차 골목 느낌) --- */
+    var lights = '<path d="M118 9 Q248 26 380 9" stroke="#4a3f2e" stroke-width="1" fill="none"/>';
+    for (var lx = 132; lx <= 368; lx += 21) {
+      var t = (lx - 118) / 262, ly = 9 + 17 * (t * (1 - t) * 4);   // 가운데가 처지는 곡선
+      lights += '<line x1="' + lx + '" y1="' + ly.toFixed(1) + '" x2="' + lx + '" y2="' + (ly + 3).toFixed(1) + '" stroke="#4a3f2e" stroke-width=".8"/>';
+      lights += '<circle class="' + (lx % 42 === 6 ? 'alley-win' : '') + '" cx="' + lx + '" cy="' + (ly + 4.5).toFixed(1) + '" r="2" fill="#ffd777"/>';
+    }
+    p.push('<g>' + lights + '</g>');
+
     return '<svg viewBox="0 0 390 84" preserveAspectRatio="xMidYMax slice" ' +
       'xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + p.join('') + '</svg>';
   }

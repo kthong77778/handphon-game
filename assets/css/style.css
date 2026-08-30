@@ -970,10 +970,12 @@ body{
    더 화려한 스프라이트 애니메이션을 얹으면 된다. */
 @keyframes alleyWin{0%,100%{opacity:.95}50%{opacity:.42}}
 @keyframes alleyLamp{0%,100%{opacity:.24}50%{opacity:.44}}
+@keyframes alleySmoke{0%{opacity:0;transform:translateY(2px)}40%{opacity:.4}100%{opacity:0;transform:translateY(-7px)}}
 .street-back .alley-win{animation:alleyWin 3.6s ease-in-out infinite}
 .street-back .alley-lamp{animation:alleyLamp 4.2s ease-in-out infinite;transform-origin:center}
+.street-back .alley-smoke{animation:alleySmoke 3.2s ease-out infinite;transform-box:fill-box;transform-origin:center}
 @media (prefers-reduced-motion:reduce){
-  .street-back .alley-win,.street-back .alley-lamp{animation:none}
+  .street-back .alley-win,.street-back .alley-lamp,.street-back .alley-smoke{animation:none;opacity:.9}
 }
 
 /* ===== 거리 왼쪽에 선 가게 ===== */
