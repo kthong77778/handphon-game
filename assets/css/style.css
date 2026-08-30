@@ -960,6 +960,7 @@ body{
 .street-back{
   position:absolute;inset:0;
   z-index:0;pointer-events:none;
+  background:url(../img/scene/alley_full.png) center bottom / cover no-repeat;
 }
 .street-back svg{
   position:absolute;left:0;bottom:0;
@@ -978,13 +979,21 @@ body{
   .street-back .alley-win,.street-back .alley-lamp,.street-back .alley-smoke{animation:none;opacity:.9}
 }
 
-/* ===== 거리 왼쪽에 선 가게 ===== */
+/* ===== 거리 왼쪽에 선 가게 (손그림 PNG) ===== */
 .shopfront{
   position:absolute;left:2px;bottom:0;
-  width:118px;height:82px;
+  width:120px;height:84px;
   z-index:1;                       /* 손님이 가게 앞을 지나간다 */
   pointer-events:none;
+  background:url(../img/scene/shop.png) center bottom / contain no-repeat;
   filter:drop-shadow(0 0 10px rgba(255,204,68,.28));
+}
+/* 빈 간판 위에 얹는 스킨 글자 (분식 / 붕어빵 / 주먹밥 ...) */
+.shopfront .shop-sign{
+  position:absolute;left:19%;right:20%;top:6%;
+  text-align:center;line-height:1;white-space:nowrap;overflow:hidden;
+  font-size:8px;font-weight:800;color:#c0392b;
+  font-family:system-ui,-apple-system,sans-serif;
 }
 .shopfront svg{display:block;width:100%;height:100%}
 /* 냄비에서 오르는 김 */

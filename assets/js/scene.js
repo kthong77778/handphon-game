@@ -173,7 +173,8 @@ var Scene = (function () {
     var sign = Game.tapSkin().sign || '분식';
     if (sign === shopSign) return;
     shopSign = sign;
-    shopEl.innerHTML = Data.shopFront(sign);
+    var s = shopEl.querySelector('.shop-sign');   // 그림 간판 위 글자만 갈아끼운다
+    if (s) s.textContent = sign;
   }
 
   /* ---------- 조리할 때 튀는 음식 ---------- */
@@ -226,13 +227,14 @@ var Scene = (function () {
   function init(streetEl, popsEl) {
     street = streetEl;
     pops = popsEl;
-    // 뒤편 골목(건물 실루엣) — 손님·가게보다 뒤(z:0). 하늘이 그 뒤로 비친다.
+    // 뒤편 골목 — 손님·가게보다 뒤(z:0). 하늘이 그 뒤로 비친다.
+    // 손그림 PNG 배경(하늘 투명)을 CSS 로 깐다. 그림이 없으면 아무것도 안 그려진다.
     var backEl = document.createElement('div');
     backEl.className = 'street-back';
-    backEl.innerHTML = Data.alleyBack();
     street.appendChild(backEl);
     shopEl = document.createElement('div');
     shopEl.className = 'shopfront';
+    shopEl.innerHTML = '<b class="shop-sign"></b>';   // 빈 간판에 얹는 스킨 글자
     street.appendChild(shopEl);
     syncShop();
     try {
