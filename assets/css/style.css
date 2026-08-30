@@ -965,6 +965,16 @@ body{
   position:absolute;left:0;bottom:0;
   width:100%;height:100%;display:block;
 }
+/* 골목 연출 — 고정 화면이라 가로 스크롤(패럴랙스) 대신 '주변 생동감'.
+   창문 몇 개가 은은히 깜빡이고 가로등 후광이 숨쉰다. PNG 로 바꾸면 이 자리에
+   더 화려한 스프라이트 애니메이션을 얹으면 된다. */
+@keyframes alleyWin{0%,100%{opacity:.95}50%{opacity:.42}}
+@keyframes alleyLamp{0%,100%{opacity:.24}50%{opacity:.44}}
+.street-back .alley-win{animation:alleyWin 3.6s ease-in-out infinite}
+.street-back .alley-lamp{animation:alleyLamp 4.2s ease-in-out infinite;transform-origin:center}
+@media (prefers-reduced-motion:reduce){
+  .street-back .alley-win,.street-back .alley-lamp{animation:none}
+}
 
 /* ===== 거리 왼쪽에 선 가게 ===== */
 .shopfront{

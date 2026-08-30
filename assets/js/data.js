@@ -572,15 +572,19 @@ var Data = (function () {
       var cols = Math.floor((b.w - 8) / 12), rows = Math.floor((b.h - 10) / 12);
       for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
         var lit = ((r + c + b.x) % 3) !== 0;   // 몇 칸은 불이 꺼져 자연스럽게
-        p.push('<rect x="' + (b.x + 6 + c * 12) + '" y="' + (top + 6 + r * 12) + '" width="6" height="7" rx="1" fill="' +
+        // 켜진 창 일부는 은은하게 깜빡인다(alley-win). 서로 다른 딜레이로.
+        var flick = lit && ((r + c + b.x) % 4 === 1);
+        p.push('<rect class="' + (flick ? 'alley-win' : '') + '" ' +
+          (flick ? 'style="animation-delay:' + (((b.x + r * 3 + c) % 7) * 0.5).toFixed(1) + 's" ' : '') +
+          'x="' + (b.x + 6 + c * 12) + '" y="' + (top + 6 + r * 12) + '" width="6" height="7" rx="1" fill="' +
           (lit ? '#ffcf7a' : '#3a2f45') + '" opacity="' + (lit ? '.95' : '.5') + '"/>');
       }
     });
-    // 가로등 (등불에 은은한 후광)
+    // 가로등 (등불 후광이 은은하게 맥동 — alley-lamp)
     p.push('<g><rect x="209" y="20" width="3" height="38" fill="#2a2036"/>' +
       '<rect x="200" y="18" width="21" height="5" rx="2" fill="#2a2036"/>' +
       '<circle cx="210.5" cy="26" r="6" fill="#ffe6a0"/>' +
-      '<circle cx="210.5" cy="26" r="13" fill="#ffdd88" opacity=".28"/></g>');
+      '<circle class="alley-lamp" cx="210.5" cy="26" r="13" fill="#ffdd88" opacity=".28"/></g>');
     // 나무
     p.push('<g><rect x="311" y="46" width="4" height="12" fill="#3a2a1c"/>' +
       '<ellipse cx="313" cy="42" rx="13" ry="11" fill="#26402a"/>' +
