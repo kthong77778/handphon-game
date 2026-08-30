@@ -8,7 +8,7 @@ var Scene = (function () {
   // 어떤 손님이 오는지는 스킨과 초당 수익(등급)이 정한다 — Game.crowdTier()
   // 튀는 음식도 지금 조리하는 메뉴의 스킨을 따라간다.
 
-  var SHOP_W = 118;     // 거리 왼쪽에 서 있는 가게 그림의 너비 (px)
+  var SHOP_W = 146;     // 거리 왼쪽에 서 있는 가게 그림의 너비 (px)
 
   var street = null;    // 손님들이 걸어다니는 층
   var shopEl = null;    // 왼쪽 가게 그림

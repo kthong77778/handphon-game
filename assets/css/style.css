@@ -908,7 +908,7 @@ body{
 
 /* ===== 가게 앞 거리 (손님들이 오가는 곳) ===== */
 .street{
-  position:relative;height:84px;
+  position:relative;height:120px;
   margin:-4px -14px 10px;         /* 화면 끝까지, 가게와 이어지게 */
   overflow:hidden;
   /* 가운데에서 가게 불빛이 새어나오고, 아래쪽은 보도 */
@@ -982,7 +982,7 @@ body{
 /* ===== 거리 왼쪽에 선 가게 (손그림 PNG) ===== */
 .shopfront{
   position:absolute;left:2px;bottom:0;
-  width:120px;height:84px;
+  width:150px;height:120px;
   z-index:1;                       /* 손님이 가게 앞을 지나간다 */
   pointer-events:none;
   background:url(../img/scene/shop.png) center bottom / contain no-repeat;
