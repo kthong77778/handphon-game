@@ -987,14 +987,14 @@ var Game = (function () {
   function records() {
     var s = S();
     return [
-      { icon: '💰', name: '한 회차 최고 매출', value: Fmt.won(s.bestRunEarned) },
-      { icon: '📈', name: '최고 순간 초당 수익', value: Fmt.won(s.bestPerSec) },
-      { icon: '👊', name: '한 번에 가장 많이 번 탭', value: Fmt.won(s.bestTap) },
-      { icon: '✨', name: '한 번에 얻은 최고 명성', value: Fmt.num(s.bestFameGain) },
-      { icon: '⚡', name: '최단 환생 시간', value: s.fastestPrestige ? Fmt.time(s.fastestPrestige) : '—' },
-      { icon: '🔥', name: '최고 콤보', value: Fmt.comma(s.bestCombo) + '콤보' },
-      { icon: '🌟', name: '잡은 황금 손님', value: Fmt.comma(s.goldens) + '명' },
-      { icon: '🚨', name: '직접 잡은 도둑', value: Fmt.comma(s.thievesCaught) + '명' }
+      { icon: '💰|record/rec_earn.png', name: '한 회차 최고 매출', value: Fmt.won(s.bestRunEarned) },
+      { icon: '📈|record/rec_persec.png', name: '최고 순간 초당 수익', value: Fmt.won(s.bestPerSec) },
+      { icon: '👊|record/rec_tap.png', name: '한 번에 가장 많이 번 탭', value: Fmt.won(s.bestTap) },
+      { icon: '✨|record/rec_fame.png', name: '한 번에 얻은 최고 명성', value: Fmt.num(s.bestFameGain) },
+      { icon: '⚡|record/rec_rebirth.png', name: '최단 환생 시간', value: s.fastestPrestige ? Fmt.time(s.fastestPrestige) : '—' },
+      { icon: '🔥|record/rec_combo.png', name: '최고 콤보', value: Fmt.comma(s.bestCombo) + '콤보' },
+      { icon: '🌟|record/rec_golden.png', name: '잡은 황금 손님', value: Fmt.comma(s.goldens) + '명' },
+      { icon: '🚨|record/rec_thief.png', name: '직접 잡은 도둑', value: Fmt.comma(s.thievesCaught) + '명' }
     ];
   }
 

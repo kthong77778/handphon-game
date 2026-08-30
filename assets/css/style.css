@@ -217,6 +217,8 @@ body{
 }
 /* 그림 아이콘(설비·레시피) — 이모지 자리에 들어간다 */
 .ico-img{width:84%;height:84%;object-fit:contain;display:block}
+/* 그림 파일이 아직 없을 때 <img> 대신 들어오는 이모지 span — 부모 글자 크기를 그대로 쓴다 */
+.ico-fallback{line-height:1}
 .kf-icon .ico-img,.sp-ic .ico-img{width:100%;height:100%;object-fit:contain}
 /* 재료 그림 (창고 칸 · 레시피 재료칩) — 인라인이라 px 로 고정 */
 .ing-ic .ico-img{width:26px;height:26px;object-fit:contain;display:block}
@@ -681,6 +683,7 @@ body{
   display:flex;align-items:center;justify-content:center;
   transition:transform .06s,background .12s;
 }
+.achv-chip .achv-chip-img{width:84%;height:84%;object-fit:contain;display:block}
 .achv-chip:active{transform:scale(.9)}
 .achv-chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .achv-earned{display:inline-block;margin-top:6px;font-size:12px;font-weight:800;color:var(--good)}
@@ -1380,6 +1383,7 @@ body{
 }
 .rec:last-child{border-bottom:none}
 .rec-ic{flex:0 0 auto;font-size:16px;width:20px;text-align:center}
+.rec-ic .rec-img{width:20px;height:20px;object-fit:contain;display:inline-block;vertical-align:-4px}
 .rec-nm{flex:1 1 auto;color:var(--dim);min-width:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rec-v{

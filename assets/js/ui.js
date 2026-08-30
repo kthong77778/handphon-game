@@ -78,12 +78,42 @@ var UI = (function () {
         ' fill="#8a6212" font-family="system-ui,-apple-system,sans-serif">₩</text>' +
     '</svg>';
 
-  // 아이콘 값에 '.png' 가 들어 있으면 그림(assets/img/), 아니면 이모지 텍스트.
+  // 아이콘 값은 세 가지가 된다:
+  //   '🍢'                — 이모지만
+  //   'food/food_x.png'   — 그림만 (assets/img/ 밑)
+  //   '🍢|food/food_x.png' — 둘 다. 그림을 우선 쓰되, 파일이 아직 없으면(404)
+  //                          onerror 가 이모지로 되돌린다. 그림을 뽑아 넣으면 그 순간 뜬다.
+  // 이 '이모지|경로' 표기 덕분에 도전과제·퀘스트·기록·파티 음식처럼 지금은 이모지인
+  // 자리를 미리 배선해 둘 수 있다 — 코드를 더 고치지 않고 PNG 만 채우면 된다.
   function iconIsImg(icon) { return typeof icon === 'string' && icon.indexOf('.png') >= 0; }
+  function iconEmoji(icon) {
+    if (typeof icon !== 'string') return '';
+    var bar = icon.indexOf('|');
+    if (bar >= 0) return icon.slice(0, bar);   // '이모지|경로.png' → 이모지
+    return iconIsImg(icon) ? '' : icon;        // 순수 경로면 이모지 없음
+  }
+  function iconSrc(icon) {
+    var bar = icon.indexOf('|');
+    return bar >= 0 ? icon.slice(bar + 1) : icon;
+  }
   function iconHtml(icon, cls) {
-    return iconIsImg(icon)
-      ? '<img class="' + (cls || 'ico-img') + '" src="assets/img/' + icon + '" alt="">'
-      : (icon || '');
+    if (!iconIsImg(icon)) return icon || '';
+    var e = iconEmoji(icon);
+    var eAttr = e ? ' data-e="' + e.replace(/"/g, '&quot;') + '"' : '';
+    return '<img class="' + (cls || 'ico-img') + '" src="assets/img/' + iconSrc(icon) +
+           '" alt=""' + eAttr + ' onerror="UI.imgFallback(this)">';
+  }
+  // 그림 파일이 없을 때 <img> 를 이모지(span)로 바꾼다. 이모지가 없으면 조용히 지운다.
+  function imgFallback(img) {
+    var e = img.getAttribute('data-e') || '';
+    if (e) {
+      var span = document.createElement('span');
+      span.className = 'ico-fallback';
+      span.textContent = e;
+      if (img.parentNode) img.parentNode.replaceChild(span, img);
+    } else if (img.parentNode) {
+      img.parentNode.removeChild(img);
+    }
   }
   function setIcon(elm, icon) {
     if (iconIsImg(icon)) elm.innerHTML = iconHtml(icon);
@@ -659,7 +689,7 @@ var UI = (function () {
     var s = State.get();
 
     el.recordBox.innerHTML = Game.records().map(function (r) {
-      return '<div class="rec"><span class="rec-ic">' + r.icon + '</span>' +
+      return '<div class="rec"><span class="rec-ic">' + iconHtml(r.icon, 'rec-img') + '</span>' +
              '<span class="rec-nm">' + r.name + '</span>' +
              '<span class="rec-v">' + r.value + '</span></div>';
     }).join('');
@@ -899,7 +929,8 @@ var UI = (function () {
           var chip = document.createElement('button');
           chip.type = 'button';
           chip.className = 'achv-chip';
-          chip.textContent = a.icon;
+          if (iconIsImg(a.icon)) chip.innerHTML = iconHtml(a.icon, 'achv-chip-img');
+          else chip.textContent = a.icon;
           chip.setAttribute('aria-label', a.name + ' · 달성 완료');
           chip.addEventListener('click', function () {
             ask({ emoji: a.icon, title: a.name,
@@ -1934,7 +1965,7 @@ var UI = (function () {
    * @param {function} onYes 확인을 눌렀을 때
    */
   function ask(o, onYes) {
-    el.askEmoji.textContent = o.emoji || '❓';
+    setIcon(el.askEmoji, o.emoji || '❓');
     el.askTitle.textContent = o.title;
     el.askText.innerHTML = o.text;
     el.askOk.textContent = o.ok || '확인';
@@ -1957,7 +1988,7 @@ var UI = (function () {
    * @param {function(string)} [onOk] 값을 받아 처리 (읽기 전용이면 생략)
    */
   function textDialog(o, onOk) {
-    el.textEmoji.textContent = o.emoji || '💾';
+    setIcon(el.textEmoji, o.emoji || '💾');
     el.textTitle.textContent = o.title;
     el.textDesc.innerHTML = o.desc || '';
     el.textDesc.hidden = !o.desc;
@@ -2185,7 +2216,8 @@ var UI = (function () {
       if (found) {
         Sound.play('reward');
         // 레시피 아이콘은 이제 그림(경로 문자열)이라 토스트·플로트에 그대로 넣으면 경로가 보인다.
-        var fico = iconIsImg(found.icon) ? '🍽' : found.icon;
+        // '이모지|경로' 표기면 이모지만 뽑아 쓰고, 순수 경로면 접시 이모지로 대신한다.
+        var fico = iconEmoji(found.icon) || (iconIsImg(found.icon) ? '🍽' : found.icon);
         toast('🎉 파티 음식 발견! ' + fico + ' ' + found.name);
         floatText(x, y - 26, fico);
         sig.partydex = '';
@@ -2418,6 +2450,7 @@ var UI = (function () {
     setSheet: setSheet,
     tickWorld: tickWorld,
     toast: toast,
+    imgFallback: imgFallback,
     invalidate: function () { sig = {}; buffSig = ''; lookSig = ''; skinSig = ''; }
   };
 })();
