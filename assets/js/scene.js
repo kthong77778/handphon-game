@@ -226,6 +226,11 @@ var Scene = (function () {
   function init(streetEl, popsEl) {
     street = streetEl;
     pops = popsEl;
+    // 뒤편 골목(건물 실루엣) — 손님·가게보다 뒤(z:0). 하늘이 그 뒤로 비친다.
+    var backEl = document.createElement('div');
+    backEl.className = 'street-back';
+    backEl.innerHTML = Data.alleyBack();
+    street.appendChild(backEl);
     shopEl = document.createElement('div');
     shopEl.className = 'shopfront';
     street.appendChild(shopEl);

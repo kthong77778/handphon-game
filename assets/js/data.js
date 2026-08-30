@@ -550,6 +550,46 @@ var Data = (function () {
       '</svg>';
   }
 
+  // 거리 뒤편 골목 — 실루엣 건물 + 창문 불빛 + 가로등 + 나무.
+  // 위(하늘)·아래(바닥)는 투명이라 시간대 하늘과 거리 바닥이 그대로 비친다.
+  // 손님(z:2)·가게(z:1) 뒤(z:0)에 깔린다. 나중에 손그림 PNG/애니메이션으로 갈아끼우기 쉽게
+  // 독립 레이어(.street-back)로 둔다. 수치와는 무관한 순수 배경.
+  function alleyBack() {
+    var p = [];
+    var BASE = 58;   // 건물이 서는 바닥선 (viewBox 84 기준, 거리 바닥과 맞물린다)
+    var blds = [
+      { x: 126, w: 50, h: 42, roof: 'flat' },
+      { x: 180, w: 42, h: 30, roof: 'pitch' },
+      { x: 226, w: 56, h: 46, roof: 'tank' },
+      { x: 286, w: 44, h: 26, roof: 'flat' },
+      { x: 334, w: 52, h: 38, roof: 'pitch' }
+    ];
+    blds.forEach(function (b) {
+      var top = BASE - b.h;
+      p.push('<rect x="' + b.x + '" y="' + top + '" width="' + b.w + '" height="' + b.h + '" fill="#241a30"/>');
+      if (b.roof === 'pitch') p.push('<path d="M' + (b.x - 3) + ' ' + top + ' L' + (b.x + b.w / 2) + ' ' + (top - 9) + ' L' + (b.x + b.w + 3) + ' ' + top + ' Z" fill="#1e1528"/>');
+      if (b.roof === 'tank') p.push('<rect x="' + (b.x + b.w - 16) + '" y="' + (top - 8) + '" width="12" height="8" rx="2" fill="#1e1528"/>');
+      var cols = Math.floor((b.w - 8) / 12), rows = Math.floor((b.h - 10) / 12);
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
+        var lit = ((r + c + b.x) % 3) !== 0;   // 몇 칸은 불이 꺼져 자연스럽게
+        p.push('<rect x="' + (b.x + 6 + c * 12) + '" y="' + (top + 6 + r * 12) + '" width="6" height="7" rx="1" fill="' +
+          (lit ? '#ffcf7a' : '#3a2f45') + '" opacity="' + (lit ? '.95' : '.5') + '"/>');
+      }
+    });
+    // 가로등 (등불에 은은한 후광)
+    p.push('<g><rect x="209" y="20" width="3" height="38" fill="#2a2036"/>' +
+      '<rect x="200" y="18" width="21" height="5" rx="2" fill="#2a2036"/>' +
+      '<circle cx="210.5" cy="26" r="6" fill="#ffe6a0"/>' +
+      '<circle cx="210.5" cy="26" r="13" fill="#ffdd88" opacity=".28"/></g>');
+    // 나무
+    p.push('<g><rect x="311" y="46" width="4" height="12" fill="#3a2a1c"/>' +
+      '<ellipse cx="313" cy="42" rx="13" ry="11" fill="#26402a"/>' +
+      '<ellipse cx="305" cy="46" rx="8" ry="7" fill="#223a26"/>' +
+      '<ellipse cx="320" cy="46" rx="8" ry="7" fill="#223a26"/></g>');
+    return '<svg viewBox="0 0 390 84" preserveAspectRatio="xMidYMax slice" ' +
+      'xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + p.join('') + '</svg>';
+  }
+
   var TAP_STEP_AT = [0, 8, 100, 800, 6e3, 5e4, 1e6, 5e7];
 
   // svgs 를 주면 큰 화면과 단계표에서는 그림을, 말풍선처럼 작은 곳에서는 이모지를 쓴다
@@ -1130,6 +1170,7 @@ var Data = (function () {
     OWNER: OWNER,
     HEADWEAR: HEADWEAR,
     shopFront: shopFront,
+    alleyBack: alleyBack,
     GOLDEN: GOLDEN,
     THIEF: THIEF,
     MANAGER: MANAGER,
