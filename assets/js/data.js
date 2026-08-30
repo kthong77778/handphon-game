@@ -668,15 +668,18 @@ var Data = (function () {
   var BAKE = ['skin_bake_bagel', 'skin_bake_baguette', 'skin_bake_waffle',
               'skin_bake_donut', 'skin_bake_applepie'].map(simg);
   var MEAT = ['skin_meat_pork', 'skin_meat_bacon', 'skin_meat_steak'].map(simg);
+  // 기본 스킨(분식 성장형) 8단계 손그림 — 어묵꼬치→떡꼬치→핫도그→왕만두→모둠튀김→라면정식→부대찌개→프리미엄한상
+  var SNACK = ['skin_snack_1', 'skin_snack_2', 'skin_snack_3', 'skin_snack_4',
+               'skin_snack_5', 'skin_snack_6', 'skin_snack_7', 'skin_snack_8'].map(simg);
 
   var TAP_SKINS = [
     {
-      id: 'auto', sign: '분식', icon: '🍢', svg: SNACKS[0], name: '분식 성장형',
+      id: 'auto', sign: '분식', icon: '🍢', svg: SNACK[0], name: '분식 성장형',
       desc: '어묵 꼬치에서 시작해 한상 차림까지',
       steps: ladder([
         ['🍢', '어묵 꼬치'], ['🍡', '떡꼬치'], ['🌭', '핫도그'], ['🥟', '왕만두'],
         ['🍤', '모둠튀김'], ['🍜', '라면 정식'], ['🍲', '부대찌개'], ['🍱', '프리미엄 한상']
-      ], SNACKS)
+      ], SNACK)
     },
     {
       id: 'bungeo', sign: '붕어빵', icon: '🐟', svg: BUNG[0], name: '붕어빵 가게',
@@ -1083,14 +1086,14 @@ var Data = (function () {
 
   // kind: 진행도를 올리는 사건. max 면 합이 아니라 최고 기록으로 친다.
   var QUESTS = [
-    { id: 'q_tap',    kind: 'tap',    icon: '👆', goal: 60,  name: '조리 60번' },
-    { id: 'q_gen',    kind: 'gen',    icon: '🧑‍🍳', goal: 12,  name: '설비 12개 사기' },
-    { id: 'q_up',     kind: 'up',     icon: '⬆️', goal: 2,   name: '업그레이드 2개 사기' },
-    { id: 'q_combo',  kind: 'combo',  icon: '🔥', goal: 25,  name: '콤보 25 만들기', max: true },
-    { id: 'q_golden', kind: 'golden', icon: '🌟', goal: 3,   name: '황금 손님 3명 받기' },
-    { id: 'q_thief',  kind: 'thief',  icon: '🚨', goal: 2,   name: '도둑 2명 잡기' },
-    { id: 'q_boost',  kind: 'boost',  icon: '📣', goal: 2,   name: '손님 몰이 2번 쓰기' },
-    { id: 'q_earn',   kind: 'earn',   icon: '💰', goal: 0,   name: '오늘 벌기', money: true }
+    { id: 'q_tap',    kind: 'tap',    icon: 'quest/q_tap.png', goal: 60,  name: '조리 60번' },
+    { id: 'q_gen',    kind: 'gen',    icon: 'quest/q_gen.png', goal: 12,  name: '설비 12개 사기' },
+    { id: 'q_up',     kind: 'up',     icon: 'quest/q_up.png', goal: 2,   name: '업그레이드 2개 사기' },
+    { id: 'q_combo',  kind: 'combo',  icon: 'quest/q_combo.png', goal: 25,  name: '콤보 25 만들기', max: true },
+    { id: 'q_golden', kind: 'golden', icon: 'quest/q_golden.png', goal: 3,   name: '황금 손님 3명 받기' },
+    { id: 'q_thief',  kind: 'thief',  icon: 'quest/q_thief.png', goal: 2,   name: '도둑 2명 잡기' },
+    { id: 'q_boost',  kind: 'boost',  icon: 'quest/q_boost.png', goal: 2,   name: '손님 몰이 2번 쓰기' },
+    { id: 'q_earn',   kind: 'earn',   icon: 'quest/q_earn.png', goal: 0,   name: '오늘 벌기', money: true }
   ];
 
   function genCount(s, id) { return s.gens[id] || 0; }
