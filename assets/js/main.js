@@ -382,6 +382,7 @@
     Game.michSeasonRoll();     // 달이 바뀌었으면 새 시즌으로
     Game.seedTabsSeen();       // 지금 열린 탭은 조용히 '봤다'로 — 기존 유저에겐 연출을 안 띄운다
     UI.init(handlers);
+    if (window.Sky) Sky.init();   // 시간대 하늘 (기본 테마 배경)
     if (State.get().sawTour) settleReturn();
     else maybeTour();          // 처음이면 정산 모달과 겹치지 않게 안내부터
     UI.refresh(true);

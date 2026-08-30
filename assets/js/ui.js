@@ -1463,6 +1463,8 @@ var UI = (function () {
     if (t && t.vars) {
       Object.keys(t.vars).forEach(function (k) { root.style.setProperty(k, t.vars[k]); });
     }
+    // 기본 테마면 시간대 하늘이 --appbg 를 다시 그린다 (전환 순간 깜빡임 방지)
+    if (window.Sky) Sky.refresh();
   }
 
   function renderThemes() {
