@@ -572,11 +572,11 @@ var Data = (function () {
         '<rect class="' + (flick ? 'alley-win' : '') + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="1.5" fill="' + col + '"/>';
     }
 
-    /* --- 원경: 흐릿한 뒤 건물 실루엣 (깊이감) --- */
+    /* --- 원경: 흐릿한 뒤 건물 실루엣 (깊이감). 근경보다 살짝 밝은 남보라 = 안개 낀 거리 --- */
     var far = [[108, 40, 20], [150, 44, 26], [196, 38, 18], [246, 42, 24], [300, 46, 22], [348, 44, 16]];
     far.forEach(function (b, i) {
       var top = BASE - b[2];
-      p.push('<rect x="' + b[0] + '" y="' + top + '" width="' + (b[1] - b[0]) + '" height="' + b[2] + '" fill="#201a32" opacity=".85"/>');
+      p.push('<rect x="' + b[0] + '" y="' + top + '" width="' + (b[1] - b[0]) + '" height="' + b[2] + '" fill="#2a2340" opacity=".7"/>');
       p.push(win(b[0] + 5, top + 5, i % 2 ? 'cool' : 'warm', i));   // 창 하나씩만 은은히
     });
 
@@ -590,7 +590,9 @@ var Data = (function () {
     ];
     blds.forEach(function (b, bi) {
       var top = BASE - b.h;
-      p.push('<rect x="' + b.x + '" y="' + top + '" width="' + b.w + '" height="' + b.h + '" fill="#241a30"/>');
+      // 어떤 하늘에도 또렷하게 — 근경은 거의 검게. 옥상엔 따뜻한 테두리 빛(역광 분리감).
+      p.push('<rect x="' + b.x + '" y="' + top + '" width="' + b.w + '" height="' + b.h + '" fill="#17111f"/>');
+      p.push('<rect x="' + b.x + '" y="' + top + '" width="' + b.w + '" height="1.4" fill="#a06a48" opacity=".6"/>');
       // 옥상 소품
       if (b.roof === 'chimney') {
         p.push('<rect x="' + (b.x + b.w - 12) + '" y="' + (top - 9) + '" width="6" height="9" fill="#2a1e34"/>');
