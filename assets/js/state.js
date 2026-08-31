@@ -123,6 +123,7 @@ var State = (function () {
       noticeSeen: 0,     // 마지막으로 본 공지 id (이보다 큰 공지가 있으면 뱃지)
       mailSeen: 0,       // 마지막으로 본 우편 id (안 읽은 편지 뱃지용)
       mailTaken: [],     // 선물을 받은 우편 id 목록
+      candy: 0,          // 별사탕 — 상점 전용 재화 (환생해도 유지)
 
       startedAt: now(),
       lastSeen: now()
@@ -145,7 +146,7 @@ var State = (function () {
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup', 'sawPrestigeIntro',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
                    'coupons', 'truckCount', 'specialProg', 'specialTaken',
-                   'noticeSeen', 'mailSeen'];
+                   'noticeSeen', 'mailSeen', 'candy'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
     // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
     var CAPV = Number.MAX_VALUE;

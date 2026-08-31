@@ -20,6 +20,7 @@
   <!-- 상단: 재화 표시 -->
   <header id="hud">
     <div class="hud-actions">
+      <button class="hud-ic" id="shopBtn" aria-label="상점">🛒</button>
       <button class="hud-ic" id="mailBtn" aria-label="우편함">✉️<i class="hud-dot" id="mailDot" hidden></i></button>
       <button class="hud-ic" id="noticeBtn" aria-label="공지사항">📢<i class="hud-dot" id="noticeDot" hidden></i></button>
     </div>
@@ -33,6 +34,7 @@
     <div class="hud-sub">
       <span class="chip" id="fameChip"><img class="chip-ic" src="assets/img/fame.png" alt="">명성 <b id="fameNum">0</b></span>
       <span class="chip" id="multChip">×1.00</span>
+      <span class="chip" id="candyChip">🍬 <b id="candyHud">0</b></span>
       <button class="chip coupon-chip" id="couponChip" hidden aria-label="할인 쿠폰 사용">🎟️ 0/3</button>
     </div>
     <div class="boss" id="bossBar">
@@ -404,6 +406,18 @@
               autocapitalize="off" autocorrect="off"></textarea>
     <button class="btn big" id="textOk">확인</button>
     <button class="btn" id="textCancel">닫기</button>
+  </div>
+</div>
+
+<!-- 별사탕 상점 -->
+<div class="modal" id="shopModal" hidden>
+  <div class="modal-box notice-box">
+    <div class="modal-emoji">🛒</div>
+    <h3>상점</h3>
+    <div class="candy-bar">🍬 별사탕 <b id="candyNum">0</b></div>
+    <p class="shop-hint">출석 · 도전과제 · 환생으로 모은 별사탕으로 아이템을 사요.</p>
+    <div class="list shop-list" id="shopList"></div>
+    <button class="btn" id="shopClose">닫기</button>
   </div>
 </div>
 

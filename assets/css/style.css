@@ -470,6 +470,16 @@ button.item-cost:active{transform:scale(.92)}
 .btn.mail-claim{margin-top:8px;padding:9px 12px;font-size:13px}
 .mail-done{margin-top:8px;font-size:12px;color:var(--good);font-weight:700}
 
+/* 별사탕 상점 */
+.candy-bar{
+  font-size:15px;font-weight:700;color:var(--txt);
+  background:rgba(255,120,180,.12);border:1px solid rgba(255,120,180,.32);
+  border-radius:999px;padding:6px 16px;align-self:center;
+}
+.candy-bar b{color:#ff9ec4;font-variant-numeric:tabular-nums}
+.shop-hint{margin:0!important;font-size:12px;color:var(--dim)}
+.shop-list{width:100%;gap:9px;display:flex;flex-direction:column;text-align:left}
+
 #toast{
   position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 16px);
   transform:translateX(-50%);

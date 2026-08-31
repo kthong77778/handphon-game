@@ -672,6 +672,41 @@ console.log('\n[10.5] 우편함 선물 수령');
      '없는 id·중복은 정제된다');
 }
 
+console.log('\n[10.6] 별사탕 · 상점');
+{
+  State.set({ money: 0, candy: 0, coupons: 0 }); Game.invalidate();
+  ok(State.get().candy === 0, '별사탕 기본 0');
+
+  // 획득처: 출석·도전과제·환생
+  const dc = Game.claimDaily();
+  ok(dc.candy === Data.DAILY.candy && State.get().candy === Data.DAILY.candy, '출석하면 별사탕');
+  const c1 = State.get().candy;
+  State.get().taps = 1e9;                    // 탭 도전과제 여러 개 달성 유도
+  const got = Game.checkAchievements();
+  ok(got.length === 0 || State.get().candy === c1 + got.length * Data.CANDY.perAchv,
+     '도전과제 달성마다 별사탕 (+' + (State.get().candy - c1) + ')');
+
+  // 상점 구매: 별사탕 차감 + 효과
+  State.set({ money: 1000, candy: 20, coupons: 0 }); Game.invalidate();
+  const item = Data.SHOP.find(x => x.coupons);
+  const r = Game.buyShopItem(item.id);
+  ok(r && State.get().candy === 20 - item.cost, '사면 별사탕이 깎인다');
+  ok(State.get().coupons === item.coupons, '쿠폰 묶음이 실제로 들어온다');
+  State.set({ candy: 0 }); Game.invalidate();
+  ok(Game.buyShopItem(item.id) === null, '별사탕이 모자라면 못 산다');
+
+  // 환생해도 별사탕은 유지된다 (영구 재화)
+  State.set({ money: 1e12, runEarned: 1e12, candy: 30 }); Game.invalidate();
+  const beforeP = State.get().candy;
+  Game.doPrestige();
+  ok(State.get().candy >= beforeP, '환생해도 별사탕은 사라지지 않는다(오히려 +)',
+     beforeP + ' → ' + State.get().candy);
+
+  // 구버전 세이브(candy 없음) → 0
+  State.set({ money: 5 });
+  ok(State.get().candy === 0, '구버전 세이브는 candy 0 으로 채워짐');
+}
+
 console.log('\n[11] 일일 퀘스트');
 {
   State.set({ money: 0 }); Game.invalidate();

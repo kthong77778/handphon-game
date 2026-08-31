@@ -235,8 +235,25 @@ var Data = (function () {
     baseSeconds: 1800,     // 1일차: 초당 수익 30분치
     perStreak: 1800,       // 연속 1일마다 +30분치
     maxStreak: 7,
-    minMoney: 500          // 초반(수익 0)에도 최소한 이만큼은 준다
+    minMoney: 500,         // 초반(수익 0)에도 최소한 이만큼은 준다
+    candy: 3               // 출석하면 별사탕도 같이
   };
+
+  /* ---------- 별사탕 (🍬) — 상점 전용 재화 ----------
+     돈·명성과 별개다. 출석·도전과제(이정표)·환생으로 자동으로 모이고,
+     상점에서 소비 아이템을 사는 데 쓴다. 환생해도 사라지지 않는다. */
+  var CANDY = {
+    perAchv: 2,       // 도전과제 하나 달성마다
+    perPrestige: 5    // 환생 한 번마다
+  };
+
+  // 별사탕 상점 — 소비 아이템(반복 구매). cost 는 별사탕 개수.
+  var SHOP = [
+    { id: 'coupon', icon: '🎟️', name: '할인 쿠폰 묶음', desc: '설비·업그레이드를 싸게 사는 쿠폰 3장', cost: 8, coupons: 3 },
+    { id: 'boost',  icon: '📣', name: '수익 2배 · 30분', desc: '30분 동안 모든 수익이 ×2', cost: 5, boost: { mult: 2, dur: 1800 } },
+    { id: 'gold',   icon: '💰', name: '골드 뭉치',      desc: '지금 초당 수익 10분치를 즉시 지급', cost: 6, goldSec: 600 },
+    { id: 'ings',   icon: '📦', name: '재료 묶음',      desc: '조리 재료 5개를 랜덤으로', cost: 4, ings: 5 }
+  ];
 
 
 
@@ -1212,6 +1229,8 @@ var Data = (function () {
   // 공지사항 — id 가 클수록 최신. 최신 id 가 세이브의 noticeSeen 보다 크면
   // 헤더 📢 에 빨간 점이 뜬다. 새 소식을 추가할 땐 위에 더 큰 id 로 넣는다.
   var NOTICES = [
+    { id: 3, date: '2026-08-31', title: '🛒 상점 · ✉️ 우편함이 열렸어요',
+      body: '출석 · 도전과제 · 환생으로 모이는 새 재화 "별사탕(🍬)"으로 상점에서 쿠폰·부스트·골드·재료를 살 수 있어요. 받은 소식과 선물은 우편함에 담깁니다. 헤더 오른쪽 아이콘을 눌러보세요!' },
     { id: 2, date: '2026-08-31', title: '🌙 절전 모드가 생겼어요',
       body: '화면을 어둡게 해 배터리를 아끼면서도 가게는 계속 돌아가요. 설정에서 켜고, "절전모드 해제"를 누르면 다시 나옵니다.' },
     { id: 1, date: '2026-08-31', title: '🍢 분식집 키우기에 오신 걸 환영해요',
@@ -1232,6 +1251,8 @@ var Data = (function () {
     COST_GROWTH: COST_GROWTH,
     NOTICES: NOTICES,
     MAIL: MAIL,
+    CANDY: CANDY,
+    SHOP: SHOP,
     GENERATORS: GENERATORS,
     UPGRADES: UPGRADES,
     FAME_SHOP: FAME_SHOP,

@@ -35,6 +35,7 @@ var UI = (function () {
      'powerSaveBtn', 'powerSave', 'psMoney', 'powerSaveExit',
      'noticeBtn', 'noticeDot', 'noticeModal', 'noticeList', 'noticeClose',
      'mailBtn', 'mailDot', 'mailModal', 'mailList', 'mailClose',
+     'shopBtn', 'shopModal', 'candyNum', 'shopList', 'shopClose', 'candyChip', 'candyHud',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
@@ -183,6 +184,54 @@ var UI = (function () {
     var s = State.get();
     if (latestMailId() > (s.mailSeen || 0)) { s.mailSeen = latestMailId(); State.save(); }
     updateMailBadge();
+  }
+
+  /* ---------- 별사탕 상점 ----------
+     별사탕(재화)으로 소비 아이템을 산다. 초록(살 수 있음)일 때 오른쪽 값 버튼을
+     눌러야 사진다(다른 목록과 같은 규칙). */
+  function updateCandy() {
+    var c = State.get().candy || 0;
+    if (el.candyHud) el.candyHud.textContent = Fmt.comma(c);
+    if (el.candyNum) el.candyNum.textContent = Fmt.comma(c);
+  }
+  function shopBoughtMsg(got) {
+    if (got.coupons) return '🎟️ 쿠폰 ' + got.coupons + '장 받았어요';
+    if (got.boost) return '📣 ' + Math.round(got.boost.dur / 60) + '분 동안 수익 ×' + got.boost.mult + '!';
+    if (got.gold) return '💰 ' + Fmt.won(got.gold) + ' 받았어요';
+    if (got.ings) return '📦 재료 ' + got.ings.length + '개를 챙겼어요';
+    return '구매 완료!';
+  }
+  function renderShopList() {
+    el.shopList.innerHTML = '';
+    var candy = State.get().candy || 0;
+    Data.SHOP.forEach(function (it) {
+      var row = makeItem(it.icon, { buyBtn: true });
+      var p = parts(row);
+      p.nm.textContent = it.name;
+      p.desc.textContent = it.desc;
+      var ok = candy >= it.cost;
+      p.cost.innerHTML = '🍬 ' + it.cost;
+      p.cost.className = 'item-cost ' + (ok ? 'ok' : 'no');
+      row.className = 'item' + (ok ? ' buyable' : '');
+      p.cost.addEventListener('click', function () {
+        if (!row.classList.contains('buyable')) { toast('별사탕이 부족해요'); return; }
+        var got = Game.buyShopItem(it.id);
+        if (got) {
+          Sound.play('buy');
+          toast(shopBoughtMsg(got));
+          State.save();
+          renderShopList();
+          updateCandy();
+          refresh(true);
+        }
+      });
+      el.shopList.appendChild(row);
+    });
+  }
+  function showShop() {
+    renderShopList();
+    updateCandy();
+    el.shopModal.hidden = false;
   }
 
   function floatText(x, y, text) {
@@ -2025,7 +2074,8 @@ var UI = (function () {
     var d = Data.DAILY;
     el.dailyText.innerHTML =
       '<b>' + res.streak + '일째</b> 출석했습니다.<br>' +
-      '초당 수익 ' + Fmt.time(res.seconds) + '치 — <b>' + Fmt.won(res.gain) + '</b>';
+      '초당 수익 ' + Fmt.time(res.seconds) + '치 — <b>' + Fmt.won(res.gain) + '</b>' +
+      (res.candy ? '<br>🍬 별사탕 <b>' + res.candy + '</b> 도 받았어요' : '');
 
     var dots = '';
     for (var i = 1; i <= d.maxStreak; i++) {
@@ -2081,6 +2131,7 @@ var UI = (function () {
     updateHud();
     updateNoticeBadge();
     updateMailBadge();
+    updateCandy();
     renderTabs();
     if (currentTab === 'shop') { updateGenList(); updateReco(); }
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
@@ -2485,6 +2536,8 @@ var UI = (function () {
     el.noticeClose.addEventListener('click', function () { el.noticeModal.hidden = true; });
     el.mailBtn.addEventListener('click', showMail);
     el.mailClose.addEventListener('click', function () { el.mailModal.hidden = true; });
+    el.shopBtn.addEventListener('click', showShop);
+    el.shopClose.addEventListener('click', function () { el.shopModal.hidden = true; });
 
     // 테스트 도구 (테스트 빌드 전용 — 정식 버전에서는 index.html 에서 통째로 뺀다)
     [['dbgHour', 'hour'], ['dbgDay', 'day'],

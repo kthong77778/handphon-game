@@ -13,6 +13,9 @@ var Game = (function () {
   var MAIL_BY_ID = {};
   Data.MAIL.forEach(function (m) { MAIL_BY_ID[m.id] = m; });
 
+  var SHOP_BY_ID = {};
+  Data.SHOP.forEach(function (it) { SHOP_BY_ID[it.id] = it; });
+
   function S() { return State.get(); }
 
   // 자바스크립트 수는 1e308 을 넘으면 Infinity 가 되고, 그 뒤 Infinity - Infinity 는
@@ -611,6 +614,7 @@ var Game = (function () {
 
     s.fame += gain;
     s.prestiges++;
+    addCandy(Data.CANDY.perPrestige || 0);   // 환생 이정표마다 별사탕 (환생해도 유지)
     s.runTime = 0;
     s.money = startMoney();
     s.runEarned = 0;
@@ -957,6 +961,31 @@ var Game = (function () {
     }
     s.mailTaken.push(id);
     return m.reward;
+  }
+
+  /* ---------- 별사탕 상점 ----------
+     별사탕(s.candy)으로 소비 아이템을 산다. 반복 구매 가능. */
+  function addCandy(n) { var s = S(); s.candy = Math.max(0, (s.candy || 0) + n); }
+
+  /** 상점 아이템을 산다. 별사탕이 모자라면 null, 사면 지급 내역을 돌려준다. */
+  function buyShopItem(id) {
+    var it = SHOP_BY_ID[id];
+    var s = S();
+    if (!it || !((s.candy || 0) >= it.cost)) return null;
+    s.candy -= it.cost;
+    var out = { item: it };
+    if (it.coupons) {
+      s.coupons = Math.min((s.coupons || 0) + it.coupons, Data.COUPON.max + 1);
+      out.coupons = it.coupons;
+    }
+    if (it.boost) { applyIncomeBuff(it.boost.mult, it.boost.dur); out.boost = it.boost; }
+    if (it.goldSec) {
+      var amt = Math.max(perSec(true) * it.goldSec, 5000);   // 초반에도 허탕이 아니게 바닥
+      earn(s, amt);
+      out.gold = amt;
+    }
+    if (it.ings) { out.ings = dropIngredients(it.ings); }
+    return out;
   }
 
   /* ---- 재료 트럭 ----
@@ -1506,7 +1535,10 @@ var Game = (function () {
         unlocked.push(a);
       }
     });
-    if (unlocked.length) bump();   // 도전과제 개수가 전체 배율에 들어간다
+    if (unlocked.length) {
+      bump();   // 도전과제 개수가 전체 배율에 들어간다
+      addCandy(unlocked.length * (Data.CANDY.perAchv || 0));   // 이정표마다 별사탕 (자동지급)
+    }
     return unlocked;
   }
 
@@ -1679,8 +1711,10 @@ var Game = (function () {
     var seconds = d.baseSeconds + d.perStreak * (days - 1);
     var gain = Math.max(perSec(true) * seconds, d.minMoney);
     earn(s, gain);
+    var candy = Data.DAILY.candy || 0;
+    if (candy) addCandy(candy);            // 출석하면 별사탕도 (상점 재화)
 
-    return { streak: s.dailyStreak, days: days, seconds: seconds, gain: gain };
+    return { streak: s.dailyStreak, days: days, seconds: seconds, gain: gain, candy: candy };
   }
 
   /* ---------- 일일 퀘스트 ---------- */
@@ -1919,6 +1953,7 @@ var Game = (function () {
     claimAd: claimAd,
     mailClaimed: mailClaimed,
     claimMail: claimMail,
+    buyShopItem: buyShopItem,
     grabTruck: grabTruck,
     truckState: truckState,
     resetTruck: resetTruck,
