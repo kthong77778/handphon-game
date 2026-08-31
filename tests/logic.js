@@ -138,6 +138,40 @@ console.log('\n[6] 황금 손님');
   ok(Object.keys(seen).length === 3, '세 종류가 모두 등장', JSON.stringify(seen));
 }
 
+console.log('\n[6.1] 수익 버프 슬롯 합치기 (광고 ×2·1800초 vs 황금 ×7·30초)');
+{
+  // State.set 은 상태를 통째로 초기화하므로 뒤 블록(환생)이 쓸 수익을 날린다.
+  // 여기선 버프 필드만 직접 만졌다 끝에 되돌린다.
+  const s = State.get();
+  const rush = Data.GOLDEN.types.find(t => t.id === 'rush');   // ×7 / 30초
+  const adMult = Data.ADS.boostMult, adDur = Data.ADS.boostDur; // ×2 / 1800초
+  const reset = () => { s.goldLeft = 0; s.goldMult = 1; };
+
+  // 광고 먼저 → 황금 폭주: 센 배율(×7)은 '자기 시간(30초)'으로만, 광고의 긴 꼬리를 안 문다
+  reset();
+  Game.claimAd('boost');
+  ok(s.goldMult === adMult && s.goldLeft === adDur, '광고 버프가 걸린다 ×2/1800');
+  Game.claimGolden(rush);
+  ok(s.goldMult === rush.mult && s.goldLeft === rush.dur,
+     '센 배율이 오면 그 자신의 지속으로 교체 — ×7 이 30초', 'goldLeft=' + s.goldLeft);
+
+  // 황금 폭주 먼저 → 광고: 약한 버프(×2)는 센 버프의 배율·시간을 늘리지 못한다
+  reset();
+  Game.claimGolden(rush);
+  Game.claimAd('boost');
+  ok(s.goldMult === rush.mult && s.goldLeft === rush.dur,
+     '약한 버프는 센 버프의 배율·시간을 못 바꾼다 — ×7/30 유지', 'goldLeft=' + s.goldLeft);
+
+  // 같은 세기면 시간만 새로 채운다
+  reset();
+  Game.claimGolden(rush);
+  Game.advanceTimers(20);              // 10초 남음
+  Game.claimGolden(rush);
+  ok(s.goldMult === rush.mult && s.goldLeft === rush.dur, '같은 세기는 시간만 리필', 'goldLeft=' + s.goldLeft);
+
+  reset(); Game.invalidate();          // 버프를 끄고 나간다 (뒤 블록 오염 방지)
+}
+
 console.log('\n[6.5] 매크로 방지');
 {
   Game.resetGuard(); Game.resetCombo();

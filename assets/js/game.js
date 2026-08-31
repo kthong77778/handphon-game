@@ -845,11 +845,24 @@ var Game = (function () {
       return { def: a, left: adLeft(a.id), max: Data.ADS.perDay };
     });
   }
-  /** '수익 배율' 버프를 건다 — 황금 손님과 같은 자리(⚡)를 쓴다(세이브 필드 추가 없음) */
+  /** '수익 배율' 버프를 건다 — 황금 손님(손님 폭주)과 광고(수익 2배)가 같은
+     자리(⚡)를 쓴다(세이브 필드 추가 없음). 둘의 세기·지속이 크게 달라서
+     (광고 ×2·1800초 vs 황금 ×7·30초) 배율도 시간도 각각 max 로 합치면
+     "센 배율 + 긴 시간"(×7 이 30분)이 새어나갔다. 그래서:
+       - 걸린 게 없으면 그대로 건다
+       - 더 센 배율이 오면 그 배율 + '그 자신의' 지속으로 교체
+         (약한 버프의 긴 꼬리를 센 배율에 물려주지 않는다)
+       - 같은 세기면 시간만 새로/길게
+       - 더 약하면 무시 (약한 버프로 센 버프의 시간을 늘리지 않는다)
+     대가로, 센 버프가 오면 약한 버프의 남은 시간은 희생된다(반대로 약한
+     버프는 센 버프 중엔 허탕). 인플레이션(과지급)을 막는 쪽을 택했다. */
   function applyIncomeBuff(mult, dur) {
     var s = S();
-    s.goldMult = Math.max(s.goldLeft > 0 ? s.goldMult : 1, mult);
-    s.goldLeft = Math.max(s.goldLeft, dur);
+    if (s.goldLeft <= 0 || mult > s.goldMult) {
+      s.goldMult = mult; s.goldLeft = dur;
+    } else if (mult === s.goldMult) {
+      s.goldLeft = Math.max(s.goldLeft, dur);
+    }
   }
 
   /**
@@ -1469,9 +1482,8 @@ var Game = (function () {
       earn(s, money);
       text = '💰 ' + Fmt.won(money) + ' 획득!';
     } else if (type.id === 'rush') {
-      // 이미 걸려 있으면 더 센 쪽을 남기고 시간을 새로 채운다
-      s.goldMult = Math.max(s.goldLeft > 0 ? s.goldMult : 1, type.mult);
-      s.goldLeft = Math.max(s.goldLeft, type.dur);
+      // 광고 '수익 2배'와 같은 슬롯을 쓴다 — 합치는 규칙은 applyIncomeBuff 참고
+      applyIncomeBuff(type.mult, type.dur);
       text = '⚡ ' + type.dur + '초 동안 수익 ×' + type.mult + '!';
     } else {
       s.goldTapMult = Math.max(s.goldTapLeft > 0 ? s.goldTapMult : 1, type.mult);
