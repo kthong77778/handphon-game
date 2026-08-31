@@ -374,6 +374,12 @@ body{
   border-radius:20px;padding:24px 20px;
   width:100%;max-width:330px;text-align:center;
   display:flex;flex-direction:column;gap:12px;
+  /* 내용이 뷰포트보다 높으면(낮은 화면·가로모드) 상자 안에서만 스크롤되게 —
+     안 그러면 위아래로 넘쳐 아래 버튼이 화면 밖으로 밀려 못 누른다.
+     dvh 는 모바일 주소창 변화까지 반영, 미지원 브라우저는 앞 vh 로 폴백. */
+  max-height:calc(100vh - 48px);
+  max-height:calc(100dvh - 48px);
+  overflow-y:auto;
   animation:pop .25s ease-out;
 }
 @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
