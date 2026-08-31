@@ -943,12 +943,12 @@ var UI = (function () {
 
   /** 도감 배율 % 를 보기 좋게 (정수면 정수, 아니면 소수 첫째 자리) */
   function foodPctStr(x) { var v = Math.round(x * 1000) / 10; return v % 1 === 0 ? v.toFixed(0) : v.toFixed(1); }
-  function starStr(tier) { return '★★★'.slice(0, tier) + '☆☆☆'.slice(0, 3 - tier); }
+  function masteryStr(tier) { return '★★★'.slice(0, tier) + '☆☆☆'.slice(0, 3 - tier); }
   /** 누적 제작 안내: '제작 52 · ★★★까지 200' / 최고면 '제작 250 · 숙련 최고 ★★★' */
   function masteryHint(count) {
     var steps = Data.KITCHEN.mastery.steps, tier = Game.masteryTier(count);
     if (tier >= steps.length) return '제작 ' + Fmt.comma(count) + ' · 숙련 최고 ★★★';
-    return '제작 ' + Fmt.comma(count) + ' · ' + starStr(tier + 1) + '까지 ' + Fmt.comma(steps[tier]);
+    return '제작 ' + Fmt.comma(count) + ' · ' + masteryStr(tier + 1) + '까지 ' + Fmt.comma(steps[tier]);
   }
 
   function buildKitchenGrid() {
@@ -977,7 +977,7 @@ var UI = (function () {
           '<div class="kf-head"><span class="kf-icon">' + iconHtml(f.icon) + '</span>' +
             '<span class="kf-name">' + f.name + '</span>' +
             (isSpecial ? '<span class="kf-special">⭐특선</span>' : '') +
-            (made ? '<span class="kf-badge">' + (tier > 0 ? starStr(tier) + ' ' : '✔ ') +
+            (made ? '<span class="kf-badge">' + (tier > 0 ? masteryStr(tier) + ' ' : '✔ ') +
                     '+' + foodPctStr(Game.foodEffBonus(f)) + '%</span>' : '') + '</div>' +
           '<div class="kf-need">' + needHtml + '</div>' +
           (made ? '<div class="kf-mastery">' + masteryHint(count) + '</div>' : '') +
@@ -1045,7 +1045,7 @@ var UI = (function () {
     Sound.play(r.first || r.tierUp ? 'levelup' : 'buy');
     buzz(r.tierUp ? 16 : 12);
     if (r.tierUp) {
-      toast('🌟 ' + r.food.name + ' 숙련 ' + starStr(r.tier) + ' 달성! +' + Fmt.won(r.gain));
+      toast('🌟 ' + r.food.name + ' 숙련 ' + masteryStr(r.tier) + ' 달성! +' + Fmt.won(r.gain));
     } else {
       toast((r.first ? '🎉 새 음식 발견! ' : (r.special ? '⭐ ' : '🍳 ')) + r.food.name + '  +' + Fmt.won(r.gain));
     }
