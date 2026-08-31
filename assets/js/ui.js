@@ -659,7 +659,7 @@ var UI = (function () {
     var s = State.get();
 
     el.recordBox.innerHTML = Game.records().map(function (r) {
-      return '<div class="rec"><span class="rec-ic">' + r.icon + '</span>' +
+      return '<div class="rec"><span class="rec-ic">' + iconHtml(r.icon) + '</span>' +
              '<span class="rec-nm">' + r.name + '</span>' +
              '<span class="rec-v">' + r.value + '</span></div>';
     }).join('');
@@ -1522,7 +1522,7 @@ var UI = (function () {
         b.dataset.sound = t.id;
         b.innerHTML = '<span class="skin-ic"></span><span class="skin-nm"></span>' +
                       '<span class="skin-sub"></span>';
-        b.querySelector('.skin-ic').textContent = t.icon;
+        b.querySelector('.skin-ic').innerHTML = iconHtml(t.icon, 'tap-img');
         b.querySelector('.skin-nm').textContent = t.name;
         b.querySelector('.skin-sub').textContent = t.desc;
         b.addEventListener('click', function () {

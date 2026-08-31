@@ -185,7 +185,13 @@ var Scene = (function () {
     d.className = 'pop';
     // 파티 중엔 파티 음식이 함께 튄다
     if (Game.partyActive && Game.partyActive() && Math.random() < 0.4) {
-      d.textContent = pick(Data.PARTY.foods).icon;
+      var pic = pick(Data.PARTY.foods).icon;
+      // 파티 음식은 손그림 PNG — 경로면 <img>, 아니면 이모지
+      if (typeof pic === 'string' && pic.indexOf('.png') >= 0) {
+        d.innerHTML = '<img class="pop-img" src="assets/img/' + pic + '" alt="">';
+      } else {
+        d.textContent = pic;
+      }
     } else {
       d.textContent = orderIcon();
     }

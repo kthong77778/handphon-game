@@ -50,12 +50,12 @@ var Data = (function () {
 
   // 탭(직접 조리) 강화
   [
-    { id: 't1', icon: '👌', name: '손목 스냅',       desc: '탭 수익 ×2',  cost: 150,   mult: 2, taps: 10 },
-    { id: 't2', icon: '🙌', name: '양손 조리',       desc: '탭 수익 ×2',  cost: 5000,  mult: 2, taps: 50 },
-    { id: 't3', icon: '🔥', name: '불맛 내기',       desc: '탭 수익 ×3',  cost: 1.2e5, mult: 3, taps: 150 },
-    { id: 't4', icon: '🌪️', name: '신들린 손놀림',   desc: '탭 수익 ×3',  cost: 5e6,   mult: 3, taps: 400 },
-    { id: 't5', icon: '⚡', name: '초음속 젓가락',   desc: '탭 수익 ×4',  cost: 2e8,   mult: 4, taps: 800 },
-    { id: 't6', icon: '💥', name: '분식의 신',       desc: '탭 수익 ×5',  cost: 1e11,  mult: 5, taps: 1500 }
+    { id: 't1', icon: 'up/up_t1.png', name: '손목 스냅',       desc: '탭 수익 ×2',  cost: 150,   mult: 2, taps: 10 },
+    { id: 't2', icon: 'up/up_t2.png', name: '양손 조리',       desc: '탭 수익 ×2',  cost: 5000,  mult: 2, taps: 50 },
+    { id: 't3', icon: 'up/up_t3.png', name: '불맛 내기',       desc: '탭 수익 ×3',  cost: 1.2e5, mult: 3, taps: 150 },
+    { id: 't4', icon: 'up/up_t4.png', name: '신들린 손놀림',   desc: '탭 수익 ×3',  cost: 5e6,   mult: 3, taps: 400 },
+    { id: 't5', icon: 'up/up_t5.png', name: '초음속 젓가락',   desc: '탭 수익 ×4',  cost: 2e8,   mult: 4, taps: 800 },
+    { id: 't6', icon: 'up/up_t6.png', name: '분식의 신',       desc: '탭 수익 ×5',  cost: 1e11,  mult: 5, taps: 1500 }
   ].forEach(function (u, i) {
     UPGRADES.push({
       id: u.id, icon: u.icon, name: u.name, desc: u.desc,
@@ -66,9 +66,9 @@ var Data = (function () {
 
   // 탭이 초당 수익의 일부를 함께 벌어들이게 하는 업그레이드
   [
-    { id: 'tp1', icon: '🥄', name: '감으로 조리',     pct: 0.01, cost: 1e6 },
-    { id: 'tp2', icon: '📿', name: '30년 손맛',       pct: 0.02, cost: 1e9 },
-    { id: 'tp3', icon: '👑', name: '전설의 레시피',   pct: 0.05, cost: 1e13 }
+    { id: 'tp1', icon: 'up/up_tp1.png', name: '감으로 조리',     pct: 0.01, cost: 1e6 },
+    { id: 'tp2', icon: 'up/up_tp2.png', name: '30년 손맛',       pct: 0.02, cost: 1e9 },
+    { id: 'tp3', icon: 'up/up_tp3.png', name: '전설의 레시피',   pct: 0.05, cost: 1e13 }
   ].forEach(function (u, i) {
     UPGRADES.push({
       id: u.id, icon: u.icon, name: u.name,
@@ -80,12 +80,12 @@ var Data = (function () {
 
   // 전체 배율
   [
-    { id: 'a1', icon: '🧼', name: '위생 등급 A',     mult: 1.25, cost: 1e5 },
-    { id: 'a2', icon: '🎫', name: '단골 손님 카드',  mult: 1.25, cost: 1e7 },
-    { id: 'a3', icon: '📱', name: 'SNS 맛집 인증',   mult: 1.3,  cost: 1e9 },
-    { id: 'a4', icon: '📺', name: '방송 출연',       mult: 1.4,  cost: 1e11 },
-    { id: 'a5', icon: '⭐', name: '미쉐린 분식',     mult: 1.5,  cost: 1e14 },
-    { id: 'a6', icon: '🌏', name: '분식 제국',       mult: 2,    cost: 1e17 }
+    { id: 'a1', icon: 'up/up_a1.png', name: '위생 등급 A',     mult: 1.25, cost: 1e5 },
+    { id: 'a2', icon: 'up/up_a2.png', name: '단골 손님 카드',  mult: 1.25, cost: 1e7 },
+    { id: 'a3', icon: 'up/up_a3.png', name: 'SNS 맛집 인증',   mult: 1.3,  cost: 1e9 },
+    { id: 'a4', icon: 'up/up_a4.png', name: '방송 출연',       mult: 1.4,  cost: 1e11 },
+    { id: 'a5', icon: 'up/up_a5.png', name: '미쉐린 분식',     mult: 1.5,  cost: 1e14 },
+    { id: 'a6', icon: 'up/up_a6.png', name: '분식 제국',       mult: 2,    cost: 1e17 }
   ].forEach(function (u, i) {
     UPGRADES.push({
       id: u.id, icon: u.icon, name: u.name,
@@ -892,12 +892,12 @@ var Data = (function () {
   /* ---------- 탭 소리 (합성은 sound.js) ---------- */
   // 플레이어가 취향대로 고르는 조리음. classic 이 기본.
   var TAP_SOUNDS = [
-    { id: 'classic', icon: '🔔', name: '기본음',    desc: '맑게 올라가는 전자음' },
-    { id: 'tight',   icon: '👌', name: '짧은 뽁',   desc: '딱 끊기는 뽁, 연타에 잘 붙는다' },
-    { id: 'juicy',   icon: '💧', name: '촉촉한 뽁', desc: '젤리 터지는 물기 있는 소리' },
-    { id: 'deep',    icon: '🫧', name: '깊은 뽁',   desc: '묵직하고 통 큰 저음' },
-    { id: 'bubble',  icon: '🧼', name: '뽁뽁이',    desc: '에어캡 터지듯 톡 쏘게' },
-    { id: 'boing',   icon: '🎈', name: '탱글 뽁',   desc: '끝에 튕기는 고무 같은 뽁' }
+    { id: 'classic', icon: 'sound/snd_classic.png', name: '기본음',    desc: '맑게 올라가는 전자음' },
+    { id: 'tight',   icon: 'sound/snd_tight.png', name: '짧은 뽁',   desc: '딱 끊기는 뽁, 연타에 잘 붙는다' },
+    { id: 'juicy',   icon: 'sound/snd_juicy.png', name: '촉촉한 뽁', desc: '젤리 터지는 물기 있는 소리' },
+    { id: 'deep',    icon: 'sound/snd_deep.png', name: '깊은 뽁',   desc: '묵직하고 통 큰 저음' },
+    { id: 'bubble',  icon: 'sound/snd_bubble.png', name: '뽁뽁이',    desc: '에어캡 터지듯 톡 쏘게' },
+    { id: 'boing',   icon: 'sound/snd_boing.png', name: '탱글 뽁',   desc: '끝에 튕기는 고무 같은 뽁' }
   ];
 
   /* ---------- 주말 파티 이벤트 ---------- */
@@ -912,18 +912,18 @@ var Data = (function () {
     dexBonus: 0.01,        // 도감 한 칸당 모든 수익 +1% (영구)
     // 파티에서만 나오는 음식 — 모으면 도감이 채워진다
     foods: [
-      { id: 'pf1',  icon: '🍕', name: '파티 피자' },
-      { id: 'pf2',  icon: '🍗', name: '양념치킨' },
-      { id: 'pf3',  icon: '🌭', name: '핫도그' },
-      { id: 'pf4',  icon: '🍔', name: '수제버거' },
-      { id: 'pf5',  icon: '🌮', name: '타코' },
-      { id: 'pf6',  icon: '🍿', name: '팝콘' },
-      { id: 'pf7',  icon: '🧀', name: '치즈 플래터' },
-      { id: 'pf8',  icon: '🍩', name: '도넛 타워' },
-      { id: 'pf9',  icon: '🧁', name: '컵케이크' },
-      { id: 'pf10', icon: '🎂', name: '파티 케이크' },
-      { id: 'pf11', icon: '🍭', name: '막대사탕' },
-      { id: 'pf12', icon: '🥂', name: '샴페인' }
+      { id: 'pf1',  icon: 'party/pf1.png', name: '파티 피자' },
+      { id: 'pf2',  icon: 'party/pf2.png', name: '양념치킨' },
+      { id: 'pf3',  icon: 'party/pf3.png', name: '핫도그' },
+      { id: 'pf4',  icon: 'party/pf4.png', name: '수제버거' },
+      { id: 'pf5',  icon: 'party/pf5.png', name: '타코' },
+      { id: 'pf6',  icon: 'party/pf6.png', name: '팝콘' },
+      { id: 'pf7',  icon: 'party/pf7.png', name: '치즈 플래터' },
+      { id: 'pf8',  icon: 'party/pf8.png', name: '도넛 타워' },
+      { id: 'pf9',  icon: 'party/pf9.png', name: '컵케이크' },
+      { id: 'pf10', icon: 'party/pf10.png', name: '파티 케이크' },
+      { id: 'pf11', icon: 'party/pf11.png', name: '막대사탕' },
+      { id: 'pf12', icon: 'party/pf12.png', name: '샴페인' }
     ],
     // 파티에만 오는 손님 (전신 이모지만 — 거리 규칙 6)
     guests: ['🕺', '💃', '🧑‍🎤', '🧑‍🎄', '🎅', '🤶']
