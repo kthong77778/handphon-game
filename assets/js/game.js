@@ -243,6 +243,42 @@ var Game = (function () {
      이때 가게 구매 버튼을 활성으로 두면 헛돈만 쓰게 되므로 UI 가 이걸 본다. */
   function atIncomeCap() { return perSec(true) >= CAP; }
 
+  /** 이 설비를 1개 더 살 때 오르는 초당 수익(버프 제외). 개수와 무관 — rate 는 선형이다. */
+  function genUnitGain(id) {
+    var c = calc();
+    var g = GEN_BY_ID[id];
+    return cap(g.rate * (c.genM[id] || 1) * c.stat);
+  }
+
+  /** amt 개를 더 살 때 오르는 초당 수익이 지금 수익에서 차지하는 비율.
+     수익이 0 이면(초기) 1 로 본다. */
+  function genGainShare(id, amt) {
+    var ps = perSec(true);
+    if (!(ps > 0)) return 1;
+    return cap(genUnitGain(id) * (amt || 1)) / ps;
+  }
+
+  /** 지금 열린 설비 중 개당 수익이 가장 큰 값(최강 설비의 한 개 값) */
+  function bestUnitGain() {
+    var best = 0;
+    Data.GENERATORS.forEach(function (g) {
+      if (!genUnlocked(g.id)) return;
+      var u = genUnitGain(g.id);
+      if (u > best) best = u;
+    });
+    return best;
+  }
+
+  /** amt 개를 사도 초당 수익을 눈에 띄게(0.1% 이상) 못 올리고, 최강 설비도 아닌가.
+     부자일 때 싼/낮은 단계 설비가 여기 해당한다 — 화면 숫자가 안 움직여 '안 오른다'처럼
+     보인다. 주력·다음 단계(개당 값이 가장 큰) 설비는 개수가 많아도 여기 걸리지 않는다. */
+  function genBarelyHelps(id, amt) {
+    var ps = perSec(true);
+    if (!(ps > 0)) return false;                 // 초반(수익 0)엔 뭐든 의미 있다
+    if (genGainShare(id, amt) >= 0.001) return false;  // amt 사면 티가 난다
+    return genUnitGain(id) < bestUnitGain();      // 최강 설비면 힌트를 띄우지 않는다
+  }
+
   /* ---------- 매크로(오토클릭) 방지 ---------- */
   // 사람을 잘못 막는 쪽이 봇을 놓치는 쪽보다 훨씬 나쁘다.
   // 그래서 서로 독립적인 신호가 "동시에" 맞을 때만 막고, 벌은 몇 초 쉬는 것으로 끝낸다.
@@ -1777,6 +1813,7 @@ var Game = (function () {
     maxAffordable: maxAffordable,
     perSec: perSec,
     atIncomeCap: atIncomeCap,
+    genBarelyHelps: genBarelyHelps,
     tapValue: tapValue,
     tap: tap,
     globalMult: globalMult,

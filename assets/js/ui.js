@@ -162,6 +162,9 @@ var UI = (function () {
       var amt = amountFor(g.id);
       var cost = Game.genCost(g.id, amt);
       var canBuy = unlocked && money >= cost && !atCap;
+      // 부자일 때 싼/낮은 단계 설비 — 사도 화면 숫자가 안 움직인다.
+      // 구매는 막지 않고 힌트만 준다(주력·다음 단계 설비엔 안 뜬다).
+      var lowEff = unlocked && !atCap && Game.genBarelyHelps(g.id, amt);
 
       r.p.nm.textContent = unlocked ? g.name : '???';
       if (count > 0) {
@@ -175,11 +178,15 @@ var UI = (function () {
         r.p.desc.textContent = '이전 설비를 1개 구매하면 열립니다';
       } else if (atCap) {
         r.p.desc.textContent = '🔝 수익이 한계에 도달해 더 사도 오르지 않아요';
+      } else if (lowEff) {
+        // 한 줄이라 말줄임에 잘리지 않게 짧게 — 긴 수익 문자열은 빼고 힌트만 준다
+        r.p.desc.textContent = '💤 지금 사도 수익이 거의 안 올라요';
       } else if (count > 0) {
         r.p.desc.textContent = '초당 ' + Fmt.rate(Game.genRate(g.id)) + '원 (전체의 ' + sharePct(g.id) + ')';
       } else {
         r.p.desc.textContent = g.desc;
       }
+      r.row.classList.toggle('loweff', lowEff);
 
       r.p.cost.innerHTML = COST_COIN + '<span class="cnum">' + Fmt.num(cost) + '<small>' +
         (buyAmt === 'max' ? (canBuy ? '×' + amt : '×1') : '×' + amt) + '</small></span>';

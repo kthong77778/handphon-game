@@ -1295,5 +1295,28 @@ console.log('\n[25] 수익 천장 — ∞ 로 새지 않고 한계를 알린다'
   ok(Game.bestGen() !== null, '한계가 아니면 추천 설비가 있다');
 })();
 
+console.log('\n[26] 싼 설비 "거의 안 올라요" 힌트 (genBarelyHelps)');
+(function () {
+  const last = Data.GENERATORS[Data.GENERATORS.length - 1];
+  const first = Data.GENERATORS[0];
+  const fameLv = {};
+  Data.FAME_SHOP.forEach(function (f) { fameLv[f.id] = f.max; });
+
+  // 부자 + 최고단계 잔뜩 → 싼 설비는 사도 티가 안 난다, 주력은 힌트 없음
+  State.set({ money: Number.MAX_VALUE, fame: 1e30,
+              gens: { [last.id]: 2000, [first.id]: 5 }, fameLv, michelinGrand: 1 });
+  Game.invalidate();
+  ok(Game.genBarelyHelps(first.id, 1), '부자일 때 싼 설비는 힌트 대상');
+  ok(Game.genBarelyHelps(first.id, 100), '×100 을 사도 여전히 미미하면 힌트');
+  ok(!Game.genBarelyHelps(last.id, 1), '주력(최강) 설비는 개수 많아도 힌트 안 뜸');
+
+  // 초반: 유일/주력 설비는 힌트 대상이 아니다
+  State.set({ money: 1e4, gens: { [first.id]: 3 } }); Game.invalidate();
+  ok(!Game.genBarelyHelps(first.id, 1), '초반 주력 설비엔 힌트 없음');
+  // 수익이 0 이면(맨 처음) 힌트 없음
+  State.set({ gens: {} }); Game.invalidate();
+  ok(!Game.genBarelyHelps(first.id, 1), '수익 0 에선 힌트 없음(0으로 나눔 방어)');
+})();
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);

@@ -207,6 +207,10 @@ body{
 }
 .item.locked{opacity:.42}
 .item.owned{border-color:rgba(139,92,246,.5);background:var(--card2)}
+/* 지금 사도 수익이 거의 안 오르는 설비 — 살 수는 있지만(잠금 아님) 초록(매력적
+   구매)으로 강조하지 않고, 힌트를 앰버로 살짝 띄운다. */
+.item.loweff.buyable{border-color:var(--line);background:var(--card)}
+.item.loweff .item-desc{color:var(--gold)}
 .item:active{transform:scale(.985)}
 
 .item-icon{
