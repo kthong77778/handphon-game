@@ -78,18 +78,19 @@ var Game = (function () {
       else if (u.kind === 'tapPct') tapPct += u.value;
     });
     tapBase *= Math.pow(3, fameLv('f_tap'));
+    stat = cap(stat);          // 오버플로우(Infinity) 방지 — 규칙 10
 
     // 버프를 뺀 초당 수익
     var base = 0;
     Data.GENERATORS.forEach(function (g) {
       base += g.rate * (s.gens[g.id] || 0) * genM[g.id];
     });
-    base *= stat;
+    base = cap(base * stat);   // Infinity 로 새면 수익이 ∞ 로 굳고 지분이 NaN% 가 된다
 
     cache.ver = cacheVer;
     cache.stat = stat;
     cache.genM = genM;
-    cache.tapBase = tapBase;
+    cache.tapBase = cap(tapBase);
     cache.tapPct = tapPct;
     cache.base = base;
     return cache;
@@ -230,13 +231,17 @@ var Game = (function () {
   function genRate(id, noBuff) {
     var c = calc();
     var g = GEN_BY_ID[id];
-    return g.rate * genCount(id) * (c.genM[id] || 1) * c.stat * (noBuff ? 1 : buffMult());
+    return cap(g.rate * genCount(id) * (c.genM[id] || 1) * c.stat * (noBuff ? 1 : buffMult()));
   }
 
   /** 전체 초당 수익 (noBuff 면 일시 버프를 뺀 값) */
   function perSec(noBuff) {
-    return calc().base * (noBuff ? 1 : buffMult());
+    return cap(calc().base * (noBuff ? 1 : buffMult()));
   }
+
+  /** 수익이 수의 천장(CAP)에 닿아 더는 못 오르는 상태 — 설비를 더 사도 소용없다.
+     이때 가게 구매 버튼을 활성으로 두면 헛돈만 쓰게 되므로 UI 가 이걸 본다. */
+  function atIncomeCap() { return perSec(true) >= CAP; }
 
   /* ---------- 매크로(오토클릭) 방지 ---------- */
   // 사람을 잘못 막는 쪽이 봇을 놓치는 쪽보다 훨씬 나쁘다.
@@ -641,6 +646,7 @@ var Game = (function () {
      추천이 시시해진다 — 자동구매(runManager)와 같은 '절대 수익 증가' 기준을 쓴다.
      살 수 있는 게 하나도 없으면, 다음으로 모을 목표(제일 싼 설비)를 알려준다. */
   function bestGen() {
+    if (atIncomeCap()) return null;   // 수익이 한계면 추천할 게 없다 ('초당 +∞' 방지)
     var s = S(), c = calc(), money = s.money;
     var best = null, bestGain = 0, target = null, targetCost = Infinity;
     for (var k = 0; k < Data.GENERATORS.length; k++) {
@@ -1770,6 +1776,7 @@ var Game = (function () {
     genUnlocked: genUnlocked,
     maxAffordable: maxAffordable,
     perSec: perSec,
+    atIncomeCap: atIncomeCap,
     tapValue: tapValue,
     tap: tap,
     globalMult: globalMult,

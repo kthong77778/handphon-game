@@ -1268,5 +1268,32 @@ console.log('\n[24] 온보딩 — 탭 점진적 잠금');
   ok(Game.tabsToReveal().length === 0, '기존 유저는 부팅 후 새로 뜰(연출할) 탭이 없다');
 })();
 
+console.log('\n[25] 수익 천장 — ∞ 로 새지 않고 한계를 알린다');
+(function () {
+  const last = Data.GENERATORS[Data.GENERATORS.length - 1];
+  // 수익 천장(CAP)까지 밀어 넣는다. 명성상점 레벨은 normalize 가 상한으로 깎으므로
+  // (예: f_research 는 999) 명성(fame, 상한 없음)으로 천장을 구동한다.
+  // fame≈1e300 은 실제 플레이로는 도달 불가지만 CAP 방어 로직을 검증하기엔 충분하다.
+  const fameLvMax = {};
+  Data.FAME_SHOP.forEach(function (f) { fameLvMax[f.id] = f.max; });
+  State.set({ money: Number.MAX_VALUE, fame: 1e300,
+              gens: { [last.id]: 3000 }, fameLv: fameLvMax, michelinGrand: 1 });
+  Game.invalidate();
+  const ps = Game.perSec(true);
+  ok(isFinite(ps), '수익이 Infinity 로 새지 않는다(CAP 로 막힘)', Fmt.num(ps));
+  ok(Game.atIncomeCap(), '한계에 도달하면 atIncomeCap() 이 참');
+  const share = Math.round(Game.genRate(last.id) / Game.perSec() * 100);
+  ok(!Number.isNaN(share), '설비 지분이 NaN% 가 아니다', share + '%');
+  ok(Game.bestGen() === null, '한계에선 추천 설비가 없다(초당 +∞ 방지)');
+
+  // 정상 스케일에선 아무 영향 없다
+  State.set({ money: 1e6, gens: { g1: 5 } }); Game.invalidate();
+  ok(!Game.atIncomeCap(), '정상 스케일은 한계가 아니다');
+  const b = Game.perSec(true);
+  Game.buyGen('g1', 1); Game.invalidate();
+  ok(Game.perSec(true) > b, '한계가 아니면 설비 구매로 수익이 오른다');
+  ok(Game.bestGen() !== null, '한계가 아니면 추천 설비가 있다');
+})();
+
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);
 process.exit(fails ? 1 : 0);

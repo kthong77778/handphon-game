@@ -149,6 +149,7 @@ var UI = (function () {
   function updateGenList() {
     var money = State.get().money;
     var visible = visibleGenCount();
+    var atCap = Game.atIncomeCap();   // 수익 한계면 설비를 더 사도 안 오른다
 
     Data.GENERATORS.forEach(function (g, i) {
       var r = genRows[g.id];
@@ -160,7 +161,7 @@ var UI = (function () {
       var unlocked = Game.genUnlocked(g.id);
       var amt = amountFor(g.id);
       var cost = Game.genCost(g.id, amt);
-      var canBuy = unlocked && money >= cost;
+      var canBuy = unlocked && money >= cost && !atCap;
 
       r.p.nm.textContent = unlocked ? g.name : '???';
       if (count > 0) {
@@ -172,6 +173,8 @@ var UI = (function () {
 
       if (!unlocked) {
         r.p.desc.textContent = '이전 설비를 1개 구매하면 열립니다';
+      } else if (atCap) {
+        r.p.desc.textContent = '🔝 수익이 한계에 도달해 더 사도 오르지 않아요';
       } else if (count > 0) {
         r.p.desc.textContent = '초당 ' + Fmt.rate(Game.genRate(g.id)) + '원 (전체의 ' + sharePct(g.id) + ')';
       } else {
@@ -193,6 +196,7 @@ var UI = (function () {
 
   function onBuyGen(id) {
     if (!Game.genUnlocked(id)) { toast('아직 잠겨 있습니다'); return; }
+    if (Game.atIncomeCap()) { toast('🔝 수익이 한계에 도달했어요 — 더 사도 오르지 않아요'); return; }
     var amt = amountFor(id);
     if (buyAmt === 'max') {
       amt = Game.maxAffordable(id);
