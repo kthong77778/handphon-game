@@ -713,6 +713,7 @@ console.log('\n[10.7] 성장하는 할인 쿠폰');
   ok(State.get().couponPct === Data.COUPON.start, '쿠폰 할인율 기본 = start(' + Data.COUPON.start + ')');
   State.set({ money: 5 });   // couponPct 없는 구버전
   ok(State.get().couponPct === Data.COUPON.start, '구버전 세이브도 start 로 채워짐');
+  ok(State.get().sawCouponTip === 0, '쿠폰 사용법 튜토리얼 플래그 기본 0(구버전도 채워짐)');
 
   // 쿠폰은 ×1 구매에만 붙는다 — 대량구매(×10 등)에는 아예 안 붙는다(B안)
   State.set({ money: 1e12, gens: {}, coupons: 3, couponPct: 30 }); Game.invalidate();

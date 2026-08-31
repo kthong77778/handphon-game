@@ -1847,12 +1847,30 @@ var UI = (function () {
     var c = Game.couponState();
     if (c.count <= 0) { el.couponChip.hidden = true; return; }   // 없으면 숨긴다
     el.couponChip.hidden = false;
-    // 자라는 할인율을 앞세운다: 🎟️ 30% · 2/3
-    el.couponChip.textContent = '🎟️ ' + c.pct + '% · ' + couponCountStr(c);
+    // 자라는 할인율을 앞세우고, '1개만' 적용을 정면에 늘 보이게 박아둔다: 🎟️ 30% · 2/3 · 1개만
+    el.couponChip.textContent = '🎟️ ' + c.pct + '% · ' + couponCountStr(c) + ' · 1개만';
     el.couponChip.classList.toggle('armed', c.armed);           // 켜면 금색 강조
     el.couponChip.title = c.armed
       ? '다음 ×1 구매(설비/업그레이드 1개) −' + c.pct + '% 적용 중 · 쓰면 자라요 (눌러서 끄기)'
       : '눌러서 다음 ×1 구매(설비/업그레이드 1개)에 −' + c.pct + '% · 쓸수록 자라요';
+    maybeCouponTip();   // 쿠폰이 처음 생기면 사용법을 한 번 알려준다
+  }
+
+  /* ---------- 쿠폰 사용법 튜토리얼 (처음 한 번) ----------
+     쿠폰이 '1개만' 적용된다는 건 스스로 알기 어렵다. 처음 쿠폰이 생겼을 때
+     한 번만 팝업으로 알려주고, 다시는 안 뜬다(sawCouponTip). 다른 안내가
+     떠 있으면 겹치지 않게 미루고, 다음 갱신 때 다시 시도한다. */
+  function maybeCouponTip() {
+    var s = State.get();
+    if (s.sawCouponTip) return;
+    if (Game.couponState().count <= 0) return;                 // 쿠폰이 실제로 생겼을 때만
+    if (document.querySelector('.modal:not([hidden])')) return; // 다른 팝업 위에 겹치지 않게
+    s.sawCouponTip = 1; State.save();
+    ask({ oneButton: true, emoji: '🎟️', ok: '알겠어요', title: '할인 쿠폰 사용법',
+      text: '쿠폰은 <b>설비·업그레이드 1개(×1)</b>에만 쓸 수 있어요.<br>' +
+            '<b>×10·×100·최대</b> 같은 대량구매엔 붙지 않습니다.<br><br>' +
+            '할인율은 쓸수록 <b>자라서 100%</b>까지 오르니,<br>' +
+            '<b>비싼 설비 하나</b>에 몰아 쓰면 가장 이득이에요!' }, function () {});
   }
 
   /* ---------- 황금 손님 ---------- */

@@ -96,7 +96,7 @@ body{
 }
 .money-pill .coin{flex:0 0 auto;width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
 .rate{font-size:13px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
-.hud-sub{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.hud-sub{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
 .chip{
   font-size:12px;padding:3px 10px;border-radius:999px;
   background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.4);
