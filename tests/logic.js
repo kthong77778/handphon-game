@@ -595,15 +595,17 @@ console.log('\n[8] 환생 / 세이브 왕복');
   ok(near(Game.perSec(), 0), '환생 후 초당 수익 0');
   ok(near(Game.globalMult(), bruteRate() || Game.globalMult()), '환생 후 캐시 무효화됨');
 
-  s.goldens = 42; s.bestCombo = 33; s.dailyStreak = 4; s.boosts = 7;
+  s.goldens = 42; s.bestCombo = 33; s.dailyStreak = 4; s.boosts = 7; s.noticeSeen = 2;
   const code = State.exportText();
   State.wipe(); Game.invalidate();
   ok(State.get().goldens === 0, '초기화됨');
+  ok(State.get().noticeSeen === 0, '초기화 시 noticeSeen 0');
   ok(State.importText(code), '세이브 코드 복원');
   Game.invalidate();
   const t = State.get();
   ok(t.goldens === 42 && t.bestCombo === 33 && t.dailyStreak === 4 && t.boosts === 7,
      '새 필드가 백업/복원됨');
+  ok(t.noticeSeen === 2, 'noticeSeen 백업/복원됨');
 }
 
 console.log('\n[9] 구버전 세이브 호환 (v1 데이터에 새 필드가 없어도)');

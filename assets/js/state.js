@@ -120,6 +120,8 @@ var State = (function () {
       questAllTaken: 0,  // 셋 다 끝낸 보너스를 받았는가 (0/1)
       questsDone: 0,     // 지금까지 끝낸 퀘스트 수 (평생)
 
+      noticeSeen: 0,     // 마지막으로 본 공지 id (이보다 큰 공지가 있으면 뱃지)
+
       startedAt: now(),
       lastSeen: now()
     };
@@ -140,7 +142,8 @@ var State = (function () {
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup', 'sawPrestigeIntro',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
-                   'coupons', 'truckCount', 'specialProg', 'specialTaken'];
+                   'coupons', 'truckCount', 'specialProg', 'specialTaken',
+                   'noticeSeen'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
     // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
     var CAPV = Number.MAX_VALUE;

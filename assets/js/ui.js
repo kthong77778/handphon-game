@@ -33,6 +33,7 @@ var UI = (function () {
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
      'muteBtn', 'muteIc', 'muteTx', 'notifyBtn', 'helpBtn',
      'powerSaveBtn', 'powerSave', 'psMoney', 'powerSaveExit',
+     'noticeBtn', 'noticeDot', 'noticeModal', 'noticeList', 'noticeClose',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
@@ -73,6 +74,39 @@ var UI = (function () {
     el.powerSave.hidden = true;
     if (window.Sky && Sky.pause) Sky.pause(false);
     refresh(true);                                   // 어두운 동안 밀린 화면을 한 번에 갱신
+  }
+
+  /* ---------- 공지사항 ----------
+     Data.NOTICES 의 최신 id 가 세이브 noticeSeen 보다 크면 📢 에 빨간 점.
+     열면 최신 id 를 봤다고 적어 뱃지를 끈다. */
+  function latestNoticeId() {
+    var m = 0;
+    Data.NOTICES.forEach(function (n) { if (n.id > m) m = n.id; });
+    return m;
+  }
+  function updateNoticeBadge() {
+    if (el.noticeDot) el.noticeDot.hidden = !(latestNoticeId() > (State.get().noticeSeen || 0));
+  }
+  function showNotices() {
+    var html = '';
+    Data.NOTICES.forEach(function (n) {
+      html += '<div class="notice-item"><div class="notice-head"><b></b>' +
+              '<span class="notice-date"></span></div><p></p></div>';
+    });
+    el.noticeList.innerHTML = html;
+    // 텍스트는 textContent 로 넣어 안전하게 (제목·본문에 사용자 입력은 없지만 습관)
+    var items = el.noticeList.children;
+    Data.NOTICES.forEach(function (n, i) {
+      var it = items[i];
+      it.querySelector('b').textContent = n.title;
+      it.querySelector('.notice-date').textContent = n.date;
+      it.querySelector('p').textContent = n.body;
+    });
+    el.noticeModal.hidden = false;
+    // 봤다고 기록 → 뱃지 끄기
+    var s = State.get();
+    if (latestNoticeId() > (s.noticeSeen || 0)) { s.noticeSeen = latestNoticeId(); State.save(); }
+    updateNoticeBadge();
   }
 
   function floatText(x, y, text) {
@@ -1969,6 +2003,7 @@ var UI = (function () {
 
   function refresh(force) {
     updateHud();
+    updateNoticeBadge();
     renderTabs();
     if (currentTab === 'shop') { updateGenList(); updateReco(); }
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
@@ -2369,6 +2404,8 @@ var UI = (function () {
     el.helpBtn.addEventListener('click', function () { showTour(0); });
     el.powerSaveBtn.addEventListener('click', enterPowerSave);
     el.powerSaveExit.addEventListener('click', exitPowerSave);
+    el.noticeBtn.addEventListener('click', showNotices);
+    el.noticeClose.addEventListener('click', function () { el.noticeModal.hidden = true; });
 
     // 테스트 도구 (테스트 빌드 전용 — 정식 버전에서는 index.html 에서 통째로 뺀다)
     [['dbgHour', 'hour'], ['dbgDay', 'day'],

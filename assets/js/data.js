@@ -1209,8 +1209,18 @@ var Data = (function () {
     }
   ];
 
+  // 공지사항 — id 가 클수록 최신. 최신 id 가 세이브의 noticeSeen 보다 크면
+  // 헤더 📢 에 빨간 점이 뜬다. 새 소식을 추가할 땐 위에 더 큰 id 로 넣는다.
+  var NOTICES = [
+    { id: 2, date: '2026-08-31', title: '🌙 절전 모드가 생겼어요',
+      body: '화면을 어둡게 해 배터리를 아끼면서도 가게는 계속 돌아가요. 설정에서 켜고, "절전모드 해제"를 누르면 다시 나옵니다.' },
+    { id: 1, date: '2026-08-31', title: '🍢 분식집 키우기에 오신 걸 환영해요',
+      body: '어묵 꼬치부터 시작해 전국 최고의 분식집으로 키워보세요. 자리를 비워도 가게는 계속 돈을 벌어요. 재개업(환생)으로 명성을 쌓으면 더 빨라집니다!' }
+  ];
+
   return {
     COST_GROWTH: COST_GROWTH,
+    NOTICES: NOTICES,
     GENERATORS: GENERATORS,
     UPGRADES: UPGRADES,
     FAME_SHOP: FAME_SHOP,
