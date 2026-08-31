@@ -189,7 +189,11 @@ var State = (function () {
           seconds: Math.max(0, Number(r.seconds) || 0)
         };
       }).filter(function (r) {
-        return isFinite(r.earned) && isFinite(r.seconds);
+        // n·fame 도 유한성을 봐야 한다 — Infinity 가 그대로 통과하면
+        // (Math.max(0, Infinity)===Infinity) 명예의 전당에서 영구 1위로 박히고
+        // Fmt.num(Infinity) 로 깨져 보인다.
+        return isFinite(r.n) && isFinite(r.earned) &&
+               isFinite(r.fame) && isFinite(r.seconds);
       }).slice(-MAX_RUNS);
     }
 

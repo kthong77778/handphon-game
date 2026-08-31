@@ -172,6 +172,37 @@ console.log('\n[6.1] 수익 버프 슬롯 합치기 (광고 ×2·1800초 vs 황�
   reset(); Game.invalidate();          // 버프를 끄고 나간다 (뒤 블록 오염 방지)
 }
 
+console.log('\n[6.2] 황금 현금 바닥값은 버프와 무관 (규칙 4)');
+{
+  const snap = State.exportText();
+  const cash = Data.GOLDEN.types.find(t => t.id === 'cash');
+  // perSec 항(초당×240)을 죽이고(gens 비움) 명성을 높여 tapBase×25 항이 100·초당항을
+  // 확실히 넘겨 '바닥값을 정하게' 만든다. 이래야 버프 오염이 실제로 드러난다.
+  const s = State.get();
+  s.gens = {}; s.fame = 1000; s.goldLeft = 0; s.goldMult = 1; s.boostLeft = 0; Game.invalidate();
+  ok(Game.tapBaseValue() * 25 > Math.max(Game.perSec(true) * 240, 100),
+     '탭 항이 바닥값을 결정하는 상황', Fmt.won(Game.tapBaseValue() * 25));
+  const m0 = s.money; Game.claimGolden(cash); const noBuf = s.money - m0;
+
+  State.importText(snap); Game.invalidate();
+  const s2 = State.get();
+  s2.gens = {}; s2.fame = 1000; s2.goldLeft = 999; s2.goldMult = 7; s2.boostLeft = 0; Game.invalidate();
+  const m1 = s2.money; Game.claimGolden(cash); const withBuf = s2.money - m1;
+
+  ok(near(noBuf, withBuf), '버프(×7) 켜도 같은 현금 보상', noBuf + ' vs ' + withBuf);
+  State.importText(snap); Game.invalidate();   // 원상복구
+}
+
+console.log('\n[6.3] 오프라인 정산 방어 (NaN·음수 경과)');
+{
+  const r = Game.offlineReward(NaN);
+  ok(r.gain === 0 && r.trucks === 0, 'NaN 경과 → 보상 0·트럭 0');
+  const rn = Game.offlineReward(-100);
+  ok(rn.gain === 0 && rn.trucks === 0, '음수 경과 → 보상 0·트럭 0');
+  ok(Game.offlineReward(0).gain === 0, '0 경과 → 보상 0');
+  ok(isFinite(Game.offlineReward(3600).gain), '정상 경과는 여전히 유한한 보상');
+}
+
 console.log('\n[6.5] 매크로 방지');
 {
   Game.resetGuard(); Game.resetCombo();
@@ -610,6 +641,15 @@ console.log('\n[10] 깨진 세이브 방어');
   ok(State.get().money === 12345 && State.get().prestiges === 2,
      '거부된 불러오기가 진행을 날리지 않음');
   ok(State.importText(State.exportText()) === true, '정상 세이브 코드는 통과');
+
+  // 조작된 회차 기록의 무한대 n·fame 은 걸러야 한다 — 안 그러면 명예의 전당
+  // 영구 1위·Fmt.num(Infinity) 로 깨진다.
+  State.set({ runs: [ { n: Infinity, earned: 100, fame: Infinity, seconds: 60 },
+                      { n: 2, earned: 200, fame: 5, seconds: 90 } ] });
+  const runs = State.get().runs;
+  ok(runs.every(r => isFinite(r.n) && isFinite(r.fame)), '무한대 n·fame 회차는 버려짐',
+     JSON.stringify(runs.map(r => [r.n, r.fame])));
+  ok(runs.length === 1 && runs[0].n === 2, '멀쩡한 회차만 남음');
 }
 
 console.log('\n[11] 일일 퀘스트');

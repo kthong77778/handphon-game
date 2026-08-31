@@ -956,7 +956,7 @@ var Game = (function () {
       간격이 30·60·90…로 escalating 이라 개수가 저절로 완만해진다(방치 농사 방지).
       오늘치 카운트(truckCount)에서 이어 세므로, 이미 많이 받은 날은 적게 준다. */
   function offlineTrucks(secs) {
-    if (secs <= 0) return 0;
+    if (!(secs > 0)) return 0;   // NaN·음수·0 모두 차단 (secs<=0 은 NaN 을 놓친다)
     truckDayRoll();                                  // 자정을 넘겼으면 오늘치는 0부터
     var every = Data.KITCHEN.truckEvery, c = S().truckCount || 0;
     var t = 0, n = 0;
@@ -1372,6 +1372,12 @@ var Game = (function () {
    * @returns {{seconds:number, capped:number, tailSeconds:number, tailEff:number, gain:number}}
    */
   function offlineReward(elapsedSec) {
+    // 이상한 경과값(NaN·음수·0)이 들어오면 NaN 보상·트럭 5000개가 새지 않게 바로 0.
+    // 지금 호출처(main.js)는 항상 유한한 양수를 넘기지만, 방어를 함수 안에 둔다.
+    if (!(elapsedSec > 0)) {
+      return { seconds: 0, capped: 0, tailSeconds: 0,
+               tailEff: Data.OFFLINE.tailEff, gain: 0, trucks: 0, ings: 0 };
+    }
     var cap = offlineCapSeconds();
     var capped = Math.min(elapsedSec, cap);                       // 제값 구간(초)
     var tailRoom = offlineTailCapSeconds() - cap;                 // 꼬리 구간 길이
@@ -1478,7 +1484,8 @@ var Game = (function () {
 
     if (type.id === 'cash') {
       // 초반에 초당 수익이 0이어도 허탕이 되지 않도록 탭 수익으로 바닥을 깐다
-      money = Math.max(perSec(true) * 240, tapValue() * 25, 100);
+      // 바닥값은 버프·콤보를 뺀 값으로 — 버프 켠 채 잡았다고 부풀면 안 된다(규칙 4)
+      money = Math.max(perSec(true) * 240, tapBaseValue() * 25, 100);
       earn(s, money);
       text = '💰 ' + Fmt.won(money) + ' 획득!';
     } else if (type.id === 'rush') {
