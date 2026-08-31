@@ -565,6 +565,17 @@ console.log('\n[10] 깨진 세이브 방어');
   ok(s.goldMult === 1 && s.goldTapMult === 1, '0/NaN 배율은 1로 교정');
   ok(s.dailyDate === '', '엉뚱한 날짜 문자열 무시');
   ok(isFinite(Game.perSec()), '수익 계산이 NaN 이 되지 않음', Game.perSec());
+
+  // 세이브가 아닌 유효 JSON(null·숫자·배열·엉뚱한 객체)을 불러오면 조용히
+  // 초기화되면 안 된다 — 거부(false)하고 기존 진행을 그대로 둔다.
+  State.set({ money: 12345, taps: 99, prestiges: 2 }); Game.invalidate();
+  const b64 = x => Buffer.from(x, 'binary').toString('base64');
+  ['null', '12', '[]', '"hi"', '{"foo":1}'].forEach(function (raw) {
+    ok(State.importText(b64(raw)) === false, '세이브 아닌 JSON 거부: ' + raw);
+  });
+  ok(State.get().money === 12345 && State.get().prestiges === 2,
+     '거부된 불러오기가 진행을 날리지 않음');
+  ok(State.importText(State.exportText()) === true, '정상 세이브 코드는 통과');
 }
 
 console.log('\n[11] 일일 퀘스트');

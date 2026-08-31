@@ -371,9 +371,22 @@ var State = (function () {
     }
   }
 
+  // 세이브로 볼 만한 최소 형태인지 — 유효 JSON이라도 null·숫자·문자열·배열·
+  // 엉뚱한 객체면 normalize 가 빈 새 세이브를 돌려주므로, 여기서 걸러
+  // 진행 상황을 조용히 날리는 것을 막는다. 핵심 키 중 하나라도 있으면 통과.
+  var SAVE_KEYS = ['money', 'taps', 'gens', 'upgrades', 'prestiges', 'totalEarned'];
+  function looksLikeSave(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+    for (var i = 0; i < SAVE_KEYS.length; i++) {
+      if (Object.prototype.hasOwnProperty.call(obj, SAVE_KEYS[i])) return true;
+    }
+    return false;
+  }
+
   function importText(txt) {
     try {
       var obj = JSON.parse(decodeURIComponent(escape(atob(String(txt).trim()))));
+      if (!looksLikeSave(obj)) return false;
       data = normalize(obj);
       save();
       return true;
