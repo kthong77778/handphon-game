@@ -223,7 +223,8 @@ var Game = (function () {
     return g.baseCost * Math.pow(Data.COST_GROWTH, index) * costDiscount();
   }
 
-  /** 지금 amount개를 살 때 총 가격. 쿠폰 할인은 '다음 1개'에만 붙는다(대량 전체 아님). */
+  /** 지금 amount개를 살 때 총 가격. 쿠폰은 '설비 1개(×1)'만 살 때에만 붙는다.
+      대량구매(×10 등)에는 아예 안 붙어 쿠폰이 그대로 남는다(다음 ×1 이나 업그레이드에 쓴다). */
   function genCost(id, amount) {
     amount = amount || 1;
     var owned = genCount(id);
@@ -231,7 +232,7 @@ var Game = (function () {
     var r = Data.COST_GROWTH;
     var base = g.baseCost * Math.pow(r, owned) * costDiscount();   // 다음 1개 정가
     var full = base * (Math.pow(r, amount) - 1) / (r - 1);         // amount개 정가 합
-    return full - couponDisc() * base;                            // 쿠폰은 다음 1개만 깎는다
+    return full - (amount === 1 ? couponDisc() * base : 0);       // ×1 구매에만 쿠폰 할인
   }
 
   /** 지금 돈으로 최대 몇 개 살 수 있나 */
@@ -239,9 +240,9 @@ var Game = (function () {
     var g = GEN_BY_ID[id];
     var r = Data.COST_GROWTH;
     var owned = genCount(id);
-    var base = g.baseCost * Math.pow(r, owned) * costDiscount();   // 쿠폰 제외 정가
-    // 쿠폰이 다음 1개를 깎아주니, 그만큼 돈이 더 있는 셈 치고 계산한다
-    var money = S().money + couponDisc() * base;
+    var base = g.baseCost * Math.pow(r, owned) * costDiscount();   // 정가
+    // Max 는 대량구매라 쿠폰이 안 붙는다 — 정가 기준으로만 몇 개인지 센다
+    var money = S().money;
     if (money < base) return 0;
     var n = Math.floor(Math.log(money * (r - 1) / base + 1) / Math.log(r));
     return Math.max(0, Math.min(n, 1000));
@@ -545,7 +546,7 @@ var Game = (function () {
     if (!(s.money >= cost) || amount <= 0) return false;
     s.money -= cost;
     s.gens[id] = genCount(id) + amount;
-    useCouponIfArmed();               // 성사됐으니 쿠폰(있으면) 1장 소모
+    if (amount === 1) useCouponIfArmed();   // ×1 구매에만 쿠폰 소모 (대량구매면 그대로 둔다)
     questBump('gen', amount);
     bump();
     return true;

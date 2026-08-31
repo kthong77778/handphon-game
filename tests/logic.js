@@ -714,12 +714,23 @@ console.log('\n[10.7] 성장하는 할인 쿠폰');
   State.set({ money: 5 });   // couponPct 없는 구버전
   ok(State.get().couponPct === Data.COUPON.start, '구버전 세이브도 start 로 채워짐');
 
-  // 할인은 '설비 1개'에만 붙는다 (대량구매 전체가 아니라)
+  // 쿠폰은 ×1 구매에만 붙는다 — 대량구매(×10 등)에는 아예 안 붙는다(B안)
   State.set({ money: 1e12, gens: {}, coupons: 3, couponPct: 30 }); Game.invalidate();
   const full1 = Game.genCost(g, 1), full10 = Game.genCost(g, 10);
   Game.setCouponArmed(true);
-  ok(near(Game.genCost(g, 1), full1 * 0.7), '1개는 30% 깎인다');
-  ok(near(full10 - Game.genCost(g, 10), full1 * 0.3), '10개를 사도 딱 1개분만 깎인다');
+  ok(near(Game.genCost(g, 1), full1 * 0.7), '×1 은 30% 깎인다');
+  ok(near(Game.genCost(g, 10), full10), '×10 대량구매엔 쿠폰이 안 붙는다(정가)');
+
+  // 대량구매(×10)로는 쿠폰이 소모되지 않고 그대로 남는다
+  State.set({ money: 1e12, gens: {}, coupons: 2, couponPct: 30 }); Game.invalidate();
+  Game.setCouponArmed(true);
+  Game.buyGen(g, 10);
+  ok(State.get().coupons === 2, '대량구매는 쿠폰을 소모하지 않는다');
+  ok(State.get().couponPct === 30, '대량구매로는 할인율도 안 자란다');
+  ok(Game.couponState().armed === true, '대량구매 뒤에도 쿠폰은 켜진 채 남는다');
+  // 이어서 ×1 로 사면 그때 소모된다
+  Game.buyGen(g, 1);
+  ok(State.get().coupons === 1 && State.get().couponPct === 35, '×1 구매에서 비로소 1장 쓰고 자란다');
 
   // 쓸수록 자란다: 30 → +step … → 100 → reset
   State.set({ money: 1e15, gens: {}, couponPct: 30 }); Game.invalidate();
@@ -732,11 +743,12 @@ console.log('\n[10.7] 성장하는 할인 쿠폰');
   ok(seq.indexOf(100) >= 0, '계속 쓰면 100% 까지 오른다');
   ok(seq[seq.indexOf(100) + 1] === Data.COUPON.reset, '100% 를 쓰면 reset(' + Data.COUPON.reset + ')로 떨어진다');
 
-  // 100% 쿠폰은 설비 1개를 공짜로
+  // 100% 쿠폰은 설비 1개(×1)를 공짜로 — 대량구매엔 안 붙어 정가 그대로
   State.set({ money: 1e15, gens: {}, coupons: 1, couponPct: 100 }); Game.invalidate();
+  const full10b = Game.genCost(g, 10);
   Game.setCouponArmed(true);
-  ok(near(Game.genCost(g, 1), 0), '100% 쿠폰은 1개를 공짜로');
-  ok(Game.genCost(g, 10) > 0, '100% 라도 10개 중 1개만 공짜(나머지는 값이 있다)');
+  ok(near(Game.genCost(g, 1), 0), '100% 쿠폰은 ×1 을 공짜로');
+  ok(near(Game.genCost(g, 10), full10b), '100% 라도 ×10 은 정가(공짜 없음)');
 
   // 조작된 할인율은 정제된다
   State.set({ couponPct: 9999 });

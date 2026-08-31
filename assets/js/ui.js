@@ -1851,8 +1851,8 @@ var UI = (function () {
     el.couponChip.textContent = '🎟️ ' + c.pct + '% · ' + couponCountStr(c);
     el.couponChip.classList.toggle('armed', c.armed);           // 켜면 금색 강조
     el.couponChip.title = c.armed
-      ? '다음 구매(설비 1개) −' + c.pct + '% 적용 중 · 쓰면 자라요 (눌러서 끄기)'
-      : '눌러서 다음 구매(설비 1개)에 −' + c.pct + '% · 쓸수록 자라요';
+      ? '다음 ×1 구매(설비/업그레이드 1개) −' + c.pct + '% 적용 중 · 쓰면 자라요 (눌러서 끄기)'
+      : '눌러서 다음 ×1 구매(설비/업그레이드 1개)에 −' + c.pct + '% · 쓸수록 자라요';
   }
 
   /* ---------- 황금 손님 ---------- */
@@ -2455,6 +2455,10 @@ var UI = (function () {
         Array.prototype.forEach.call(el.buyAmt.children, function (o) {
           o.classList.toggle('active', o === b);
         });
+        // 쿠폰은 ×1 구매에만 붙는다 — 대량구매로 바꾸면 알려준다(쿠폰은 그대로 남는다)
+        if (buyAmt !== 1 && Game.couponState().armed) {
+          toast('🎟️ 쿠폰은 ×1 구매에만 적용돼요 (그대로 남겨둘게요)');
+        }
         updateGenList();
       });
     });
@@ -2465,7 +2469,10 @@ var UI = (function () {
       var c = Game.couponState();
       var on = Game.setCouponArmed(!c.armed);
       buzz(8);
-      toast(on ? ('🎟️ 다음 설비 1개 −' + c.pct + '%!') : '쿠폰 사용을 껐어요');
+      if (on) toast(buyAmt === 1
+        ? ('🎟️ 다음 ×1 구매 −' + c.pct + '%!')
+        : ('🎟️ 쿠폰 켰어요 · ×1 구매에만 −' + c.pct + '% 적용돼요'));
+      else toast('쿠폰 사용을 껐어요');
       refresh(true);   // 무장 상태 + 할인가 미리보기를 다시 그린다
     });
 
