@@ -91,18 +91,28 @@ var UI = (function () {
   }
 
   function makeItem(iconText, opts) {
-    // div + click 이면 키보드로 살 수 없고 스크린리더가 버튼으로 읽지 않는다.
-    // 누를 수 있는 행은 button, 보여주기만 하는 행(도전과제)은 div 로 만든다.
-    var row = document.createElement(opts && opts.static ? 'div' : 'button');
-    if (row.tagName === 'BUTTON') row.type = 'button';
+    opts = opts || {};
+    // 세 종류:
+    //  - buyBtn : 행은 div(컨테이너), 오른쪽 .item-cost 만 button — 그 '구매' 버튼만
+    //             눌러야 사진다. 행 몸통(이름·설명)을 눌러도 구매되지 않는다.
+    //  - static : 보여주기만 하는 행(도전과제) — div, 클릭 없음.
+    //  - 기본   : 행 전체가 button (광고 슬롯 등 행 전체가 하나의 동작).
+    // div + click 이면 키보드로 못 쓰고 스크린리더가 버튼으로 안 읽으므로,
+    // 누를 수 있는 것은 반드시 button 으로 둔다(규칙 11).
+    var asButton = !opts.static && !opts.buyBtn;
+    var row = document.createElement(asButton ? 'button' : 'div');
+    if (asButton) row.type = 'button';
     row.className = 'item';
+    var cost = opts.buyBtn
+      ? '<button class="item-cost" type="button"></button>'
+      : '<div class="item-cost"></div>';
     row.innerHTML =
       '<div class="item-icon"></div>' +
       '<div class="item-body">' +
         '<div class="item-name"><span class="nm"></span><span class="item-lv" hidden></span></div>' +
         '<div class="item-desc"></div>' +
       '</div>' +
-      '<div class="item-cost"></div>';
+      cost;
     setIcon(row.querySelector('.item-icon'), iconText);
     return row;
   }
@@ -125,9 +135,10 @@ var UI = (function () {
     el.genList.innerHTML = '';
     genRows = {};
     Data.GENERATORS.forEach(function (g) {
-      var row = makeItem(g.icon);
+      var row = makeItem(g.icon, { buyBtn: true });
       row.dataset.gen = g.id;
-      row.addEventListener('click', function () { onBuyGen(g.id); });
+      // 오른쪽 '구매' 버튼만 눌러야 산다 (행 몸통은 클릭해도 아무 일 없음)
+      row.querySelector('.item-cost').addEventListener('click', function () { onBuyGen(g.id); });
       el.genList.appendChild(row);
       genRows[g.id] = { row: row, p: parts(row) };
     });
@@ -204,6 +215,8 @@ var UI = (function () {
   function onBuyGen(id) {
     if (!Game.genUnlocked(id)) { toast('아직 잠겨 있습니다'); return; }
     if (Game.atIncomeCap()) { toast('🔝 수익이 한계에 도달했어요 — 더 사도 오르지 않아요'); return; }
+    // 초록(활성)일 때만 산다 — 화면이 회색이면(돈 부족) 눌러도 안 사진다
+    if (genRows[id] && !genRows[id].row.classList.contains('buyable')) { toast('돈이 부족합니다'); return; }
     var amt = amountFor(id);
     if (buyAmt === 'max') {
       amt = Game.maxAffordable(id);
@@ -277,12 +290,13 @@ var UI = (function () {
       el.upgradeList.innerHTML = '';
       list.forEach(function (u) {
         var locked = !Game.upgradeUnlocked(u);
-        var row = makeItem(u.icon);
+        var row = makeItem(u.icon, { buyBtn: true });
         row.dataset.up = u.id;
         var p = parts(row);
         p.nm.textContent = u.name;
         p.desc.textContent = locked ? ('🔒 ' + upgradeLockText(u) + ' · ' + u.desc) : u.desc;
-        row.addEventListener('click', function () {
+        // 오른쪽 '구매' 버튼만 눌러야 산다 (행 몸통은 클릭해도 아무 일 없음)
+        row.querySelector('.item-cost').addEventListener('click', function () {
           if (!Game.upgradeUnlocked(u)) { toast('🔒 ' + upgradeLockText(u)); return; }
           // 초록(활성)일 때만 산다 — 화면이 회색이면(돈 부족) 눌러도 안 사진다.
           // buyable 클래스는 updateUpgrades 가 매 렌더마다 최신으로 갱신한다.
@@ -327,7 +341,7 @@ var UI = (function () {
       sig.fame = newSig;
       el.fameShopList.innerHTML = '';
       Data.FAME_SHOP.forEach(function (f) {
-        var row = makeItem(f.icon);
+        var row = makeItem(f.icon, { buyBtn: true });
         row.dataset.fame = f.id;
         var p = parts(row);
         var lv = Game.fameLv(f.id);
@@ -335,8 +349,11 @@ var UI = (function () {
         p.lv.hidden = false;
         p.lv.textContent = f.infinite ? ('Lv.' + lv + ' ∞') : ('Lv.' + lv + '/' + f.max);
         p.desc.textContent = f.desc;
-        row.addEventListener('click', function () {
+        // 오른쪽 '구매' 버튼만 눌러야 산다 (행 몸통은 클릭해도 아무 일 없음)
+        row.querySelector('.item-cost').addEventListener('click', function () {
           if (Game.fameLv(f.id) >= f.max) { toast('이미 최대 레벨입니다'); return; }
+          // 초록(활성)일 때만 산다 — 화면이 회색이면(명성 부족) 눌러도 안 강화된다
+          if (!row.classList.contains('buyable')) { toast('명성이 부족합니다'); return; }
           if (Game.buyFame(f.id)) {
             Sound.play('upgrade');
             buzz(12);

@@ -247,6 +247,18 @@ body{
 .item-cost.ok{color:var(--good)}
 .item-cost.no{color:var(--bad)}
 .item-cost small{display:block;font-size:10px;font-weight:600;color:var(--dim);margin-top:1px}
+/* 구매 목록(설비·업그레이드·명성)에서는 .item-cost 가 실제 '구매' 버튼이다.
+   행 몸통이 아니라 이 버튼만 눌러야 사진다 — 눌러지는 것처럼 보이게 한다. */
+button.item-cost{
+  appearance:none;-webkit-appearance:none;
+  border:1px solid var(--line);background:var(--bg2);
+  font-family:inherit;cursor:pointer;text-align:center;
+  padding:8px 12px;border-radius:11px;min-width:78px;
+  transition:transform .06s,filter .12s,background .12s,border-color .12s;
+}
+button.item-cost:active{transform:scale(.92)}
+/* 살 수 있을 때(초록)만 강조 — 회색이면 눌러도 안 사진다 */
+.item.buyable button.item-cost{border-color:rgba(74,222,128,.55);background:rgba(74,222,128,.15)}
 
 /* ===== 카드 / 버튼 ===== */
 .card{

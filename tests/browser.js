@@ -1245,15 +1245,23 @@ suite('접근성 · 소리 · 안내 · 점장', async ({ page, ctx, ok, errs })
     await p.keyboard.press('Space'); await p.waitForTimeout(80);
     ok(await p.evaluate(()=>State.get().taps)===t0+2, '엔터·스페이스로 조리됨');
 
-    console.log('\n[3] 목록이 진짜 버튼');
+    console.log('\n[3] 구매는 오른쪽 버튼(.item-cost)만 — 행 몸통은 눌러도 안 사짐');
     await p.evaluate(()=>{const s=State.get();s.money=1e9;Game.invalidate();UI.refresh(true);});
     await p.waitForTimeout(300);
-    const tags = await p.evaluate(()=>[...document.querySelectorAll('#genList .item')].map(e=>e.tagName));
-    ok(tags.every(t=>t==='BUTTON'), `설비 ${tags.length}행 전부 button`);
+    // 행은 컨테이너(div), 구매 버튼은 .item-cost(button) — 키보드·스크린리더 접근성 유지(규칙 11)
+    const rowTags = await p.evaluate(()=>[...document.querySelectorAll('#genList .item')].map(e=>e.tagName));
+    ok(rowTags.every(t=>t==='DIV'), `설비 ${rowTags.length}행은 컨테이너 div`);
+    const costTags = await p.evaluate(()=>[...document.querySelectorAll('#genList .item .item-cost')].map(e=>e.tagName));
+    ok(costTags.length>0 && costTags.every(t=>t==='BUTTON'), '구매 컨트롤은 .item-cost 버튼');
     const g0 = await p.evaluate(()=>State.get().gens.g1||0);
-    await p.evaluate(()=>{ const b=[...document.querySelectorAll('#genList .item')].find(e=>!e.hidden); b.focus(); });
+    // 행 몸통(이름)을 눌러도 구매되지 않는다
+    await p.evaluate(()=>{ const b=[...document.querySelectorAll('#genList .item')].find(e=>!e.hidden); b.querySelector('.item-name').click(); });
+    await p.waitForTimeout(120);
+    ok(await p.evaluate(()=>State.get().gens.g1||0) === g0, '이름을 눌러도 구매 안 됨');
+    // 오른쪽 .item-cost 버튼은 키보드(Enter)로 구매된다
+    await p.evaluate(()=>{ const b=[...document.querySelectorAll('#genList .item')].find(e=>!e.hidden); b.querySelector('.item-cost').focus(); });
     await p.keyboard.press('Enter'); await p.waitForTimeout(200);
-    ok(await p.evaluate(()=>State.get().gens.g1||0) > g0, '키보드로 설비 구매됨');
+    ok(await p.evaluate(()=>State.get().gens.g1||0) > g0, '오른쪽 버튼은 키보드로 구매됨');
     await p.click('#tabbar .tab[data-tab="upgrade"]'); await p.waitForTimeout(300);
     const achv = await p.evaluate(()=>[...document.querySelectorAll('#achvList .item')].map(e=>e.tagName));
     ok(achv.length > 0 && achv.every(t=>t==='DIV'), '도전과제는 누를 수 없으니 div (업그레이드 탭)');
