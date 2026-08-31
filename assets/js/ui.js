@@ -34,6 +34,7 @@ var UI = (function () {
      'muteBtn', 'muteIc', 'muteTx', 'notifyBtn', 'helpBtn',
      'powerSaveBtn', 'powerSave', 'psMoney', 'powerSaveExit',
      'noticeBtn', 'noticeDot', 'noticeModal', 'noticeList', 'noticeClose',
+     'mailBtn', 'mailDot', 'mailModal', 'mailList', 'mailClose',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
@@ -107,6 +108,81 @@ var UI = (function () {
     var s = State.get();
     if (latestNoticeId() > (s.noticeSeen || 0)) { s.noticeSeen = latestNoticeId(); State.save(); }
     updateNoticeBadge();
+  }
+
+  /* ---------- 우편함 ----------
+     안 읽은 편지(id > mailSeen)나, 아직 안 받은 선물이 있으면 ✉️ 에 빨간 점. */
+  function latestMailId() {
+    var m = 0;
+    Data.MAIL.forEach(function (n) { if (n.id > m) m = n.id; });
+    return m;
+  }
+  function mailHasAlert() {
+    var s = State.get();
+    if (latestMailId() > (s.mailSeen || 0)) return true;              // 안 읽은 편지
+    return Data.MAIL.some(function (m) {                              // 안 받은 선물
+      return m.reward && !Game.mailClaimed(m.id);
+    });
+  }
+  function updateMailBadge() {
+    if (el.mailDot) el.mailDot.hidden = !mailHasAlert();
+  }
+  function rewardText(r) {
+    var parts = [];
+    if (r.gold) parts.push('💰 ' + Fmt.won(r.gold));
+    if (r.coupons) parts.push('🎟️ 쿠폰 ' + r.coupons + '장');
+    return parts.join(' · ');
+  }
+  function renderMailList() {
+    el.mailList.innerHTML = '';
+    Data.MAIL.forEach(function (m) {
+      var it = document.createElement('div');
+      it.className = 'notice-item mail-item';
+      it.innerHTML =
+        '<div class="notice-head"><b></b><span class="notice-date"></span></div>' +
+        '<div class="mail-from"></div><p></p>';
+      it.querySelector('b').textContent = m.title;
+      it.querySelector('.notice-date').textContent = m.date;
+      it.querySelector('.mail-from').textContent = 'From. ' + m.from;
+      it.querySelector('p').textContent = m.body;
+      if (m.reward) {
+        if (Game.mailClaimed(m.id)) {
+          var done = document.createElement('div');
+          done.className = 'mail-done';
+          done.textContent = '✔ 받았어요 — ' + rewardText(m.reward);
+          it.appendChild(done);
+        } else {
+          var rw = document.createElement('div');
+          rw.className = 'mail-reward';
+          rw.textContent = '🎁 ' + rewardText(m.reward);
+          it.appendChild(rw);
+          var btn = document.createElement('button');
+          btn.className = 'btn mail-claim';
+          btn.type = 'button';
+          btn.textContent = '받기';
+          btn.addEventListener('click', function () {
+            var got = Game.claimMail(m.id);
+            if (got) {
+              Sound.play('reward');
+              toast('🎁 선물을 받았어요! ' + rewardText(got));
+              State.save();
+              renderMailList();
+              updateMailBadge();
+              refresh(true);
+            }
+          });
+          it.appendChild(btn);
+        }
+      }
+      el.mailList.appendChild(it);
+    });
+  }
+  function showMail() {
+    renderMailList();
+    el.mailModal.hidden = false;
+    var s = State.get();
+    if (latestMailId() > (s.mailSeen || 0)) { s.mailSeen = latestMailId(); State.save(); }
+    updateMailBadge();
   }
 
   function floatText(x, y, text) {
@@ -2004,6 +2080,7 @@ var UI = (function () {
   function refresh(force) {
     updateHud();
     updateNoticeBadge();
+    updateMailBadge();
     renderTabs();
     if (currentTab === 'shop') { updateGenList(); updateReco(); }
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
@@ -2406,6 +2483,8 @@ var UI = (function () {
     el.powerSaveExit.addEventListener('click', exitPowerSave);
     el.noticeBtn.addEventListener('click', showNotices);
     el.noticeClose.addEventListener('click', function () { el.noticeModal.hidden = true; });
+    el.mailBtn.addEventListener('click', showMail);
+    el.mailClose.addEventListener('click', function () { el.mailModal.hidden = true; });
 
     // 테스트 도구 (테스트 빌드 전용 — 정식 버전에서는 index.html 에서 통째로 뺀다)
     [['dbgHour', 'hour'], ['dbgDay', 'day'],

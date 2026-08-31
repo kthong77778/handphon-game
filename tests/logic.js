@@ -654,6 +654,24 @@ console.log('\n[10] 깨진 세이브 방어');
   ok(runs.length === 1 && runs[0].n === 2, '멀쩡한 회차만 남음');
 }
 
+console.log('\n[10.5] 우편함 선물 수령');
+{
+  State.set({ money: 1000, coupons: 0 }); Game.invalidate();
+  ok(Array.isArray(State.get().mailTaken) && State.get().mailTaken.length === 0, '처음엔 받은 우편 없음');
+  const gift = Data.MAIL.find(m => m.reward);
+  const info = Data.MAIL.find(m => !m.reward);
+  const m0 = State.get().money;
+  const got = Game.claimMail(gift.id);
+  ok(got && State.get().money === m0 + gift.reward.gold, '선물을 받으면 돈이 들어온다');
+  ok(!info || Game.claimMail(info.id) === null, '선물 없는 편지는 받을 게 없다');
+  ok(Game.claimMail(gift.id) === null, '같은 선물은 두 번 못 받는다');
+  ok(Game.mailClaimed(gift.id), '받은 우편으로 기록됨');
+  // 조작된 mailTaken(없는 id) 은 걸러진다
+  State.set({ mailTaken: [gift.id, 99999, gift.id] });
+  ok(State.get().mailTaken.length === 1 && State.get().mailTaken[0] === gift.id,
+     '없는 id·중복은 정제된다');
+}
+
 console.log('\n[11] 일일 퀘스트');
 {
   State.set({ money: 0 }); Game.invalidate();

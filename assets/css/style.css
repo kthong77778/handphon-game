@@ -459,6 +459,17 @@ button.item-cost:active{transform:scale(.92)}
 .notice-date{color:var(--dim);font-size:11px;flex:0 0 auto;font-variant-numeric:tabular-nums}
 .notice-item p{margin:0;font-size:12.5px;color:var(--dim);line-height:1.6}
 
+/* 우편함 항목 (공지 스타일 재사용 + 보낸이·선물) */
+.mail-from{font-size:11px;color:#8b80b5;margin-bottom:5px}
+.mail-reward{
+  display:inline-flex;gap:8px;align-items:center;margin-top:8px;
+  font-size:12px;font-weight:700;color:var(--gold);
+  background:rgba(255,204,68,.1);border:1px solid rgba(255,204,68,.28);
+  padding:5px 10px;border-radius:9px;
+}
+.btn.mail-claim{margin-top:8px;padding:9px 12px;font-size:13px}
+.mail-done{margin-top:8px;font-size:12px;color:var(--good);font-weight:700}
+
 #toast{
   position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 16px);
   transform:translateX(-50%);

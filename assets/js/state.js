@@ -121,6 +121,8 @@ var State = (function () {
       questsDone: 0,     // 지금까지 끝낸 퀘스트 수 (평생)
 
       noticeSeen: 0,     // 마지막으로 본 공지 id (이보다 큰 공지가 있으면 뱃지)
+      mailSeen: 0,       // 마지막으로 본 우편 id (안 읽은 편지 뱃지용)
+      mailTaken: [],     // 선물을 받은 우편 id 목록
 
       startedAt: now(),
       lastSeen: now()
@@ -143,7 +145,7 @@ var State = (function () {
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup', 'sawPrestigeIntro',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
                    'coupons', 'truckCount', 'specialProg', 'specialTaken',
-                   'noticeSeen'];
+                   'noticeSeen', 'mailSeen'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
     // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
     var CAPV = Number.MAX_VALUE;
@@ -211,6 +213,16 @@ var State = (function () {
         return { s: h.s, stars: Math.max(0, Math.min(5, Math.floor(Number(h.stars) || 0))),
                  taps: Math.max(0, Math.floor(Number(h.taps) || 0)) };
       }).slice(-Data.MICHELIN.histKeep);
+    }
+
+    // 우편 선물 수령 기록 — 실제로 있는 우편 id 만, 중복 없이
+    if (Array.isArray(raw.mailTaken)) {
+      var mseen = {};
+      s.mailTaken = raw.mailTaken.filter(function (id) {
+        if (mseen[id]) return false;
+        mseen[id] = 1;
+        return Data.MAIL.some(function (m) { return m.id === id; });
+      });
     }
 
     // 파티 도감 — 실제로 있는 음식 id 만, 중복 없이

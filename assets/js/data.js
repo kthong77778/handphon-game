@@ -1218,9 +1218,20 @@ var Data = (function () {
       body: '어묵 꼬치부터 시작해 전국 최고의 분식집으로 키워보세요. 자리를 비워도 가게는 계속 돈을 벌어요. 재개업(환생)으로 명성을 쌓으면 더 빨라집니다!' }
   ];
 
+  // 우편함 — 받은 편지. reward 가 있으면 한 번 받을 수 있다(mailTaken 에 기록).
+  // 출석·이정표 보상은 자동지급이라 여기 없다 — 개업 선물·안내 편지 위주다.
+  var MAIL = [
+    { id: 1, date: '2026-08-31', from: '분식집 운영팀', title: '🎁 개업 축하 선물이에요',
+      body: '분식집 키우기를 시작해 주셔서 고마워요! 개업 축하 선물을 담아 보냅니다. 아래 "받기"로 챙기세요.',
+      reward: { gold: 5000, coupons: 1 } },
+    { id: 2, date: '2026-08-31', from: '분식집 운영팀', title: '자리를 비워도 가게는 돌아가요',
+      body: '앱을 꺼두거나 절전 모드를 켜도 가게는 계속 돈을 벌어요. 다시 오면 그동안 번 돈을 정산해 드립니다. 편하게 다녀오세요!' }
+  ];
+
   return {
     COST_GROWTH: COST_GROWTH,
     NOTICES: NOTICES,
+    MAIL: MAIL,
     GENERATORS: GENERATORS,
     UPGRADES: UPGRADES,
     FAME_SHOP: FAME_SHOP,

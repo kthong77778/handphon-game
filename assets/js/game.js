@@ -10,6 +10,9 @@ var Game = (function () {
   var FAME_BY_ID = {};
   Data.FAME_SHOP.forEach(function (f) { FAME_BY_ID[f.id] = f; });
 
+  var MAIL_BY_ID = {};
+  Data.MAIL.forEach(function (m) { MAIL_BY_ID[m.id] = m; });
+
   function S() { return State.get(); }
 
   // 자바스크립트 수는 1e308 을 넘으면 Infinity 가 되고, 그 뒤 Infinity - Infinity 는
@@ -936,6 +939,24 @@ var Game = (function () {
       out.ings = dropIngredients(Data.ADS.ingCount);
     }
     return out;
+  }
+
+  /* ---------- 우편함 ----------
+     Data.MAIL 의 편지. reward 가 있으면 한 번 받을 수 있고, 받은 id 는
+     s.mailTaken 에 남는다(출석·이정표 보상은 여기 없고 자동지급이다). */
+  function mailClaimed(id) { return S().mailTaken.indexOf(id) >= 0; }
+
+  /** 우편 선물을 받는다. 이미 받았거나 선물이 없으면 null. */
+  function claimMail(id) {
+    var m = MAIL_BY_ID[id];
+    var s = S();
+    if (!m || !m.reward || mailClaimed(id)) return null;
+    if (m.reward.gold) earn(s, m.reward.gold);
+    if (m.reward.coupons) {
+      s.coupons = Math.min((s.coupons || 0) + m.reward.coupons, Data.COUPON.max + 1);
+    }
+    s.mailTaken.push(id);
+    return m.reward;
   }
 
   /* ---- 재료 트럭 ----
@@ -1896,6 +1917,8 @@ var Game = (function () {
     adLeft: adLeft,
     adRoll: adRoll,
     claimAd: claimAd,
+    mailClaimed: mailClaimed,
+    claimMail: claimMail,
     grabTruck: grabTruck,
     truckState: truckState,
     resetTruck: resetTruck,
