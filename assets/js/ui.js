@@ -404,9 +404,12 @@ var UI = (function () {
       amt = Game.maxAffordable(id);
       if (amt < 1) { toast('돈이 부족합니다'); return; }
     }
+    var before = Game.couponState().pct;   // 쿠폰을 썼는지·자랐는지 알려주기 위해
     if (Game.buyGen(id, amt)) {
       Sound.play('buy');
       buzz(8);
+      var m = couponGrewMsg(before);
+      if (m) toast(m);
       refresh(true);
     } else {
       toast('돈이 부족합니다');
@@ -483,10 +486,12 @@ var UI = (function () {
           // 초록(활성)일 때만 산다 — 화면이 회색이면(돈 부족) 눌러도 안 사진다.
           // buyable 클래스는 updateUpgrades 가 매 렌더마다 최신으로 갱신한다.
           if (!row.classList.contains('buyable')) { toast('돈이 부족합니다'); return; }
+          var before = Game.couponState().pct;
           if (Game.buyUpgrade(u.id)) {
             Sound.play('upgrade');
             buzz(12);
-            toast(u.name + ' 구매!');
+            var m = couponGrewMsg(before);
+            toast(m ? (u.name + ' 구매! ' + m) : (u.name + ' 구매!'));
             refresh(true);
           } else {
             toast('돈이 부족합니다');
@@ -1824,20 +1829,30 @@ var UI = (function () {
     }
   }
 
+  /** 구매 직전 할인율(before)과 지금을 비교해 성장/리셋 안내 문구를 만든다.
+     쿠폰을 안 썼으면 빈 문자열. */
+  function couponGrewMsg(before) {
+    var pct = Game.couponState().pct;
+    if (pct === before) return '';
+    if (before >= 100 && pct < 100) return '🎟️ 100% 쿠폰 사용! ' + pct + '%부터 다시 자라요';
+    if (pct >= 100) return '🎟️ 쿠폰 할인 100% 완성! 다음 설비 1개는 공짜예요';
+    return '🎟️ 쿠폰 할인 ' + pct + '% 로 자랐어요';
+  }
+  function couponCountStr(c) {
+    // 총 보유 가능량까지: 2/3. 첫 환생 예외로 3장을 넘으면 (3)+1.
+    return c.count > c.max ? '(' + c.max + ')+' + (c.count - c.max) : c.count + '/' + c.max;
+  }
   function updateCoupon() {
     if (!el.couponChip) return;
     var c = Game.couponState();
     if (c.count <= 0) { el.couponChip.hidden = true; return; }   // 없으면 숨긴다
     el.couponChip.hidden = false;
-    // 총 보유 가능량까지 보여준다: 🎟️ 2/3. 첫 환생 예외로 3장을 넘으면 🎟️ (3)+1.
-    el.couponChip.textContent = '🎟️ ' + (c.count > c.max
-      ? '(' + c.max + ')+' + (c.count - c.max)
-      : c.count + '/' + c.max);
+    // 자라는 할인율을 앞세운다: 🎟️ 30% · 2/3
+    el.couponChip.textContent = '🎟️ ' + c.pct + '% · ' + couponCountStr(c);
     el.couponChip.classList.toggle('armed', c.armed);           // 켜면 금색 강조
-    var pct = Math.round(c.discount * 100);
     el.couponChip.title = c.armed
-      ? '다음 구매 −' + pct + '% 적용 중 (눌러서 끄기)'
-      : '눌러서 다음 구매 −' + pct + '%';
+      ? '다음 구매(설비 1개) −' + c.pct + '% 적용 중 · 쓰면 자라요 (눌러서 끄기)'
+      : '눌러서 다음 구매(설비 1개)에 −' + c.pct + '% · 쓸수록 자라요';
   }
 
   /* ---------- 황금 손님 ---------- */
@@ -2450,7 +2465,7 @@ var UI = (function () {
       var c = Game.couponState();
       var on = Game.setCouponArmed(!c.armed);
       buzz(8);
-      toast(on ? ('🎟️ 다음 구매 −' + Math.round(c.discount * 100) + '%!') : '쿠폰 사용을 껐어요');
+      toast(on ? ('🎟️ 다음 설비 1개 −' + c.pct + '%!') : '쿠폰 사용을 껐어요');
       refresh(true);   // 무장 상태 + 할인가 미리보기를 다시 그린다
     });
 

@@ -188,37 +188,50 @@ var Game = (function () {
      그 한 번만 discount 만큼 깎이고 쿠폰 1장이 소모된다. 무장 여부는 저장하지
      않는 일시 상태다. couponFactor 는 가격 계산 곳곳에 곱해져 미리보기도 맞춘다. */
   var couponArmed = false;
-  function couponFactor() {
-    return (couponArmed && S().coupons > 0) ? (1 - Data.COUPON.discount) : 1;
+  /** 지금 쿠폰이 켜져 있고 쓸 수 있으면 할인 비율(0~1), 아니면 0 */
+  function couponDisc() {
+    var s = S();
+    return (couponArmed && s.coupons > 0) ? Math.min(1, (s.couponPct || 0) / 100) : 0;
   }
+  /** 업그레이드(단일 아이템)용 가격 배율. 설비는 '1개만' 이라 couponDisc 를 따로 쓴다. */
+  function couponFactor() { return 1 - couponDisc(); }
   function setCouponArmed(v) { couponArmed = !!v && S().coupons > 0; return couponArmed; }
   function couponState() {
-    return { count: S().coupons, max: Data.COUPON.max,
-             armed: couponArmed && S().coupons > 0, discount: Data.COUPON.discount };
+    var s = S();
+    return { count: s.coupons, max: Data.COUPON.max,
+             armed: couponArmed && s.coupons > 0, pct: s.couponPct || 0 };
   }
-  // 구매가 실제로 성사됐을 때만 부른다: 쿠폰 1장 소모 + 무장 해제
+  // 구매가 실제로 성사됐을 때만 부른다: 쿠폰 1장 소모 + 무장 해제 + 할인율 성장.
+  // 100% 를 쓰면 reset 로 떨어지고, 아니면 step 만큼 자라 100% 까지 오른다.
   function useCouponIfArmed() {
     var s = S();
-    if (couponArmed && s.coupons > 0) { s.coupons -= 1; couponArmed = false; return true; }
+    if (couponArmed && s.coupons > 0) {
+      s.coupons -= 1;
+      couponArmed = false;
+      var c = Data.COUPON;
+      if ((s.couponPct || 0) >= 100) s.couponPct = c.reset;
+      else s.couponPct = Math.min(100, (s.couponPct || c.start) + c.step);
+      return true;
+    }
     couponArmed = false;
     return false;
   }
 
-  /** n번째(0-indexed) 하나의 가격 */
+  /** n번째(0-indexed) 하나의 가격 (쿠폰 제외한 정가) */
   function genCostAt(id, index) {
     var g = GEN_BY_ID[id];
-    return g.baseCost * Math.pow(Data.COST_GROWTH, index) * costDiscount() * couponFactor();
+    return g.baseCost * Math.pow(Data.COST_GROWTH, index) * costDiscount();
   }
 
-  /** 지금 amount개를 살 때 총 가격 */
+  /** 지금 amount개를 살 때 총 가격. 쿠폰 할인은 '다음 1개'에만 붙는다(대량 전체 아님). */
   function genCost(id, amount) {
     amount = amount || 1;
     var owned = genCount(id);
     var g = GEN_BY_ID[id];
-    // 등비수열 합
     var r = Data.COST_GROWTH;
-    var base = g.baseCost * Math.pow(r, owned) * costDiscount() * couponFactor();
-    return base * (Math.pow(r, amount) - 1) / (r - 1);
+    var base = g.baseCost * Math.pow(r, owned) * costDiscount();   // 다음 1개 정가
+    var full = base * (Math.pow(r, amount) - 1) / (r - 1);         // amount개 정가 합
+    return full - couponDisc() * base;                            // 쿠폰은 다음 1개만 깎는다
   }
 
   /** 지금 돈으로 최대 몇 개 살 수 있나 */
@@ -226,8 +239,9 @@ var Game = (function () {
     var g = GEN_BY_ID[id];
     var r = Data.COST_GROWTH;
     var owned = genCount(id);
-    var base = g.baseCost * Math.pow(r, owned) * costDiscount() * couponFactor();
-    var money = S().money;
+    var base = g.baseCost * Math.pow(r, owned) * costDiscount();   // 쿠폰 제외 정가
+    // 쿠폰이 다음 1개를 깎아주니, 그만큼 돈이 더 있는 셈 치고 계산한다
+    var money = S().money + couponDisc() * base;
     if (money < base) return 0;
     var n = Math.floor(Math.log(money * (r - 1) / base + 1) / Math.log(r));
     return Math.max(0, Math.min(n, 1000));

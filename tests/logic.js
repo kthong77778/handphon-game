@@ -707,6 +707,42 @@ console.log('\n[10.6] 별사탕 · 상점');
   ok(State.get().candy === 0, '구버전 세이브는 candy 0 으로 채워짐');
 }
 
+console.log('\n[10.7] 성장하는 할인 쿠폰');
+{
+  const g = Data.GENERATORS[0].id;
+  ok(State.get().couponPct === Data.COUPON.start, '쿠폰 할인율 기본 = start(' + Data.COUPON.start + ')');
+  State.set({ money: 5 });   // couponPct 없는 구버전
+  ok(State.get().couponPct === Data.COUPON.start, '구버전 세이브도 start 로 채워짐');
+
+  // 할인은 '설비 1개'에만 붙는다 (대량구매 전체가 아니라)
+  State.set({ money: 1e12, gens: {}, coupons: 3, couponPct: 30 }); Game.invalidate();
+  const full1 = Game.genCost(g, 1), full10 = Game.genCost(g, 10);
+  Game.setCouponArmed(true);
+  ok(near(Game.genCost(g, 1), full1 * 0.7), '1개는 30% 깎인다');
+  ok(near(full10 - Game.genCost(g, 10), full1 * 0.3), '10개를 사도 딱 1개분만 깎인다');
+
+  // 쓸수록 자란다: 30 → +step … → 100 → reset
+  State.set({ money: 1e15, gens: {}, couponPct: 30 }); Game.invalidate();
+  const seq = [];
+  for (let i = 0; i < 16; i++) {
+    State.get().coupons = 1; Game.setCouponArmed(true); Game.buyGen(g, 1);
+    seq.push(State.get().couponPct);
+  }
+  ok(seq[0] === 30 + Data.COUPON.step, '한 번 쓰면 step 만큼 자란다');
+  ok(seq.indexOf(100) >= 0, '계속 쓰면 100% 까지 오른다');
+  ok(seq[seq.indexOf(100) + 1] === Data.COUPON.reset, '100% 를 쓰면 reset(' + Data.COUPON.reset + ')로 떨어진다');
+
+  // 100% 쿠폰은 설비 1개를 공짜로
+  State.set({ money: 1e15, gens: {}, coupons: 1, couponPct: 100 }); Game.invalidate();
+  Game.setCouponArmed(true);
+  ok(near(Game.genCost(g, 1), 0), '100% 쿠폰은 1개를 공짜로');
+  ok(Game.genCost(g, 10) > 0, '100% 라도 10개 중 1개만 공짜(나머지는 값이 있다)');
+
+  // 조작된 할인율은 정제된다
+  State.set({ couponPct: 9999 });
+  ok(State.get().couponPct === Data.COUPON.start, '범위 벗어난 할인율은 start 로 정제');
+}
+
 console.log('\n[11] 일일 퀘스트');
 {
   State.set({ money: 0 }); Game.invalidate();

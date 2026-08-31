@@ -97,6 +97,7 @@ var State = (function () {
       ownerSex: 'female',// 사장님 성별 (female/male) — 성장형 이미지 선택
       theme: 'auto',     // 화면 색 테마 id (Data.THEMES)
       coupons: 0,        // 🎟️ 보유 할인 쿠폰 수 (0 ~ Data.COUPON.max)
+      couponPct: Data.COUPON.start,   // 🎟️ 지금 쿠폰 할인율(%) — 쓸수록 자란다
 
       // 명예의 전당 — 환생해도 남는 개인 기록
       runTime: 0,        // 이번 회차 경과 시간 (초)
@@ -145,7 +146,7 @@ var State = (function () {
                    'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup', 'sawPrestigeIntro',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
-                   'coupons', 'truckCount', 'specialProg', 'specialTaken',
+                   'coupons', 'couponPct', 'truckCount', 'specialProg', 'specialTaken',
                    'noticeSeen', 'mailSeen', 'candy'];
     // 큰 돈이 저장 중 Infinity 로 새면(구버전 세이브 등) 0 으로 리셋하지 말고 천장으로 clamp.
     // 0 으로 밀면 최고 부자가 빈털터리가 되고, 화면엔 '0원' 인데 구매만 되는 것처럼 보인다.
@@ -182,6 +183,10 @@ var State = (function () {
     // 쿠폰은 정수로. 상한은 max+1 까지 허용한다 — 첫 환생 예외 보상(4장)이
     // 저장에서 3으로 깎이지 않게. (트럭 드롭은 game.js 에서 max 까지만 준다)
     s.coupons = Math.min(Math.floor(s.coupons) || 0, Data.COUPON.max + 1);
+
+    // 쿠폰 할인율은 start~100 범위의 정수. 깨졌거나 범위를 벗어나면 start 로.
+    var cp = Math.floor(s.couponPct);
+    s.couponPct = (cp >= Data.COUPON.start && cp <= 100) ? cp : Data.COUPON.start;
 
     // 회차 기록 — 숫자만 추리고 개수를 제한한다 (깨진 값이 순위표를 망치지 않게)
     if (Array.isArray(raw.runs)) {
