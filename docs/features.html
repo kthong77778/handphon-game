@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>분식집 키우기 기능 정의서</title>
+<meta name="description" content="방치형 게임 '분식집 키우기'의 기능 28종과 밸런스 수치 정의서.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:title" content="분식집 키우기 기능 정의서">
+<meta property="og:description" content="방치형 게임 '분식집 키우기'의 기능 28종과 밸런스 수치 정의서.">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🍢</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#f7f5f1; --surface:#ffffff; --surface-2:#efece6;
+    --line:#ddd8ce; --line-soft:#e8e4dc;
+    --ink:#1e2029; --ink-2:#4a4e5c; --muted:#767a86;
+    --amber:#a8621a; --amber-soft:#f3e6d5;
+    --gochu:#a83232; --gochu-soft:#f6e3e1;
+    --ok:#3f6b4a; --ok-soft:#e2ecdf;
+    --blue:#2f5d8a; --blue-soft:#e2eaf2;
+    --shadow:0 1px 2px rgba(30,32,41,.06),0 8px 24px -12px rgba(30,32,41,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#14161c; --surface:#1b1e26; --surface-2:#23262f;
+      --line:#333744; --line-soft:#282c36;
+      --ink:#eceaf0; --ink-2:#b9bcc7; --muted:#8b90a0;
+      --amber:#e2a05c; --amber-soft:#33261a;
+      --gochu:#e08a80; --gochu-soft:#33211f;
+      --ok:#8fc09b; --ok-soft:#1d2a21;
+      --blue:#8fb3d6; --blue-soft:#1c2632;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#14161c; --surface:#1b1e26; --surface-2:#23262f;
+    --line:#333744; --line-soft:#282c36;
+    --ink:#eceaf0; --ink-2:#b9bcc7; --muted:#8b90a0;
+    --amber:#e2a05c; --amber-soft:#33261a;
+    --gochu:#e08a80; --gochu-soft:#33211f;
+    --ok:#8fc09b; --ok-soft:#1d2a21;
+    --blue:#8fb3d6; --blue-soft:#1c2632;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    font-size:15.5px;line-height:1.7;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:56px 24px 96px}
+  @media (max-width:640px){.wrap{padding:36px 16px 72px}}
+
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--amber);font-weight:600;margin:0 0 14px;
+  }
+  h1{
+    font-family:"Do Hyeon",sans-serif;font-weight:400;
+    font-size:clamp(32px,6vw,46px);line-height:1.14;margin:0 0 16px;text-wrap:balance;
+  }
+  .lede{font-size:17px;color:var(--ink-2);max-width:62ch;margin:0 0 4px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 0;padding:0;list-style:none}
+  .meta li{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--surface-2);
+    border:1px solid var(--line-soft);border-radius:4px;padding:5px 10px;color:var(--ink-2);
+  }
+  .meta b{color:var(--ink);font-weight:600}
+  hr.rule{border:0;border-top:1px solid var(--line);margin:44px 0}
+
+  h2{
+    font-family:"Do Hyeon",sans-serif;font-weight:400;font-size:27px;line-height:1.25;
+    margin:56px 0 4px;text-wrap:balance;
+  }
+  h2 .sec-tag{
+    display:block;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:11px;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+  }
+  p{margin:0 0 14px;max-width:68ch}
+  p.note{color:var(--ink-2);font-size:14.5px}
+
+  /* 기능 블록 */
+  .feat{
+    background:var(--surface);border:1px solid var(--line);border-radius:9px;
+    padding:20px 22px;margin:16px 0;box-shadow:var(--shadow);
+  }
+  .feat-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:4px}
+  .fid{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;
+    color:var(--amber);background:var(--amber-soft);border-radius:4px;padding:2px 7px;
+    letter-spacing:.02em;
+  }
+  .feat-head h3{
+    font-family:"IBM Plex Sans KR",sans-serif;font-weight:700;font-size:17px;
+    margin:0;letter-spacing:-.005em;
+  }
+  .def{color:var(--ink-2);font-size:14.5px;margin:2px 0 14px;max-width:70ch}
+  .rules{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+  .rules li{
+    display:grid;grid-template-columns:minmax(96px,auto) 1fr;gap:14px;
+    font-size:14.5px;align-items:baseline;
+  }
+  .rules .k{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;
+    color:var(--muted);letter-spacing:.04em;text-transform:uppercase;padding-top:2px;
+  }
+  .rules .v{color:var(--ink)}
+  .rules .v b{font-family:"IBM Plex Mono",monospace;font-weight:600;font-variant-numeric:tabular-nums}
+  @media (max-width:560px){
+    .rules li{grid-template-columns:1fr;gap:1px}
+    .rules .k{padding-top:6px}
+  }
+
+  /* 표 */
+  .tw{overflow-x:auto;margin:18px 0 26px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:540px}
+  caption{
+    text-align:left;padding:13px 16px 12px;font-size:13px;color:var(--ink-2);
+    border-bottom:1px solid var(--line-soft);background:var(--surface-2);font-weight:500;
+  }
+  th,td{padding:9px 16px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  thead th{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;background:var(--surface-2);border-bottom:1px solid var(--line);
+  }
+  tbody tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .chip{
+    display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+    padding:2.5px 7px;border-radius:4px;white-space:nowrap;
+  }
+  .chip.core{background:var(--gochu-soft);color:var(--gochu)}
+  .chip.sys{background:var(--blue-soft);color:var(--blue)}
+  .chip.meta2{background:var(--surface-2);color:var(--muted)}
+
+  .callout{
+    border:1px solid var(--line);border-left:3px solid var(--amber);background:var(--surface);
+    border-radius:0 8px 8px 0;padding:18px 20px;margin:24px 0;box-shadow:var(--shadow);
+  }
+  .callout h4{font-size:14px;font-weight:700;margin:0 0 8px}
+  .callout p{margin:0 0 8px;font-size:14.5px;color:var(--ink-2)}
+  .callout p:last-child{margin-bottom:0}
+
+  code{
+    font-family:"IBM Plex Mono",monospace;font-size:.88em;background:var(--surface-2);
+    border:1px solid var(--line-soft);border-radius:3px;padding:1px 5px;
+  }
+  .foot{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<style>
+  .theme-toggle{position:fixed;top:14px;right:14px;z-index:10;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;background:var(--surface);color:var(--ink-2);border:1px solid var(--line);border-radius:6px;padding:7px 11px;cursor:pointer;box-shadow:var(--shadow);line-height:1}
+  .theme-toggle:hover{color:var(--ink);border-color:var(--muted)}
+  .theme-toggle:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media print{.theme-toggle{display:none}body{background:#fff;color:#000;font-size:10.5pt}.wrap{max-width:none;padding:0}.feat,.tw,.callout{box-shadow:none;border-color:#bbb;break-inside:avoid;page-break-inside:avoid}h2{break-after:avoid;page-break-after:avoid}thead th{background:#f0f0f0!important;color:#000!important}a{color:#000;text-decoration:none}}
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="밝게/어둡게 전환">◐ 테마</button>
+<div class="wrap">
+
+  <p class="eyebrow">기능 정의서</p>
+  <h1>분식집 키우기</h1>
+  <p class="lede">
+    방치형(idle) 모바일 웹게임. 탭해서 조리하고, 설비를 늘리고, 자리를 비운 동안에도 수익이 쌓인다.
+    아래 수치는 모두 실제 코드에서 뽑은 값이다.
+  </p>
+
+  <ul class="meta">
+    <li>장르 <b>방치형 / 클리커 / 타이쿤</b></li>
+    <li>소재 <b>한국 분식집</b></li>
+    <li>기능 <b>28종</b></li>
+    <li>플랫폼 <b>모바일 웹 → 앱</b></li>
+    <li>세션 <b>온라인 불필요</b></li>
+  </ul>
+
+  <hr class="rule">
+
+  <div class="callout">
+    <h4>핵심 루프</h4>
+    <p>
+      <b>탭해서 돈을 번다 → 설비를 사서 자동 수익을 만든다 → 업그레이드로 배율을 올린다 →
+      한계에 닿으면 환생해서 명성을 얻는다 → 명성으로 영구 강화를 산다 → 더 빨리 다시 오른다.</b>
+    </p>
+    <p>
+      여기에 자리를 비운 시간을 보상하는 오프라인 수익, 잠깐 들를 이유를 만드는 이벤트
+      (황금 손님·도둑·퀘스트·출석), 그리고 후반 목표(주방·스타 셰프·랭킹)가 얹혀 있다.
+    </p>
+  </div>
+
+  <h2><span class="sec-tag">1</span>화폐와 자원</h2>
+  <div class="tw">
+    <table>
+      <caption>게임 내 자원 4종</caption>
+      <thead><tr><th>자원</th><th>획득</th><th>용도</th><th>환생 시</th></tr></thead>
+      <tbody>
+        <tr><td><b>돈</b></td><td>조리(탭) · 설비 자동수익 · 이벤트 보상</td><td>설비 · 업그레이드 구매</td><td>초기화</td></tr>
+        <tr><td><b>명성</b></td><td>환생할 때 회차 매출로 환산</td><td>명성 상점 영구 강화</td><td>누적 유지</td></tr>
+        <tr><td><b>할인 쿠폰</b></td><td>조리 중 드롭 · 광고 보상</td><td>설비·업그레이드 40% 할인</td><td>유지</td></tr>
+        <tr><td><b>재료</b></td><td>재료 트럭 · 조리 중 드롭 · 광고 보상</td><td>음식 합성 (도감 배율)</td><td>유지</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span class="sec-tag">2</span>핵심 기능</h2>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-01</span><h3>조리 (탭)</h3><span class="chip core">핵심</span></div>
+    <p class="def">화면 중앙의 조리 버튼을 눌러 즉시 돈을 얻는다. 게임의 유일한 능동 입력이다.</p>
+    <ul class="rules">
+      <li><span class="k">수익</span><span class="v">탭 기본값 × 콤보 배율 × 버프 배율 × 전체 배율</span></li>
+      <li><span class="k">부수 효과</span><span class="v">쿠폰 드롭 <b>18%</b> · 재료 드롭 · 사장 경험치 · 퀘스트 진행 · 스타 셰프 심사 진행</span></li>
+      <li><span class="k">입력</span><span class="v">터치 · 마우스 · 엔터 · 스페이스</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-02</span><h3>콤보</h3><span class="chip core">핵심</span></div>
+    <p class="def">연속으로 탭하면 탭 수익 배율이 오른다. 손을 떼면 풀린다.</p>
+    <ul class="rules">
+      <li><span class="k">유지 시간</span><span class="v"><b>1.2초</b> 안에 다시 탭해야 유지</span></li>
+      <li><span class="k">증가량</span><span class="v">콤보 1당 <b>+4%</b></span></li>
+      <li><span class="k">상한</span><span class="v"><b>50</b>콤보 = <b>×3.0</b></span></li>
+      <li><span class="k">적용 범위</span><span class="v">탭 수익만. 자동 수익에는 영향 없음</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-03</span><h3>설비</h3><span class="chip core">핵심</span></div>
+    <p class="def">사두면 자리를 비워도 초당 수익을 낸다. 10종이 순차적으로 열린다.</p>
+    <ul class="rules">
+      <li><span class="k">가격 상승</span><span class="v">같은 설비를 살 때마다 <b>×1.15</b></span></li>
+      <li><span class="k">구매 단위</span><span class="v"><b>×1 / ×10 / 최대</b> 전환</span></li>
+      <li><span class="k">추천</span><span class="v">가성비가 가장 좋은 설비를 상단에 제시. 수익이 한계에 닿으면 추천하지 않는다</span></li>
+      <li><span class="k">범위</span><span class="v">알바생 <b>15원</b>(초당 0.1) ~ 우주 분식 스테이션 <b>750억원</b>(초당 160만)</span></li>
+      <li><span class="k">구매 조작</span><span class="v">행 오른쪽 <b>구매 버튼만</b> 누르면 사진다. 이름·아이콘·설명을 눌러도 구매되지 않는다 (실수 구매 방지)</span></li>
+      <li><span class="k">저효율 힌트</span><span class="v">사도 초당 수익이 <b>0.1%</b>도 오르지 않고 최강 설비도 아니면 &lsquo;거의 안 올라요&rsquo; 힌트를 띄운다. <b>구매는 막지 않는다</b></span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-04</span><h3>업그레이드</h3><span class="chip core">핵심</span></div>
+    <p class="def">조건을 만족하면 목록에 열린다. 한 번 사면 해당 회차 내내 적용된다.</p>
+    <ul class="rules">
+      <li><span class="k">종수</span><span class="v"><b>65종</b></span></li>
+      <li><span class="k">해금</span><span class="v">설비 보유 수 · 누적 매출 등 조건 충족 시</span></li>
+      <li><span class="k">지속</span><span class="v">환생하면 초기화</span></li>
+      <li><span class="k">구매 조작</span><span class="v">행 오른쪽 <b>구매 버튼만</b> 누르면 사진다</span></li>
+      <li><span class="k">구매 판정</span><span class="v">화면에 <b>활성(초록)으로 보일 때만</b> 사진다. 회색이면 눌러도 안 사지고 &lsquo;돈이 부족합니다&rsquo; 안내만 뜬다 &mdash; 화면과 실제가 어긋나지 않게</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-05</span><h3>손님 몰이 (수동 버프)</h3><span class="chip sys">시스템</span></div>
+    <p class="def">플레이어가 직접 켜는 일시적 수익 배율. 쿨다운이 있다.</p>
+    <ul class="rules">
+      <li><span class="k">효과</span><span class="v">모든 수익 <b>×3</b></span></li>
+      <li><span class="k">지속</span><span class="v"><b>60초</b></span></li>
+      <li><span class="k">쿨다운</span><span class="v"><b>900초</b>(15분). 명성 상점 &lsquo;확성기&rsquo; 레벨당 <b>×0.92</b> (최대 10레벨)</span></li>
+      <li><span class="k">추가 충전</span><span class="v">일일 퀘스트 완주 시</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-06</span><h3>황금 손님</h3><span class="chip sys">시스템</span></div>
+    <p class="def">화면 어딘가에 잠깐 나타난다. 제한 시간 안에 탭하면 보상 3종 중 하나를 준다.</p>
+    <ul class="rules">
+      <li><span class="k">출현 간격</span><span class="v"><b>55~130초</b> 무작위. 명성 상점 &lsquo;단골화&rsquo; 레벨당 <b>×0.92</b> (최대 12레벨)</span></li>
+      <li><span class="k">생존 시간</span><span class="v"><b>9초</b></span></li>
+      <li><span class="k">보상 1</span><span class="v">현금 다발 — 초당 수익 <b>4분치</b> 즉시 (가중치 5)</span></li>
+      <li><span class="k">보상 2</span><span class="v">손님 폭주 — <b>30초</b> 동안 모든 수익 <b>×7</b> (가중치 3). 중첩은 F-07 규칙을 따른다</span></li>
+      <li><span class="k">보상 3</span><span class="v">신들린 손 — <b>30초</b> 동안 탭 수익 <b>×25</b> (가중치 2)</span></li>
+      <li><span class="k">보상 계산</span><span class="v">현금 다발은 <b>버프를 뺀</b> 값으로 계산한다. 버프를 켠 채 잡아도 보상이 부풀지 않는다</span></li>
+      <li><span class="k">주말 파티 중</span><span class="v">출현 간격 <b>×0.5</b></span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-07</span><h3>버프 중첩 규칙</h3><span class="chip core">핵심</span></div>
+    <p class="def">
+      광고 &lsquo;수익 2배&rsquo;와 황금 손님 &lsquo;손님 폭주&rsquo;는 <b>같은 버프 슬롯</b>을 공유한다.
+      겹칠 때 배율과 시간을 어떻게 합칠지 정한 규칙이다.
+    </p>
+    <ul class="rules">
+      <li><span class="k">빈 슬롯</span><span class="v">그대로 걸린다</span></li>
+      <li><span class="k">더 센 배율</span><span class="v">그 배율로 교체 + <b>그 자신의 지속시간</b>으로 교체 (약한 버프의 남은 시간을 물려주지 않는다)</span></li>
+      <li><span class="k">같은 배율</span><span class="v">시간만 더 긴 쪽으로 갱신</span></li>
+      <li><span class="k">더 약한 배율</span><span class="v">무시 (약한 버프로 센 버프의 시간을 늘릴 수 없다)</span></li>
+      <li><span class="k">막는 것</span><span class="v">광고 ×2·30분에 황금 ×7·30초를 겹쳐 <b>×7을 30분</b> 유지하던 꼼수</span></li>
+      <li><span class="k">대가</span><span class="v">센 버프가 오면 약한 버프의 남은 시간은 희생된다. 슬롯을 나누면 곱연산으로 ×14가 되어 더 세지므로, 과지급을 막는 쪽을 택했다</span></li>
+      <li><span class="k">별개 슬롯</span><span class="v">손님 몰이(F-05)와 신들린 손(탭 전용)은 이 슬롯과 무관하게 따로 적용된다</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-08</span><h3>도둑 &amp; 경찰</h3><span class="chip sys">시스템</span></div>
+    <p class="def">돈을 훔쳐 화면을 가로지른다. 직접 잡거나 경찰이 잡으면 피해가 없다.</p>
+    <ul class="rules">
+      <li><span class="k">출현 간격</span><span class="v"><b>200~460초</b> 무작위</span></li>
+      <li><span class="k">생존 시간</span><span class="v"><b>7.5초</b></span></li>
+      <li><span class="k">피해액</span><span class="v">보유액 <b>8%</b> 와 초당 수익 <b>180초분</b> 중 <b>작은 쪽</b>. 최소 <b>100원</b></span></li>
+      <li><span class="k">직접 검거</span><span class="v">피해 0 + 보너스 (피해액의 <b>50%</b>)</span></li>
+      <li><span class="k">경찰 검거</span><span class="v">피해 0. 확률 기본 <b>15%</b>, 명성 상점 &lsquo;야간 순찰&rsquo; 레벨당 <b>+7%p</b> (최대 10레벨)</span></li>
+      <li><span class="k">보호 규칙</span><span class="v">설비·업그레이드·명성은 절대 건드리지 않는다. 훔칠 돈이 없으면 출현하지 않는다</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-09</span><h3>오프라인 수익</h3><span class="chip core">핵심</span></div>
+    <p class="def">게임을 꺼둔 동안에도 초당 수익이 쌓인다. 방치형의 근간이다.</p>
+    <ul class="rules">
+      <li><span class="k">인정 시간</span><span class="v">기본 <b>4시간</b> + 명성 상점 &lsquo;무인 주문&rsquo; 레벨당 <b>2시간</b> (최대 12레벨) → 최대 <b>28시간</b></span></li>
+      <li><span class="k">효율</span><span class="v">기본 <b>50%</b> + &lsquo;자동 조리 로봇&rsquo; 레벨당 <b>+10%</b> (최대 10레벨) → 최대 <b>150%</b></span></li>
+      <li><span class="k">꼬리 구간</span><span class="v">인정 시간을 넘긴 뒤에도 <b>3배 구간</b>까지 효율 <b>15%</b>로 추가 정산</span></li>
+      <li><span class="k">계산 기준</span><span class="v"><b>버프를 뺀</b> 초당 수익. 버프를 켠 채 나가도 보상이 부풀지 않는다</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-10</span><h3>점장 (자동 구매)</h3><span class="chip sys">시스템</span></div>
+    <p class="def">자리를 비운 동안 설비를 대신 사둔다. 명성 상점에서 고용한다.</p>
+    <ul class="rules">
+      <li><span class="k">구매 횟수</span><span class="v">레벨당 <b>2회</b> (최대 10레벨 → <b>20회</b>)</span></li>
+      <li><span class="k">발동 조건</span><span class="v"><b>300초</b> 이상 자리를 비웠을 때</span></li>
+      <li><span class="k">구매 기준</span><span class="v">수익이 가장 많이 오르는 설비부터</span></li>
+      <li><span class="k">안전장치</span><span class="v">보유 금액의 <b>25%</b>는 남겨둔다</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-11</span><h3>환생 (재개업) &amp; 명성</h3><span class="chip core">핵심</span></div>
+    <p class="def">가게를 정리하고 처음부터 시작한다. 대신 영구 화폐인 명성을 얻는다.</p>
+    <ul class="rules">
+      <li><span class="k">조건</span><span class="v">해당 회차 매출 <b>100만원</b> 이상</span></li>
+      <li><span class="k">명성 공식</span><span class="v"><code>floor((회차매출 / 1,000,000) ^ 0.37)</code></span></li>
+      <li><span class="k">명성 효과</span><span class="v">명성 1당 모든 수익 <b>+2%</b></span></li>
+      <li><span class="k">초기화</span><span class="v">돈 · 설비 · 업그레이드</span></li>
+      <li><span class="k">유지</span><span class="v">명성 · 명성 상점 · 도전과제 · 재료 · 도감 · 기록 · 스킨</span></li>
+      <li><span class="k">첫 환생 특례</span><span class="v">시작 자금 <b>30,000원</b> 지급</span></li>
+      <li><span class="k">기록</span><span class="v">회차별 매출·명성·소요 시간을 명예의 전당에 남긴다 (최근 <b>50회차</b>)</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-12</span><h3>명성 상점</h3><span class="chip core">핵심</span></div>
+    <p class="def">명성으로 사는 영구 강화 12종. 환생해도 사라지지 않는다.</p>
+    <div class="tw">
+      <table>
+        <caption>명성 상점 12종</caption>
+        <thead><tr><th>항목</th><th>효과</th><th class="num">최대</th></tr></thead>
+        <tbody>
+          <tr><td>전설의 명성</td><td>모든 수익 ×1.5 (중첩)</td><td class="num">20</td></tr>
+          <tr><td>명인의 손</td><td>탭 수익 ×3 (중첩)</td><td class="num">15</td></tr>
+          <tr><td>무인 주문 시스템</td><td>오프라인 인정 시간 +2시간</td><td class="num">12</td></tr>
+          <tr><td>자동 조리 로봇</td><td>오프라인 효율 +10%</td><td class="num">10</td></tr>
+          <tr><td>창업 지원금</td><td>재개업 후 시작 자금 ×100</td><td class="num">12</td></tr>
+          <tr><td>단체 구매 계약</td><td>모든 설비 가격 −3%</td><td class="num">10</td></tr>
+          <tr><td>황금 손님 단골화</td><td>황금 손님 8% 더 자주</td><td class="num">12</td></tr>
+          <tr><td>확성기</td><td>손님 몰이 쿨다운 −8%</td><td class="num">10</td></tr>
+          <tr><td>야간 순찰</td><td>경찰 검거 확률 +7%p</td><td class="num">10</td></tr>
+          <tr><td>점장 고용</td><td>오프라인 자동 구매 +2회</td><td class="num">10</td></tr>
+          <tr><td>분식 왕조</td><td>모든 수익 ×3 (중첩) — 후반 소비처</td><td class="num">25</td></tr>
+          <tr><td>끝없는 연구</td><td>모든 수익 ×1.05 (중첩)</td><td class="num">∞</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-13</span><h3>도전과제</h3><span class="chip sys">시스템</span></div>
+    <p class="def">조건을 만족하면 자동 달성된다. 보여주기만 하는 목록이 아니라 실제 배율이 붙는다.</p>
+    <ul class="rules">
+      <li><span class="k">종수</span><span class="v"><b>37종</b></span></li>
+      <li><span class="k">효과</span><span class="v">달성 1개당 모든 수익 <b>+1%</b> (영구)</span></li>
+      <li><span class="k">지속</span><span class="v">환생해도 유지</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-14</span><h3>일일 퀘스트</h3><span class="chip sys">시스템</span></div>
+    <p class="def">매일 자정에 3개가 깔린다. 무엇이 깔릴지는 날짜가 정하므로 새로고침으로 다시 뽑을 수 없다.</p>
+    <ul class="rules">
+      <li><span class="k">개수</span><span class="v">하루 <b>3개</b> (후보 8종에서 날짜 시드로 선택)</span></li>
+      <li><span class="k">개별 보상</span><span class="v">초당 수익 <b>420초분</b> (최소 300원)</span></li>
+      <li><span class="k">완주 보너스</span><span class="v">초당 수익 <b>900초분</b> + 손님 몰이 즉시 충전</span></li>
+      <li><span class="k">갱신</span><span class="v">자정. 진행도도 함께 초기화</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-15</span><h3>출석 보상</h3><span class="chip sys">시스템</span></div>
+    <p class="def">하루 한 번 받는다. 연속으로 받으면 커진다.</p>
+    <ul class="rules">
+      <li><span class="k">기본</span><span class="v">초당 수익 <b>1800초분</b> (30분치)</span></li>
+      <li><span class="k">연속 증가</span><span class="v">연속 1일당 <b>+1800초분</b></span></li>
+      <li><span class="k">최대</span><span class="v"><b>7일</b>차 = <b>12,600초분</b> (3시간 30분치)</span></li>
+      <li><span class="k">최소 보장</span><span class="v"><b>500원</b></span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-16</span><h3>주방 — 재료 · 합성 · 숙련도 · 도감</h3><span class="chip core">핵심</span></div>
+    <p class="def">재료를 모아 음식을 만들면 그 음식의 영구 배율이 붙는다. 중반 이후의 성장축이다.</p>
+    <ul class="rules">
+      <li><span class="k">재료</span><span class="v"><b>12종</b>. 재료 트럭 · 조리 중 드롭 · 광고 보상으로 획득</span></li>
+      <li><span class="k">재료 트럭</span><span class="v">기준 <b>30초</b> 간격(받을수록 늘어남) · <b>12초</b> 생존 · 탭하면 <b>4개</b>, 놓치면 <b>2개</b></span></li>
+      <li><span class="k">레시피</span><span class="v"><b>20종</b>. 등급 3단계 (초급 · 중급 · 고급)</span></li>
+      <li><span class="k">숙련도</span><span class="v">같은 음식 누적 제작 <b>10 / 50 / 200</b>회에 ★ 상승 → 배율 <b>×1.5 / ×2 / ×3</b></span></li>
+      <li><span class="k">특별 주문</span><span class="v">하루 한 음식 지정. 보상 <b>×3</b> · 목표 <b>3개</b> · 제한 <b>1800초</b> · 최소 1000원</span></li>
+      <li><span class="k">지속</span><span class="v">도감·숙련도·재료는 환생해도 유지</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-17</span><h3>스타 셰프 도전</h3><span class="chip sys">시스템</span></div>
+    <p class="def">제한 시간 안에 조리 횟수를 채워 별 1~5개를 받는다. 시즌제로 돌아간다.</p>
+    <ul class="rules">
+      <li><span class="k">심사 시간</span><span class="v"><b>25초</b> + 단계당 <b>+3초</b></span></li>
+      <li><span class="k">별 목표</span><span class="v">조리 <b>15 / 40 / 75 / 115 / 160</b>회 (1단계 기준)</span></li>
+      <li><span class="k">단계 상승</span><span class="v">5성을 채우면 다음 단계. 목표가 <b>×1.2</b>씩 늘어난다</span></li>
+      <li><span class="k">보상</span><span class="v">별 1개당 초당 수익 <b>40초분</b> (최소 500원/별)</span></li>
+      <li><span class="k">5성 첫 달성</span><span class="v">모든 수익 <b>×1.5</b> 영구</span></li>
+      <li><span class="k">시즌</span><span class="v">매달 이름이 바뀐다(12종). 지난 시즌 기록 <b>6개</b> 보관</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-18</span><h3>전국 인기 맛집 랭킹</h3><span class="chip meta2">연출</span></div>
+    <p class="def">내 가게의 인기(초당 수익)로 전국·지역 순위를 매긴다. <b>서버가 없는 연출</b>이다.</p>
+    <ul class="rules">
+      <li><span class="k">전국</span><span class="v">가상 맛집 <b>12,000곳</b> 중 순위 + 상위 %</span></li>
+      <li><span class="k">지역</span><span class="v"><b>13개</b> 지역 중 하나에 배정(시작 시각으로 고정). 모집단이 작아 더 일찍 1위에 닿는다</span></li>
+      <li><span class="k">이름 생성</span><span class="v">(지역 · 순위) 해시로 고정 &mdash; 새로고침해도 안 바뀐다</span></li>
+      <li><span class="k">셰프 랭킹</span><span class="v">가상 셰프 <b>8,000명</b>. 시즌 조리 횟수 기준</span></li>
+      <li><span class="k">비고</span><span class="v">실제 다른 플레이어는 없다. 서버 연동 시 대체될 자리</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-19</span><h3>주말 파티</h3><span class="chip sys">시스템</span></div>
+    <p class="def">금·토 저녁에 자동으로 열린다. 접속 시간대를 유도하는 장치다.</p>
+    <ul class="rules">
+      <li><span class="k">시간</span><span class="v">금요일 · 토요일 <b>17~24시</b> (기기 시각)</span></li>
+      <li><span class="k">효과</span><span class="v">모든 수익 <b>×3</b> · 황금 손님 간격 <b>×0.5</b></span></li>
+      <li><span class="k">파티 음식</span><span class="v"><b>12종</b>. 조리 중 <b>3%</b> 확률로 발견 → 도감에 영구 등록</span></li>
+      <li><span class="k">도감 보너스</span><span class="v">발견 1종당 모든 수익 <b>+1%</b></span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-20</span><h3>무료 보상 (광고)</h3><span class="chip sys">시스템</span></div>
+    <p class="def">30초를 기다리면 보상을 받는다. 현재는 시뮬레이션이며 앱 래핑 시 실제 광고가 들어갈 자리다.</p>
+    <ul class="rules">
+      <li><span class="k">시청 시간</span><span class="v"><b>30초</b> 카운트다운</span></li>
+      <li><span class="k">횟수</span><span class="v">슬롯당 하루 <b>3회</b> (자정 초기화)</span></li>
+      <li><span class="k">보상 A</span><span class="v">보너스 골드 — 초당 수익 <b>3600초분</b> (최소 5000원)</span></li>
+      <li><span class="k">보상 B</span><span class="v">수익 <b>×2</b>, <b>1800초</b>(30분)</span></li>
+      <li><span class="k">보상 C</span><span class="v">할인 쿠폰 <b>1장</b></span></li>
+      <li><span class="k">보상 D</span><span class="v">랜덤 재료 <b>12개</b></span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-21</span><h3>사장 레벨</h3><span class="chip sys">시스템</span></div>
+    <p class="def">플레이 전반의 진행도를 하나의 레벨로 보여준다. 탭 해금과 그림 변화의 기준이 된다.</p>
+    <ul class="rules">
+      <li><span class="k">칭호</span><span class="v">Lv.0 동네 사장 → 5 소문난 사장 → 10 지역 명장 → 15 전국구 사장 → 20 분식 대부</span></li>
+      <li><span class="k">초상 변화</span><span class="v">4단계 (새내기 → 요리사 → 정장 → 분식 대부) × 성별 2종</span></li>
+      <li><span class="k">연동</span><span class="v">주방 탭 해금(Lv.1) · 기록 탭 해금(Lv.2)</span></li>
+    </ul>
+  </div>
+
+  <h2><span class="sec-tag">3</span>성장 연출</h2>
+  <p class="note">수치에 관여하지 않고 <b>진행을 눈으로 보여주는</b> 기능들이다.</p>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-22</span><h3>조리 메뉴 8단계</h3><span class="chip meta2">연출</span></div>
+    <p class="def">탭 수익이 오르면 조리하는 음식이 고급스러워진다. 테두리도 함께 화려해진다.</p>
+    <ul class="rules">
+      <li><span class="k">문턱</span><span class="v">탭 수익 <b>0 / 8 / 100 / 800 / 6,000 / 50,000 / 100만 / 5,000만</b>원</span></li>
+      <li><span class="k">판정 기준</span><span class="v"><b>버프를 뺀</b> 탭 기본값. 버프를 켤 때마다 메뉴가 오르내리지 않게</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-23</span><h3>손님 등급 5단계 · 가게 앞 거리</h3><span class="chip meta2">연출</span></div>
+    <p class="def">초당 수익이 오르면 거리에 오는 손님의 격이 올라가고, 거리 자체도 바뀐다.</p>
+    <ul class="rules">
+      <li><span class="k">문턱</span><span class="v">초당 수익 <b>0 / 300 / 50,000 / 500만 / 5억</b>원</span></li>
+      <li><span class="k">등급</span><span class="v">동네 손님 → 소문 난 가게 → 차려입은 손님 → VIP → 재벌</span></li>
+      <li><span class="k">거리 변화</span><span class="v">보도 → 자주색 → 레드카펫(금색 테두리)</span></li>
+      <li><span class="k">혼잡도</span><span class="v">초당 수익이 오를수록 붐빈다. 손님 몰이 중엔 뛰어온다</span></li>
+      <li><span class="k">이동 규칙</span><span class="v">오른쪽에서 걸어와 가게 앞에서 돌아 나간다 (가게 그림을 가리지 않게)</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-24</span><h3>스킨 · 테마 · 소리</h3><span class="chip meta2">연출</span></div>
+    <p class="def">취향대로 고른다. 고른 스킨 안에서 성장 단계는 그대로 이어진다.</p>
+    <ul class="rules">
+      <li><span class="k">조리 스킨</span><span class="v"><b>8세트</b> × 8단계 (분식 · 주먹밥 · 붕어빵 · 떡·디저트 · 면 · 치킨 · 베이커리 · 고기)</span></li>
+      <li><span class="k">손님 스킨</span><span class="v"><b>7세트</b> (동네→재벌 · 동물 · 판타지 · 탈것 등)</span></li>
+      <li><span class="k">화면 테마</span><span class="v"><b>3종</b> — 기본(시간대 하늘 연동) · 포장마차 · 중화풍</span></li>
+      <li><span class="k">시간대 하늘</span><span class="v">기본 테마에서만. 새벽→낮→노을→밤으로 배경이 흐른다</span></li>
+      <li><span class="k">탭 소리</span><span class="v"><b>6종</b>. 음원 파일 없이 합성(WebAudio). 설정에서 끌 수 있다</span></li>
+    </ul>
+  </div>
+
+  <h2><span class="sec-tag">4</span>기반 기능</h2>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-25</span><h3>세이브</h3><span class="chip core">핵심</span></div>
+    <p class="def">브라우저에 저장한다. 서버 없이 진행이 유지된다.</p>
+    <ul class="rules">
+      <li><span class="k">저장 위치</span><span class="v">브라우저 <code>localStorage</code></span></li>
+      <li><span class="k">자동 저장</span><span class="v"><b>10초</b> 간격 + 앱을 벗어날 때</span></li>
+      <li><span class="k">백업</span><span class="v">세이브 코드 내보내기 · 불러오기 (문자열)</span></li>
+      <li><span class="k">방어</span><span class="v">없는 필드는 기본값으로 채우고, 깨진 값·삭제된 항목 id는 걸러낸다. 구버전 세이브로도 실행된다</span></li>
+      <li><span class="k">오버플로</span><span class="v">금액이 한계를 넘으면 0으로 밀지 않고 천장에서 고정</span></li>
+      <li><span class="k">불러오기 가드</span><span class="v">세이브로 볼 수 없는 형태(숫자·문자열·빈 객체 등)는 <b>거부</b>한다. 유효한 JSON이라는 이유로 진행을 날리고 &lsquo;성공&rsquo;이라 표시하지 않는다</span></li>
+      <li><span class="k">기록 필터</span><span class="v">회차 기록의 회차수·명성이 무한대면 버린다 &mdash; 조작 세이브가 명예의 전당 영구 1위로 박히지 않게</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-26</span><h3>수치 안전장치</h3><span class="chip sys">시스템</span></div>
+    <p class="def">
+      방치형은 수가 끝없이 커진다. 자바스크립트의 한계(약 1.8e308)를 넘기면 값이 &lsquo;무한&rsquo;으로 새고,
+      그 뒤 계산이 전부 깨진다. 그 지점을 막는다.
+    </p>
+    <ul class="rules">
+      <li><span class="k">상한</span><span class="v">수익 계산(기본값 · 배율 · 설비 초당 · 전체 초당 · 탭 기본값)에 모두 천장을 씌운다</span></li>
+      <li><span class="k">막는 증상</span><span class="v">초당 수익이 <b>∞로 굳어</b> 설비를 더 사도 안 오르는 것 · 설비 지분이 <b>NaN%</b>로 깨지는 것</span></li>
+      <li><span class="k">한계 도달 시</span><span class="v">추천 설비를 내놓지 않는다 (&lsquo;초당 +∞&rsquo; 표시 방지)</span></li>
+      <li><span class="k">금액 합산</span><span class="v">돈을 더할 때도 천장에서 고정 &mdash; 무한 − 무한 = NaN 을 막는다</span></li>
+      <li><span class="k">표기</span><span class="v">진짜 무한대는 <b>∞</b>로 보여준다. 0원으로 표시하지 않는다</span></li>
+      <li><span class="k">도달 시점</span><span class="v">정상 진행으로는 닿지 않는다. 90일 자동 플레이 기준 <b>46.5해원</b>으로, 한계까지 280자릿수 이상 남는다</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-27</span><h3>매크로(오토클릭) 방지</h3><span class="chip sys">시스템</span></div>
+    <p class="def">사람을 잘못 막는 쪽이 봇을 놓치는 쪽보다 나쁘다고 보고, 독립적인 신호가 <b>동시에</b> 맞을 때만 막는다.</p>
+    <ul class="rules">
+      <li><span class="k">1차</span><span class="v">브라우저가 &lsquo;사용자 입력&rsquo;으로 인정하지 않는 클릭은 무효 (콘솔·확장 프로그램)</span></li>
+      <li><span class="k">2차</span><span class="v">초당 <b>14회</b> 상한. 초과분만 무효</span></li>
+      <li><span class="k">3차</span><span class="v">최근 <b>32</b>회 탭 간격의 변동계수가 <b>0.09</b> 미만 <b>이고</b> 좌표가 <b>2px</b> 안에서만 움직일 때 → 조리 <b>5초</b> 정지</span></li>
+      <li><span class="k">벌칙 범위</span><span class="v">몇 초 쉬는 것으로 끝난다. 세이브에 손대지 않는다</span></li>
+      <li><span class="k">알려진 한계</span><span class="v">메트로놈처럼 정확하면서 손을 1px도 안 움직이는 연타는 봇과 구분되지 않는다</span></li>
+    </ul>
+  </div>
+
+  <div class="feat">
+    <div class="feat-head"><span class="fid">F-28</span><h3>온보딩</h3><span class="chip sys">시스템</span></div>
+    <p class="def">신규 유저에게 화면을 한꺼번에 쏟지 않는다. 진행에 따라 탭이 하나씩 열린다.</p>
+    <div class="tw">
+      <table>
+        <caption>탭 해금 조건</caption>
+        <thead><tr><th>탭</th><th>조건</th></tr></thead>
+        <tbody>
+          <tr><td>가게 · 설정</td><td>처음부터 열림</td></tr>
+          <tr><td>업그레이드</td><td>설비 <b>3개</b> 보유 또는 누적 매출 <b>300원</b></td></tr>
+          <tr><td>주방</td><td>사장 <b>Lv.1</b></td></tr>
+          <tr><td>기록</td><td>사장 <b>Lv.2</b> 또는 환생 <b>1회</b></td></tr>
+          <tr><td>환생</td><td>회차 매출 <b>100만원</b> 또는 환생 <b>1회</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="rules">
+      <li><span class="k">재잠금</span><span class="v">한 번 열린 탭은 다시 잠기지 않는다</span></li>
+      <li><span class="k">기존 유저</span><span class="v">조건이 세이브에서 파생되므로 켜자마자 전부 열려 있다</span></li>
+      <li><span class="k">첫 실행 안내</span><span class="v"><b>5장</b> (콤보 · 시트 · 황금 손님 · 도둑 · 재개업). 설정에서 다시 볼 수 있다</span></li>
+    </ul>
+  </div>
+
+  <h2><span class="sec-tag">5</span>설비 수치표</h2>
+  <div class="tw">
+    <table>
+      <caption>설비 10종 &mdash; 구매마다 가격 ×1.15</caption>
+      <thead><tr><th class="num">#</th><th>이름</th><th class="num">기본 가격</th><th class="num">초당 수익</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>알바생</td><td class="num">15</td><td class="num">0.1</td></tr>
+        <tr><td class="num">2</td><td>떡볶이 냄비</td><td class="num">100</td><td class="num">1</td></tr>
+        <tr><td class="num">3</td><td>튀김기</td><td class="num">1,100</td><td class="num">8</td></tr>
+        <tr><td class="num">4</td><td>만두 찜기</td><td class="num">12,000</td><td class="num">47</td></tr>
+        <tr><td class="num">5</td><td>김밥 장인</td><td class="num">130,000</td><td class="num">260</td></tr>
+        <tr><td class="num">6</td><td>배달 오토바이</td><td class="num">1,400,000</td><td class="num">1,400</td></tr>
+        <tr><td class="num">7</td><td>프랜차이즈 지점</td><td class="num">2,000만</td><td class="num">7,800</td></tr>
+        <tr><td class="num">8</td><td>중앙 주방 공장</td><td class="num">3.3억</td><td class="num">44,000</td></tr>
+        <tr><td class="num">9</td><td>해외 진출 본부</td><td class="num">51억</td><td class="num">260,000</td></tr>
+        <tr><td class="num">10</td><td>우주 분식 스테이션</td><td class="num">750억</td><td class="num">160만</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <h4>진행 속도 (실측)</h4>
+    <p>
+      자동 플레이 시뮬레이션 결과다. 30분마다 들러 잠깐 탭하는 패턴으로 측정했다.
+    </p>
+    <p>
+      첫 환생 <b>2~3시간</b> · 조리 8단계 도달 <b>3일 14시간</b> · 손님 5등급 도달 <b>3일 11시간</b>.
+    </p>
+    <p>
+      누적 매출은 7일차 <b>9.92경원</b>, 30일차 <b>1.85해원</b>, 90일차 <b>46.5해원</b>.
+      30일에서 90일 사이 60일 동안 <b>25배</b>밖에 오르지 않는다 &mdash; 곡선이 후반에 눕는다.
+    </p>
+  </div>
+
+  <h2><span class="sec-tag">6</span>최근 반영된 변경</h2>
+  <p class="note">
+    커밋 7건에서 규칙이 바뀐 부분이다. 밸런스 수치(<code>data.js</code>)는 바뀌지 않았고,
+    <b>판정 규칙과 안전장치</b>가 달라졌다.
+  </p>
+  <div class="tw">
+    <table>
+      <caption>변경 내역 &mdash; 반영 위치</caption>
+      <thead><tr><th>바뀐 것</th><th>내용</th><th>반영</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>버프 중첩</b></td>
+          <td>광고 ×2와 황금 ×7이 같은 슬롯을 공유하는데, 배율은 센 쪽·시간은 긴 쪽을 먹어 <b>×7이 30분</b> 유지되던 꼼수를 막았다</td>
+          <td>F-07 신설</td>
+        </tr>
+        <tr>
+          <td><b>구매 조작</b></td>
+          <td>행 전체가 버튼이라 이름을 눌러도 사졌다 → 오른쪽 <b>구매 버튼만</b> 누르면 사진다</td>
+          <td>F-03 · F-04</td>
+        </tr>
+        <tr>
+          <td><b>구매 판정</b></td>
+          <td>회색으로 보이는데 사지는 어긋남 → 화면이 <b>활성일 때만</b> 사진다</td>
+          <td>F-04</td>
+        </tr>
+        <tr>
+          <td><b>저효율 힌트</b></td>
+          <td>부자가 된 뒤 싼 설비를 사면 표시가 안 움직여 버그로 오해됐다 → 힌트를 띄운다. 구매는 막지 않는다</td>
+          <td>F-03</td>
+        </tr>
+        <tr>
+          <td><b>수익 상한</b></td>
+          <td>수익이 무한으로 새면 초당 수익이 ∞로 굳고 설비 지분이 NaN%가 됐다 → 천장을 씌웠다</td>
+          <td>F-26 신설</td>
+        </tr>
+        <tr>
+          <td><b>황금 보상</b></td>
+          <td>현금 다발 바닥값이 버프를 포함해 부풀었다 → 버프를 뺀 값으로 계산</td>
+          <td>F-06</td>
+        </tr>
+        <tr>
+          <td><b>기록 필터</b></td>
+          <td>조작 세이브의 무한대 기록이 명예의 전당 영구 1위로 박혔다 → 걸러낸다</td>
+          <td>F-25</td>
+        </tr>
+        <tr>
+          <td><b>불러오기 가드</b></td>
+          <td>세이브가 아닌 유효 JSON을 넣으면 진행을 날리고 &lsquo;성공&rsquo;이라 표시했다 → 거부한다</td>
+          <td>F-25</td>
+        </tr>
+        <tr>
+          <td>모달 스크롤</td>
+          <td>낮은 화면에서 긴 모달의 버튼이 화면 밖으로 밀려 못 눌렀다 → 상자 안에서 스크롤</td>
+          <td>화면 처리</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="foot">
+    수치는 <code>data.js</code> · <code>mock.js</code> · <code>game.js</code> 를 실행해 읽은 값이다.
+    진행 속도는 <code>tests/progression.js</code> 와 동일한 시뮬레이션으로 측정했다.
+    README 에 적힌 일부 수치(도전과제 35종, 명성 상점 11종 등)는 코드와 어긋나 있어 코드 쪽을 따랐다.
+  </p>
+
+</div>
+
+<script>
+(function(){
+  var K="spec-theme", root=document.documentElement, btn=document.getElementById("themeToggle");
+  try{ var v=localStorage.getItem(K); if(v==="dark"||v==="light") root.setAttribute("data-theme",v); }catch(e){}
+  btn.addEventListener("click", function(){
+    var cur=root.getAttribute("data-theme");
+    if(!cur) cur = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var next = cur==="dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try{ localStorage.setItem(K,next); }catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
