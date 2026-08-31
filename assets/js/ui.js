@@ -284,6 +284,9 @@ var UI = (function () {
         p.desc.textContent = locked ? ('🔒 ' + upgradeLockText(u) + ' · ' + u.desc) : u.desc;
         row.addEventListener('click', function () {
           if (!Game.upgradeUnlocked(u)) { toast('🔒 ' + upgradeLockText(u)); return; }
+          // 초록(활성)일 때만 산다 — 화면이 회색이면(돈 부족) 눌러도 안 사진다.
+          // buyable 클래스는 updateUpgrades 가 매 렌더마다 최신으로 갱신한다.
+          if (!row.classList.contains('buyable')) { toast('돈이 부족합니다'); return; }
           if (Game.buyUpgrade(u.id)) {
             Sound.play('upgrade');
             buzz(12);
