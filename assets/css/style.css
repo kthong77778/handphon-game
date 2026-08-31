@@ -260,6 +260,31 @@ button.item-cost:active{transform:scale(.92)}
 /* 살 수 있을 때(초록)만 강조 — 회색이면 눌러도 안 사진다 */
 .item.buyable button.item-cost{border-color:rgba(74,222,128,.55);background:rgba(74,222,128,.15)}
 
+/* ===== 절전 모드 (화면을 어둡게 덮는다 — 배터리 절약) ===== */
+#powerSave{
+  position:fixed;inset:0;z-index:200;         /* 모달(60)·토스트(70)보다 위 */
+  background:#000;color:#5a5566;
+  display:flex;align-items:center;justify-content:center;
+  padding:32px;
+  -webkit-tap-highlight-color:transparent;
+}
+.ps-inner{
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  text-align:center;max-width:280px;
+}
+.ps-moon{font-size:54px;opacity:.45}
+.ps-title{font-size:19px;font-weight:800;color:#7a7488;letter-spacing:.5px}
+.ps-desc{font-size:13px;line-height:1.65;color:#454154;margin:0}
+.ps-money{
+  font-size:15px;font-weight:700;color:#6b6478;
+  font-variant-numeric:tabular-nums;margin-top:2px;
+}
+.btn.ps-exit{
+  margin-top:10px;min-width:180px;
+  background:#1a1726;border-color:#2c2740;color:#9a92ad;
+}
+.btn.ps-exit:active{transform:scale(.97)}
+
 /* ===== 카드 / 버튼 ===== */
 .card{
   background:var(--card);border:1px solid var(--line);

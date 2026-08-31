@@ -32,6 +32,7 @@ var UI = (function () {
      'shopPage', 'shopTop', 'shopSheet', 'sheetHandle', 'sheetHint', 'sheetBody',
      'tourModal', 'tourEmoji', 'tourTitle', 'tourText', 'tourDots', 'tourNext', 'tourSkip',
      'muteBtn', 'muteIc', 'muteTx', 'notifyBtn', 'helpBtn',
+     'powerSaveBtn', 'powerSave', 'psMoney', 'powerSaveExit',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
      'saveBtn', 'exportBtn', 'importBtn', 'resetBtn', 'saveGuard',
@@ -50,6 +51,28 @@ var UI = (function () {
     el.toast.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { el.toast.hidden = true; }, 1800);
+  }
+
+  /* ---------- 절전 모드 ----------
+     화면을 검게 덮되 게임 루프는 계속 돈다(전경이면 실시간, 잠기면 복귀 시
+     오프라인 정산). main 의 루프가 powerSaveOn() 을 보고 무거운 렌더·연출을
+     건너뛰어 배터리를 아낀다. 새로고침하면 풀리는 일시 모드라 세이브엔 안 남긴다. */
+  var powerSave = false;
+  function powerSaveOn() { return powerSave; }
+  function updatePowerSave() {
+    if (el.psMoney) el.psMoney.textContent = Fmt.won(State.get().money);
+  }
+  function enterPowerSave() {
+    powerSave = true;
+    el.powerSave.hidden = false;
+    updatePowerSave();
+    if (window.Sky && Sky.pause) Sky.pause(true);   // 하늘 갱신 인터벌도 멈춘다
+  }
+  function exitPowerSave() {
+    powerSave = false;
+    el.powerSave.hidden = true;
+    if (window.Sky && Sky.pause) Sky.pause(false);
+    refresh(true);                                   // 어두운 동안 밀린 화면을 한 번에 갱신
   }
 
   function floatText(x, y, text) {
@@ -2344,6 +2367,8 @@ var UI = (function () {
       }
     });
     el.helpBtn.addEventListener('click', function () { showTour(0); });
+    el.powerSaveBtn.addEventListener('click', enterPowerSave);
+    el.powerSaveExit.addEventListener('click', exitPowerSave);
 
     // 테스트 도구 (테스트 빌드 전용 — 정식 버전에서는 index.html 에서 통째로 뺀다)
     [['dbgHour', 'hour'], ['dbgDay', 'day'],
@@ -2449,6 +2474,8 @@ var UI = (function () {
     setSheet: setSheet,
     tickWorld: tickWorld,
     toast: toast,
+    powerSaveOn: powerSaveOn,
+    updatePowerSave: updatePowerSave,
     invalidate: function () { sig = {}; buffSig = ''; lookSig = ''; skinSig = ''; }
   };
 })();

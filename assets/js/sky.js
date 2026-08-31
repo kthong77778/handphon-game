@@ -122,5 +122,15 @@ var Sky = (function () {
     });
   }
 
-  return { init: init, refresh: refresh, previewAt: previewAt };
+  /** 절전 모드에서 하늘 갱신 인터벌을 멈추고/되살린다 */
+  function pause(on) {
+    if (on) {
+      if (timer) { clearInterval(timer); timer = null; }
+    } else if (!timer) {
+      refresh();
+      timer = setInterval(refresh, 2000);
+    }
+  }
+
+  return { init: init, refresh: refresh, previewAt: previewAt, pause: pause };
 })();

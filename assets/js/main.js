@@ -196,9 +196,10 @@
     var dt = Math.min((ts - lastFrame) / 1000, MAX_DT);
     lastFrame = ts;
 
+    var saving = UI.powerSaveOn && UI.powerSaveOn();
     if (dt > 0) {
-      Game.tick(dt);
-      UI.tickWorld(dt);
+      Game.tick(dt);                     // 수익은 절전 중에도 그대로 흐른다
+      if (!saving) UI.tickWorld(dt);     // 거리·손님 연출은 절전 중엔 멈춘다
       uiAcc += dt * 1000;
       saveAcc += dt * 1000;
     }
@@ -206,8 +207,12 @@
     if (uiAcc >= UI_MS) {
       uiAcc = 0;
       announceAchievements();
-      maybePrestigeIntro();
-      UI.refresh();
+      if (saving) {
+        UI.updatePowerSave();            // 어두운 화면엔 돈 숫자만 가볍게 갱신
+      } else {
+        maybePrestigeIntro();
+        UI.refresh();
+      }
     }
 
     if (saveAcc >= AUTOSAVE_MS) {

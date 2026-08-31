@@ -258,6 +258,7 @@
       <div class="card">
         <button class="btn" id="muteBtn"><img class="btn-ic" id="muteIc" src="assets/img/ui/ui_sound_on.png" alt=""><span id="muteTx">소리 켜짐</span></button>
         <button class="btn" id="notifyBtn">🔔 오프라인 알림 켜기</button>
+        <button class="btn" id="powerSaveBtn">🌙 절전 모드 (화면 어둡게)</button>
         <button class="btn" id="helpBtn">❓ 조작 안내 다시 보기</button>
         <button class="btn" id="saveBtn">지금 저장</button>
         <button class="btn" id="exportBtn">세이브 내보내기</button>
@@ -399,6 +400,17 @@
               autocapitalize="off" autocorrect="off"></textarea>
     <button class="btn big" id="textOk">확인</button>
     <button class="btn" id="textCancel">닫기</button>
+  </div>
+</div>
+
+<!-- 절전 모드: 화면을 어둡게 덮되 가게는 계속 돌아간다 -->
+<div id="powerSave" hidden>
+  <div class="ps-inner">
+    <div class="ps-moon">🌙</div>
+    <div class="ps-title">절전 모드</div>
+    <p class="ps-desc">화면을 어둡게 해 배터리를 아껴요.<br>가게는 계속 돌아갑니다.</p>
+    <div class="ps-money" id="psMoney">0 원</div>
+    <button class="btn ps-exit" id="powerSaveExit">절전모드 해제</button>
   </div>
 </div>
 
