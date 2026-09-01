@@ -1911,6 +1911,59 @@ var Game = (function () {
              milestone: !!ms, grand: !!(ms && ms.grand), bonus: bonus };
   }
 
+  /* ---------- 🎡 행운의 룰렛 ---------- */
+
+  /** 오늘 무료 스핀이 남았나 (하루 1회) */
+  function roulFree() { return S().roulFreeDate !== today(); }
+  /** 이번 스핀 비용 (무료면 0) */
+  function roulCost() { return roulFree() ? 0 : Data.ROULETTE.spinCost; }
+  /** 지금 돌릴 수 있나 (무료거나 별사탕이 충분) */
+  function canRoulette() { return roulFree() || (S().candy || 0) >= Data.ROULETTE.spinCost; }
+
+  /** 가중치로 당첨 칸 인덱스를 뽑는다 */
+  function rollRoulette() {
+    var seg = Data.ROULETTE.seg, total = 0;
+    seg.forEach(function (x) { total += x.weight; });
+    var r = Math.random() * total;
+    for (var i = 0; i < seg.length; i++) { r -= seg[i].weight; if (r <= 0) return i; }
+    return 0;
+  }
+
+  /** 당첨 칸 보상을 실제로 지급하고 화면용 정보를 돌려준다 */
+  function applyRouletteReward(g) {
+    var s = S(), out = { id: g.id, icon: g.icon, label: g.label };
+    if (g.type === 'money' || g.type === 'jackpot') {
+      var money = Math.max(perSec(true) * (g.min || 0) * 60, g.floor || 0);
+      earn(s, money); out.money = money;
+      if (g.type === 'jackpot' && g.candy) { addCandy(g.candy); out.candy = g.candy; }
+    } else if (g.type === 'ings') {
+      dropIngredients(g.n || 10); out.ings = g.n || 10;
+    } else if (g.type === 'coupon') {
+      var add = g.n || 1; s.coupons = Math.min(Data.COUPON.max, (s.coupons || 0) + add); out.coupon = add;
+    } else if (g.type === 'boost') {
+      s.boostLeft = Data.BOOST.dur; out.boost = Data.BOOST.dur;
+    } else if (g.type === 'candy') {
+      addCandy(g.n || 1); out.candy = g.n || 1;
+    }
+    return out;
+  }
+
+  /**
+   * 룰렛 1회. 무료 스핀이 남았으면 공짜, 아니면 별사탕을 쓴다. 별사탕이 모자라면 null.
+   * @returns {{index:number, seg:Object, reward:Object, free:boolean}|null}
+   */
+  function spinRoulette() {
+    var s = S();
+    var free = roulFree();
+    var cost = free ? 0 : Data.ROULETTE.spinCost;
+    if (!free && (s.candy || 0) < cost) return null;
+    if (free) s.roulFreeDate = today(); else s.candy -= cost;
+    s.roulSpins = (s.roulSpins || 0) + 1;
+    var idx = rollRoulette();
+    var reward = applyRouletteReward(Data.ROULETTE.seg[idx]);
+    return { index: idx, seg: Data.ROULETTE.seg[idx], reward: reward, free: free };
+  }
+
   /* ---------- 일일 퀘스트 ---------- */
 
   var QUEST_BY_ID = {};
@@ -2176,6 +2229,11 @@ var Game = (function () {
     boostReady: boostReady,
     startBoost: startBoost,
     dailyReady: dailyReady,
+    roulFree: roulFree,
+    roulCost: roulCost,
+    canRoulette: canRoulette,
+    rollRoulette: rollRoulette,
+    spinRoulette: spinRoulette,
     partyActive: partyActive,
     michelinStars: michelinStars,
     michelinNextGoal: michelinNextGoal,

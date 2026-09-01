@@ -266,6 +266,24 @@ var Data = (function () {
     perPrestige: 5    // 환생 한 번마다
   };
 
+  /* ---------- 🎡 행운의 룰렛 (별사탕 소비처 미니게임) ----------
+     별사탕으로 돌리고(하루 1회 무료), 8칸 가중치 보상. '꽝'은 없다 — 낸 만큼 뭐든 준다.
+     money 보상은 '초당 수익 × 분(min)'이라 후반에도 유효(인플레 안전, 진행 테스트 밖).
+     weight 합 = 100. jackpot 은 큰 돈 + 별사탕. */
+  var ROULETTE = {
+    spinCost: 5,      // 별사탕 5개로 1회. 단, 하루 첫 스핀은 무료
+    seg: [
+      { id: 'm1', icon: '💰', label: '용돈',     weight: 22, type: 'money',   min: 30,  floor: 500 },
+      { id: 'i1', icon: '🧺', label: '재료 12',  weight: 20, type: 'ings',    n: 12 },
+      { id: 'm2', icon: '💵', label: '목돈',     weight: 16, type: 'money',   min: 100, floor: 1000 },
+      { id: 'cp', icon: '🎟️', label: '쿠폰',     weight: 12, type: 'coupon',  n: 1 },
+      { id: 'bo', icon: '📣', label: '손님몰이', weight: 10, type: 'boost' },
+      { id: 'cd', icon: '🍬', label: '별사탕 5', weight: 10, type: 'candy',   n: 5 },
+      { id: 'i2', icon: '📦', label: '재료 30',  weight: 6,  type: 'ings',    n: 30 },
+      { id: 'jp', icon: '🎉', label: '대박!',    weight: 4,  type: 'jackpot', min: 600, floor: 3000, candy: 20 }
+    ]
+  };
+
   // 별사탕 상점 — 소비 아이템(반복 구매). cost 는 별사탕 개수.
   var SHOP = [
     { id: 'coupon', icon: '🎟️', name: '할인 쿠폰 묶음', desc: '설비·업그레이드를 싸게 사는 쿠폰 3장', cost: 8, coupons: 3 },
@@ -1298,6 +1316,7 @@ var Data = (function () {
     NOTICES: NOTICES,
     MAIL: MAIL,
     CANDY: CANDY,
+    ROULETTE: ROULETTE,
     SHOP: SHOP,
     GENERATORS: GENERATORS,
     UPGRADES: UPGRADES,

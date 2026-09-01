@@ -37,6 +37,7 @@ var UI = (function () {
      'powerSaveBtn', 'powerSave', 'psMoney', 'powerSaveExit',
      'noticeBtn', 'noticeDot', 'noticeModal', 'noticeList', 'noticeClose',
      'mailBtn', 'mailDot', 'mailModal', 'mailList', 'mailClose',
+     'roulBtn', 'roulDot', 'roulModal', 'roulSub', 'roulWheel', 'roulResult', 'roulSpin', 'roulClose',
      'shopBtn', 'shopModal', 'candyNum', 'shopList', 'shopClose', 'candyChip', 'candyHud',
      'askModal', 'askEmoji', 'askTitle', 'askText', 'askOk', 'askCancel',
      'textModal', 'textEmoji', 'textTitle', 'textDesc', 'textInput', 'textOk', 'textCancel',
@@ -234,6 +235,88 @@ var UI = (function () {
     renderShopList();
     updateCandy();
     el.shopModal.hidden = false;
+  }
+
+  /* ---------- 🎡 행운의 룰렛 (상단 버튼 → 팝업) ---------- */
+  var roulRot = 0, roulSpinning = false, roulBuilt = false;
+  var ROUL_COLS = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#38d9a9', '#4dabf7', '#748ffc', '#da77f2'];
+
+  function buildRoulWheel() {
+    var seg = Data.ROULETTE.seg, n = seg.length, step = 360 / n;
+    var stops = [];
+    for (var i = 0; i < n; i++) {
+      var c = ROUL_COLS[i % ROUL_COLS.length];
+      stops.push(c + ' ' + (i * step) + 'deg ' + ((i + 1) * step) + 'deg');
+    }
+    el.roulWheel.style.background = 'conic-gradient(' + stops.join(',') + ')';
+    var html = '';
+    for (var j = 0; j < n; j++) {
+      var ang = j * step + step / 2;               // 위(0deg)에서 시계방향
+      var rad = (ang - 90) * Math.PI / 180;        // 화면 좌표: 위쪽이 -90°
+      var rx = 50 + 35 * Math.cos(rad);
+      var ry = 50 + 35 * Math.sin(rad);
+      html += '<span class="roul-seg" style="left:' + rx.toFixed(1) + '%;top:' + ry.toFixed(1) + '%">' +
+              seg[j].icon + '</span>';
+    }
+    el.roulWheel.innerHTML = html;
+    roulBuilt = true;
+  }
+
+  function updateRoulDot() { if (el.roulDot) el.roulDot.hidden = !Game.roulFree(); }
+
+  function updateRoulUI() {
+    var free = Game.roulFree(), cost = Data.ROULETTE.spinCost;
+    el.roulSub.textContent = free ? '🎁 오늘 무료 스핀이 있어요!' : '🍬 별사탕 ' + cost + '개로 돌립니다';
+    el.roulSpin.textContent = free ? '🎁 무료로 돌리기' : '🍬 ' + cost + ' 돌리기';
+    el.roulSpin.disabled = roulSpinning || !Game.canRoulette();
+  }
+
+  function showRoulette() {
+    if (!roulBuilt) buildRoulWheel();
+    el.roulResult.textContent = '';
+    updateRoulUI();
+    el.roulModal.hidden = false;
+  }
+
+  function roulRewardText(res) {
+    var rw = res.reward, parts = [];
+    if (rw.money) parts.push(Fmt.won(rw.money));
+    if (rw.ings) parts.push('🧺 재료 ' + rw.ings);
+    if (rw.coupon) parts.push('🎟️ 쿠폰 ' + rw.coupon + '장');
+    if (rw.boost) parts.push('📣 손님 몰이');
+    if (rw.candy) parts.push('🍬 별사탕 ' + rw.candy);
+    return (res.seg.type === 'jackpot' ? '🎉 <b>대박!</b> ' : '🎯 ') + parts.join(' + ') + ' 획득!';
+  }
+
+  function doRoulSpin() {
+    if (roulSpinning) return;
+    var res = Game.spinRoulette();
+    if (!res) { toast('🍬 별사탕이 부족해요'); return; }
+    roulSpinning = true;
+    el.roulSpin.disabled = true;
+    el.roulResult.textContent = '';
+    buzz(12);
+
+    var n = Data.ROULETTE.seg.length, step = 360 / n;
+    // 당첨 칸(res.index)의 중앙을 맨 위(포인터)로 오게 회전. 늘 앞으로 5바퀴+ 돈다.
+    var targetMod = (360 - (res.index * step + step / 2)) % 360;
+    var next = roulRot - (roulRot % 360) + targetMod;
+    if (next <= roulRot + 10) next += 360;
+    next += 360 * 5;
+    roulRot = next;
+    el.roulWheel.style.transform = 'rotate(' + next + 'deg)';
+
+    setTimeout(function () {
+      roulSpinning = false;
+      el.roulResult.innerHTML = roulRewardText(res);
+      el.roulResult.classList.toggle('jackpot', res.seg.type === 'jackpot');
+      Sound.play('reward');
+      buzz(res.seg.type === 'jackpot' ? [20, 40, 20] : 30);
+      updateRoulUI();
+      updateRoulDot();
+      State.save();
+      refresh(true);
+    }, 3500);
   }
 
   function floatText(x, y, text) {
@@ -1566,6 +1649,7 @@ var UI = (function () {
 
   function updateHud() {
     var s = State.get();
+    updateRoulDot();                 // 무료 스핀 남았으면 🎡 버튼에 점
     el.money.textContent = Fmt.won(s.money);
     el.rate.textContent = '초당 ' + Fmt.rate(Game.perSec()) + ' 원';
     el.fameNum.textContent = Fmt.num(s.fame);
@@ -2700,6 +2784,9 @@ var UI = (function () {
     el.mailClose.addEventListener('click', function () { el.mailModal.hidden = true; });
     el.shopBtn.addEventListener('click', showShop);
     el.shopClose.addEventListener('click', function () { el.shopModal.hidden = true; });
+    el.roulBtn.addEventListener('click', showRoulette);
+    el.roulClose.addEventListener('click', function () { el.roulModal.hidden = true; });
+    el.roulSpin.addEventListener('click', doRoulSpin);
 
     // 테스트 도구 (테스트 빌드 전용 — 정식 버전에서는 index.html 에서 통째로 뺀다)
     [['dbgHour', 'hour'], ['dbgDay', 'day'],

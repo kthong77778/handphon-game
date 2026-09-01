@@ -1039,6 +1039,27 @@ button.item-cost:active{transform:scale(.92)}
 .att-grand-tag{color:var(--gold)}
 .att-streak{color:var(--dim)}
 
+/* 🎡 행운의 룰렛 */
+.roul-box{max-width:340px}
+.roul-sub{font-size:12px;color:var(--dim);margin:0 0 4px}
+.roul-wrap{position:relative;width:240px;height:240px;margin:8px auto 12px}
+.roul-wheel{position:absolute;inset:0;border-radius:50%;
+  border:6px solid rgba(255,255,255,.92);
+  box-shadow:0 0 0 3px rgba(0,0,0,.28),0 8px 24px rgba(0,0,0,.45);
+  transition:transform 3.5s cubic-bezier(.12,.75,.15,1)}
+.roul-seg{position:absolute;transform:translate(-50%,-50%);font-size:23px;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.55));pointer-events:none}
+.roul-pointer{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  font-size:26px;line-height:1;color:#ff5b5b;z-index:3;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.roul-hub{position:absolute;top:50%;left:50%;width:46px;height:46px;
+  transform:translate(-50%,-50%);border-radius:50%;z-index:2;
+  background:radial-gradient(circle at 35% 30%,#fff,#d6d6d6);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  box-shadow:0 2px 6px rgba(0,0,0,.45)}
+.roul-result{min-height:22px;font-size:15px;font-weight:800;margin:2px 0 10px}
+.roul-result.jackpot{color:var(--gold)}
+
 /* ===== 가게 앞 거리 (손님들이 오가는 곳) ===== */
 .street{
   position:relative;height:120px;

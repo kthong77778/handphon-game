@@ -625,6 +625,45 @@ console.log('\n[7] 출석 보상 (30일 출석부)');
   ok(r31.day === 1, '30칸을 채우면 새 바퀴(Day 1)로 돈다');
 }
 
+console.log('\n[7.1] 행운의 룰렛');
+{
+  const R = Data.ROULETTE;
+  const s = State.get();
+  s.roulFreeDate = ''; s.roulSpins = 0; s.candy = 0; Game.invalidate();
+  ok(Game.roulFree() && Game.roulCost() === 0, '하루 첫 스핀은 무료');
+  const free = Game.spinRoulette();
+  ok(free && free.free === true && s.roulSpins === 1, '첫 스핀 free=true · 스핀 수 기록');
+  ok(!Game.roulFree() && Game.roulCost() === R.spinCost, '무료 소진 후엔 별사탕 비용');
+  ok(Game.canRoulette() === false && Game.spinRoulette() === null, '무료도 없고 별사탕도 없으면 못 돌린다');
+
+  // 유료 스핀은 별사탕을 정확히 차감한다
+  s.candy = R.spinCost + 3; Game.invalidate();
+  const paid = Game.spinRoulette();
+  ok(paid && paid.free === false && s.candy === 3, '유료 스핀은 별사탕 차감');
+
+  // 가중치 롤이 8칸을 모두 낸다 (개수는 데이터에서 읽는다)
+  const seen = {};
+  for (let i = 0; i < 8000; i++) seen[Game.rollRoulette()] = 1;
+  ok(Object.keys(seen).length === R.seg.length, '모든 칸이 등장', Object.keys(seen).length + '/' + R.seg.length);
+
+  // 보상이 실제 지급되는지 — 넉넉히 돌려 모든 종류가 나오고 돈도 쌓인다
+  s.candy = 100000; s.coupons = 0; Game.invalidate();
+  const kinds = {}; let moneyGained = 0;
+  for (let i = 0; i < 400; i++) {
+    const r = Game.spinRoulette(); if (!r) break;
+    const rw = r.reward;
+    if (rw.money) { kinds.money = 1; moneyGained += rw.money; }
+    if (rw.ings) kinds.ings = 1;
+    if (rw.coupon) kinds.coupon = 1;
+    if (rw.boost) kinds.boost = 1;
+    if (rw.candy) kinds.candy = 1;
+    if (r.seg.type === 'jackpot') kinds.jackpot = 1;
+  }
+  ok(moneyGained > 0, '돈 보상이 실제 지급된다');
+  ok(kinds.ings && kinds.coupon && kinds.boost && kinds.candy && kinds.jackpot,
+     '재료·쿠폰·손님몰이·별사탕·대박 보상이 모두 나온다', JSON.stringify(kinds));
+}
+
 console.log('\n[8] 환생 / 세이브 왕복');
 {
   const s = State.get();
