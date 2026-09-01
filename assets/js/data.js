@@ -1009,20 +1009,20 @@ var Data = (function () {
       { id: 'k17', icon: 'food/food_shrimp_fry.png', name: '새우튀김',  grade: 1, at: 6,  bonus: 0.015, sec: 240,  need: { sh: 3, fl: 2 } },
       { id: 'k21', icon: 'food/food_toast.png', name: '토스트',    grade: 1, at: 7,  bonus: 0.015, sec: 300,  need: { fl: 2, eg: 2, ch: 1 } },
       // 중급 (7종) — 효과 ×2 (기본값은 초급대와 비슷하게, 곱해서 약 2배가 된다)
-      { id: 'k4',  icon: 'food/food_ramen.png', name: '라면',      grade: 2, at: 8,  bonus: 0.01,   sec: 180,  need: { fl: 3, vg: 2, eg: 2 } },
-      { id: 'k5',  icon: 'food/food_hotdog.png', name: '핫도그',    grade: 2, at: 9,  bonus: 0.01,   sec: 230,  need: { fl: 3, mt: 3 } },
-      { id: 'k11', icon: 'food/food_kimchi_friedrice.png', name: '김치볶음밥', grade: 2, at: 10, bonus: 0.01,   sec: 290,  need: { rc: 3, gj: 2, eg: 1 } },
-      { id: 'k6',  icon: 'food/food_mandu.png', name: '만두',      grade: 2, at: 11, bonus: 0.01,   sec: 330,  need: { fl: 3, mt: 2, vg: 2, ms: 1 } },
-      { id: 'k12', icon: 'food/food_cheese_rabokki.png', name: '치즈라볶이', grade: 2, at: 12, bonus: 0.0125, sec: 390,  need: { fl: 3, gj: 2, ch: 2 } },
-      { id: 'k18', icon: 'food/food_mushroom_stew.png', name: '버섯전골',  grade: 2, at: 13, bonus: 0.0125, sec: 460,  need: { ms: 3, vg: 2, mt: 2 } },
-      { id: 'k19', icon: 'food/food_corn_cheese.png', name: '옥수수치즈범벅', grade: 2, at: 14, bonus: 0.0125, sec: 550,  need: { cn: 3, ch: 3 } },
+      { id: 'k4',  icon: 'food/food_ramen.png', name: '라면',      grade: 2, at: 8,  bonus: 0.01,   sec: 180,  need: { fl: 4, vg: 3, eg: 2 } },
+      { id: 'k5',  icon: 'food/food_hotdog.png', name: '핫도그',    grade: 2, at: 9,  bonus: 0.01,   sec: 230,  need: { fl: 4, mt: 4 } },
+      { id: 'k11', icon: 'food/food_kimchi_friedrice.png', name: '김치볶음밥', grade: 2, at: 10, bonus: 0.01,   sec: 290,  need: { rc: 4, gj: 3, eg: 2 } },
+      { id: 'k6',  icon: 'food/food_mandu.png', name: '만두',      grade: 2, at: 11, bonus: 0.01,   sec: 330,  need: { fl: 3, mt: 3, vg: 2, ms: 2 } },
+      { id: 'k12', icon: 'food/food_cheese_rabokki.png', name: '치즈라볶이', grade: 2, at: 12, bonus: 0.0125, sec: 390,  need: { fl: 4, gj: 3, ch: 2 } },
+      { id: 'k18', icon: 'food/food_mushroom_stew.png', name: '버섯전골',  grade: 2, at: 13, bonus: 0.0125, sec: 460,  need: { ms: 4, vg: 3, mt: 2 } },
+      { id: 'k19', icon: 'food/food_corn_cheese.png', name: '옥수수치즈범벅', grade: 2, at: 14, bonus: 0.0125, sec: 550,  need: { cn: 4, ch: 4 } },
       // 고급 (6종) — 효과 ×3 (기본값은 초급대와 비슷하게, 곱해서 약 3배가 된다)
-      { id: 'k7',  icon: 'food/food_cheese_gimbap.png', name: '치즈김밥',  grade: 3, at: 15, bonus: 0.01,  sec: 430,  need: { rc: 3, ch: 3, eg: 2 } },
-      { id: 'k13', icon: 'food/food_seafood_pancake.png', name: '해물파전',  grade: 3, at: 16, bonus: 0.01,  sec: 530,  need: { fl: 3, om: 2, sh: 2, vg: 2 } },
-      { id: 'k8',  icon: '🍲', name: '부대찌개',  grade: 3, at: 17, bonus: 0.01,  sec: 630,  need: { mt: 4, ch: 2, gj: 2, ms: 1 } },
-      { id: 'k14', icon: 'food/food_galbitang.png', name: '갈비탕',    grade: 3, at: 18, bonus: 0.012, sec: 830,  need: { mt: 5, vg: 2, pt: 2 } },
-      { id: 'k9',  icon: 'food/food_platter.png', name: '모둠 한상', grade: 3, at: 19, bonus: 0.012, sec: 1200, need: { om: 3, rc: 3, mt: 3, ch: 2 } },
-      { id: 'k20', icon: 'food/food_grand_feast.png', name: '왕특선 정식', grade: 3, at: 20, bonus: 0.013, sec: 1730, need: { mt: 4, sh: 3, ch: 3, cn: 2, pt: 2 } }
+      { id: 'k7',  icon: 'food/food_cheese_gimbap.png', name: '치즈김밥',  grade: 3, at: 15, bonus: 0.01,  sec: 430,  need: { rc: 5, ch: 4, eg: 3 } },
+      { id: 'k13', icon: 'food/food_seafood_pancake.png', name: '해물파전',  grade: 3, at: 16, bonus: 0.01,  sec: 530,  need: { fl: 4, om: 3, sh: 3, vg: 2 } },
+      { id: 'k8',  icon: '🍲', name: '부대찌개',  grade: 3, at: 17, bonus: 0.01,  sec: 630,  need: { mt: 5, ch: 3, gj: 3, ms: 2 } },
+      { id: 'k14', icon: 'food/food_galbitang.png', name: '갈비탕',    grade: 3, at: 18, bonus: 0.012, sec: 830,  need: { mt: 6, vg: 3, pt: 3 } },
+      { id: 'k9',  icon: 'food/food_platter.png', name: '모둠 한상', grade: 3, at: 19, bonus: 0.012, sec: 1200, need: { om: 4, rc: 4, mt: 4, ch: 2 } },
+      { id: 'k20', icon: 'food/food_grand_feast.png', name: '왕특선 정식', grade: 3, at: 20, bonus: 0.013, sec: 1730, need: { mt: 5, sh: 4, ch: 3, cn: 2, pt: 2 } }
     ],
     grades: [
       { g: 1, name: '초급', mult: 1 },
