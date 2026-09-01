@@ -1170,6 +1170,17 @@ var UI = (function () {
     return '제작 ' + Fmt.comma(count) + ' · ' + masteryStr(tier + 1) + '까지 ' + Fmt.comma(steps[tier]);
   }
 
+  function gradeName(g) {
+    var e = Data.KITCHEN.grades.filter(function (x) { return x.g === g; })[0];
+    return e ? e.name : '';
+  }
+  function needTotal(f) { var t = 0; for (var k in f.need) t += f.need[k]; return t; }
+  // 등급 배지: '고급 효과 ×3' — 재료를 더 쓰는 대신 효과가 크다는 걸 정면에 보인다
+  function gradeBadge(f) {
+    return '<span class="kf-grade g' + f.grade + '">' + gradeName(f.grade) +
+           ' 효과 ×' + Game.gradeMult(f.grade) + '</span>';
+  }
+
   function buildKitchenGrid() {
     el.kitchenGrid.innerHTML = '';
     kitchenCells = {};
@@ -1184,8 +1195,8 @@ var UI = (function () {
       cell.className = 'kfood' + (unlocked ? '' : ' locked') + (made ? ' done' : '') + (isSpecial ? ' special' : '');
       if (!unlocked) {
         cell.innerHTML = '<div class="kf-head"><span class="kf-icon">❓</span>' +
-          '<span class="kf-name">??? 미발견</span></div>' +
-          '<div class="kf-lock">사장 Lv.' + f.at + ' 에 레시피 해금</div>';
+          '<span class="kf-name">??? 미발견</span>' + gradeBadge(f) + '</div>' +
+          '<div class="kf-lock">사장 Lv.' + f.at + ' 에 레시피 해금 · 재료 ' + needTotal(f) + '개</div>';
       } else {
         var needHtml = Object.keys(f.need).map(function (k) {
           return '<span class="need" data-need="' + k + '"><span class="need-ic">' + iconHtml(ING_BY_ID[k].icon) +
@@ -1195,10 +1206,11 @@ var UI = (function () {
         cell.innerHTML =
           '<div class="kf-head"><span class="kf-icon">' + iconHtml(f.icon) + '</span>' +
             '<span class="kf-name">' + f.name + '</span>' +
+            gradeBadge(f) +
             (isSpecial ? '<span class="kf-special">⭐특선</span>' : '') +
             (made ? '<span class="kf-badge">' + (tier > 0 ? masteryStr(tier) + ' ' : '✔ ') +
                     '+' + foodPctStr(Game.foodEffBonus(f)) + '%</span>' : '') + '</div>' +
-          '<div class="kf-need">' + needHtml + '</div>' +
+          '<div class="kf-need"><span class="need-total">🧺 재료 ' + needTotal(f) + '</span>' + needHtml + '</div>' +
           (made ? '<div class="kf-mastery">' + masteryHint(count) + '</div>' : '') +
           '<button type="button" class="kf-craft" data-food="' + f.id + '">합성' +
             (isSpecial ? ' <b>×' + sp.mult + '</b>' : '') + '</button>';

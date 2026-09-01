@@ -1657,10 +1657,18 @@ button.item:focus-visible,
 .kf-head{display:flex;align-items:center;gap:9px}
 .kf-icon{font-size:24px;width:40px;height:40px;border-radius:11px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex:0 0 40px}
 .kfood.locked .kf-icon{filter:grayscale(1)}
-.kf-name{font-size:14px;font-weight:800;flex:1;min-width:0}
+.kf-head{flex-wrap:wrap}
+.kf-name{font-size:14px;font-weight:800;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kf-badge{font-size:11px;font-weight:800;color:var(--gold);background:rgba(255,204,68,.16);border:1px solid rgba(255,204,68,.4);padding:2px 8px;border-radius:999px;white-space:nowrap}
+/* 등급 배지: 재료를 더 쓰는 대신 효과가 크다는 걸 색으로도 보인다 (초급 초록 · 중급 파랑 · 고급 금색) */
+.kf-grade{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.kf-grade.g1{color:#54c26a;background:rgba(84,194,106,.14);border:1px solid rgba(84,194,106,.4)}
+.kf-grade.g2{color:#60a5fa;background:rgba(96,165,250,.14);border:1px solid rgba(96,165,250,.4)}
+.kf-grade.g3{color:var(--gold);background:rgba(255,204,68,.14);border:1px solid rgba(255,204,68,.45)}
 .kf-lock{font-size:12px;color:var(--dim)}
-.kf-need{display:flex;flex-wrap:wrap;gap:7px}
+.kf-need{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+/* 총 재료 수 — 등급이 오를수록 커지는 값이 한눈에 보인다 */
+.need-total{font-size:11px;font-weight:800;color:var(--dim);background:var(--bg2);border:1px dashed var(--line);border-radius:8px;padding:3px 8px;white-space:nowrap}
 .need{display:flex;align-items:center;gap:2px;font-size:12px;font-weight:800;color:var(--good);background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:3px 8px;font-variant-numeric:tabular-nums}
 .need.short{color:var(--bad)}
 .need-ic{font-size:15px}

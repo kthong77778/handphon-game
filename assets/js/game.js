@@ -790,12 +790,17 @@ var Game = (function () {
     var t = masteryTier(count);
     return t === 0 ? 1 : Data.KITCHEN.mastery.mult[t - 1];
   }
-  /** 그 음식의 지금 도감 배율 (기본 bonus × 숙련 배율). 1개 이상 만들었을 때만 유효 */
+  /** 등급 배율 — 초급 ×1 · 중급 ×2 · 고급 ×3 (고급이 재료를 더 쓰는 대가로 효과가 크다) */
+  function gradeMult(grade) {
+    var gm = Data.KITCHEN.gradeMult;
+    return gm[(grade || 1) - 1] || 1;
+  }
+  /** 그 음식의 지금 도감 배율 (기본 bonus × 등급 배율 × 숙련 배율). 1개 이상 만들었을 때만 유효 */
   function foodEffBonus(f) {
     if (typeof f === 'string') f = FOOD_BY_ID[f];
     if (!f) return 0;
     var c = S().kfoods[f.id] || 0;
-    return c >= 1 ? f.bonus * masteryMult(c) : 0;
+    return c >= 1 ? f.bonus * gradeMult(f.grade) * masteryMult(c) : 0;
   }
 
   /** 만든 음식(도감) 영구 배율의 합 (calc 에 곱해진다) — 숙련도까지 반영한다 */
@@ -829,7 +834,7 @@ var Game = (function () {
     if (!f) return 0;
     var sp = specialToday();
     var mult = (sp && sp.food.id === f.id) ? Data.KITCHEN.special.mult : 1;
-    return cap(Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade) * mult);
+    return cap(Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade) * gradeMult(f.grade) * mult);
   }
 
   /**
@@ -878,7 +883,7 @@ var Game = (function () {
     var sp = specialToday();
     var special = !!(sp && sp.food.id === id);
     var mult = special ? Data.KITCHEN.special.mult : 1;
-    var gain = earn(s, Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade) * mult);
+    var gain = earn(s, Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade) * gradeMult(f.grade) * mult);
     if (special) s.specialProg = (s.specialProg || 0) + 1;
 
     return { food: f, first: first, gain: gain, special: special,
@@ -1987,6 +1992,7 @@ var Game = (function () {
     bossTitle: bossTitle,
     foodBonus: foodBonus,
     foodEffBonus: foodEffBonus,
+    gradeMult: gradeMult,
     masteryTier: masteryTier,
     masteryMult: masteryMult,
     ingCount: ingCount,

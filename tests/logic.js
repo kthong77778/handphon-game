@@ -1244,6 +1244,22 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   for (var mc = 0; mc < mstep; mc++) { var rm = Game.craftFood('k1'); if (rm && rm.tierUp) sawTierUp = true; }
   ok(sawTierUp && Game.masteryTier(Game.foodMade('k1')) === 1, '문턱을 넘는 합성은 tierUp=true');
 
+  // 🏅 등급 배율 — 초급 ×1 · 중급 ×2 · 고급 ×3 (도감 배율·목돈 둘 다에 곱해진다)
+  ok(Game.gradeMult(1) === 1 && Game.gradeMult(2) === 2 && Game.gradeMult(3) === 3, '등급 배율 = 1/2/3');
+  var gk3 = Data.KITCHEN.foods.find(function (f) { return f.grade === 3; });   // 고급 하나
+  State.set({ totalEarned: 1e15 }); var sg = State.get(); sg.kfoods = {}; Game.invalidate();
+  sg.kfoods[gk3.id] = 1; Game.invalidate();
+  ok(near(Game.foodEffBonus(gk3), gk3.bonus * 3), '고급 도감 배율 = 기본 × 3');
+  // 같은 조건에서 목돈도 등급 배율만큼 차이 난다 (기본값이 같은 초급·고급으로 비교)
+  var lowB = Data.KITCHEN.foods.find(function (f) { return f.grade === 1 && f.bonus === 0.01; });
+  var hiB  = Data.KITCHEN.foods.find(function (f) { return f.grade === 3 && f.bonus === 0.01; });
+  if (lowB && hiB) {
+    // 목돈 하한(minReward×grade×gradeMult)이 지배하도록 수익을 0 근처로 두고 비교
+    State.set({ totalEarned: 0, gens: {}, fame: 0 }); Game.invalidate();
+    var gLow = Game.craftGain(lowB), gHi = Game.craftGain(hiB);
+    ok(gHi > gLow, '기본값이 같아도 고급 목돈이 초급보다 크다(등급 배율)');
+  }
+
   // ⭐ 오늘의 특선 / 단골 주문 — 날짜로 정해지고, 만들면 진행·보상
   Game.setClock(function () { return new Date(2026, 0, 10, 12, 0, 0); });
   State.set({ totalEarned: 1e15 }); var sp = State.get();
