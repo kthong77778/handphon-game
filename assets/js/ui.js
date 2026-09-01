@@ -545,7 +545,7 @@ var UI = (function () {
       return genNameById(u.needGen.id) + ' ' + u.needGen.count + '개 필요';
     }
     if (u.needTaps && s.taps < u.needTaps) return '조리 ' + Fmt.num(u.needTaps) + '회 필요';
-    if (u.needEarned && s.runEarned < u.needEarned) return '이번 판 누적 ' + Fmt.won(u.needEarned) + '원 필요';
+    if (u.needEarned && s.runEarned < u.needEarned) return '이번 판 누적 ' + Fmt.won(u.needEarned) + ' 필요';
     return '';
   }
 
