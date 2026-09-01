@@ -1447,8 +1447,12 @@ var UI = (function () {
     refresh(true);
   }
 
+  var truckLeaving = false;
+
   function updateTruck() {
     var here = Game.truckState().here;
+    if (truckLeaving) return;                       // 떠나는 연출 중엔 건드리지 않는다
+    if (here && el.truckPop.hidden) el.truckPop.classList.remove('leaving');  // 새로 도착 → 등장 연출 리셋
     if (el.truckPop.hidden !== !here) el.truckPop.hidden = !here;
     // 주방 탭 점: 트럭이 왔거나 · 합성 가능한 게 있거나 · 단골 주문 보상이 대기 중이면
     var any = here;
@@ -1459,18 +1463,51 @@ var UI = (function () {
     el.dotKitchen.hidden = !any;
   }
 
+  /** 트럭에서 받은 재료 아이콘이 위로 부채꼴로 튀어나오는 연출 */
+  function burstIngredients(ings, rect) {
+    var cx = rect.left + rect.width / 2, cy = rect.top + rect.height * 0.35;
+    var list = ings.slice(0, 8);
+    list.forEach(function (g, i) {
+      var d = document.createElement('div');
+      d.className = 'ing-burst';
+      d.innerHTML = iconHtml(g.icon);
+      d.style.left = cx + 'px';
+      d.style.top = cy + 'px';
+      var spread = (list.length > 1) ? (i - (list.length - 1) / 2) : 0;
+      var ang = (-90 + spread * 24) * Math.PI / 180;   // 위쪽으로 퍼진다
+      var dist = 44 + Math.random() * 28;
+      d.style.setProperty('--dx', Math.round(Math.cos(ang) * dist) + 'px');
+      d.style.setProperty('--dy', Math.round(Math.sin(ang) * dist - 18) + 'px');
+      document.body.appendChild(d);
+      setTimeout(function () { d.remove(); }, 760);
+    });
+  }
+
   function grabTruckUI() {
+    if (truckLeaving || el.truckPop.hidden) return;
+    var rect = el.truckPop.getBoundingClientRect();
     var res = Game.grabTruck();
-    el.truckPop.hidden = true;
-    if (!res) return;
+    if (!res) { el.truckPop.hidden = true; return; }
     var got = res.ings || [];
-    // 재료 아이콘이 그림이라 토스트엔 이름으로 보여준다 (중복 제거)
+
+    burstIngredients(got, rect);            // 재료가 튀어나오고
+    truckLeaving = true;                    // 트럭은 떠난다
+    el.truckPop.classList.add('leaving');
+    Sound.play('buy');
+    buzz(res.coupon ? 14 : 8);
+
     var names = got.map(function (g) { return g.name; });
     var uniq = names.filter(function (n, i) { return names.indexOf(n) === i; });
     var msg = got.length ? ('🚚 재료 +' + got.length + ' (' + uniq.join(', ') + ')') : '';
     if (res.coupon) msg += (msg ? ' · ' : '') + '🎟️ 할인 쿠폰!';
-    if (msg) { Sound.play('buy'); buzz(res.coupon ? 14 : 8); toast(msg); }
-    if (res.coupon || currentTab === 'kitchen') refresh(true);  // 쿠폰 바 갱신
+    if (msg) toast(msg);
+
+    setTimeout(function () {
+      el.truckPop.classList.remove('leaving');
+      el.truckPop.hidden = true;
+      truckLeaving = false;
+      if (res.coupon || currentTab === 'kitchen') refresh(true);  // 쿠폰 바 갱신
+    }, 440);
   }
 
   /* ---------- 환생 화면 ---------- */

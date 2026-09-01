@@ -1807,13 +1807,42 @@ button.item:focus-visible,
 .ad-bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7ee29a,#54c26a);transition:width .9s linear}
 .ad-note{font-size:12px;color:var(--dim);margin-top:12px}
 
-.truck-pop{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 14px);transform:translateX(-50%);
+.truck-pop{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + var(--safe-b) + 14px);transform:translate(-50%,0);
   display:flex;align-items:center;gap:10px;z-index:40;
   background:linear-gradient(135deg,#f2a341,#e0503a);color:#fff;border:none;border-radius:14px;padding:10px 16px;
-  box-shadow:0 8px 22px rgba(224,80,58,.45);font-family:inherit;cursor:pointer;animation:truckIn .25s ease-out}
-.truck-ic{font-size:26px}
+  box-shadow:0 8px 22px rgba(224,80,58,.45);font-family:inherit;cursor:pointer;
+  animation:truckDriveIn .55s cubic-bezier(.2,.9,.25,1)}
+.truck-ic{font-size:26px;animation:truckBob .7s ease-in-out infinite}
 .truck-tx{display:flex;flex-direction:column;line-height:1.2;text-align:left}
 .truck-tx b{font-size:14px}
 .truck-tx small{font-size:11px;opacity:.9}
-@keyframes truckIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
-@media (prefers-reduced-motion:reduce){.truck-pop{animation:none}}
+/* 도착 경적 말풍선 (등장 직후 살짝 늦게 뿅) */
+.truck-honk{position:absolute;top:-16px;right:10px;font-size:12px;font-weight:800;color:#fff;
+  background:#c0392b;padding:1px 8px;border-radius:11px;box-shadow:0 2px 6px rgba(0,0,0,.35);
+  opacity:0;animation:truckHonk 1.1s ease-out .28s}
+/* 트럭이 옆에서 들어와 살짝 오버슈트 후 정지 */
+@keyframes truckDriveIn{
+  0%{opacity:0;transform:translate(-50%,0) translateX(118vw)}
+  68%{opacity:1;transform:translate(-50%,0) translateX(-9px)}
+  84%{transform:translate(-50%,0) translateX(4px)}
+  100%{transform:translate(-50%,0) translateX(0)}
+}
+@keyframes truckBob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-2px) rotate(2deg)}}
+@keyframes truckHonk{0%{opacity:0;transform:translateY(6px) scale(.7)}22%{opacity:1;transform:translateY(0) scale(1)}72%{opacity:1}100%{opacity:0;transform:translateY(-5px)}}
+/* 탭하면 트럭이 왼쪽으로 떠난다 */
+.truck-pop.leaving{animation:truckDriveOut .42s ease-in forwards}
+@keyframes truckDriveOut{to{opacity:0;transform:translate(-50%,0) translateX(-120vw)}}
+/* 받은 재료 아이콘이 위로 부채꼴로 튀어나온다 */
+.ing-burst{position:fixed;z-index:60;width:26px;height:26px;pointer-events:none;
+  transform:translate(-50%,-50%);animation:ingBurst .74s ease-out forwards}
+.ing-burst .ico-img{width:100%;height:100%;object-fit:contain;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+@keyframes ingBurst{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
+  26%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.8)}
+}
+@media (prefers-reduced-motion:reduce){
+  .truck-pop,.truck-ic,.truck-honk,.truck-pop.leaving,.ing-burst{animation:none}
+  .truck-honk{opacity:1}
+}
