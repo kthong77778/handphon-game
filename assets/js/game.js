@@ -813,13 +813,19 @@ var Game = (function () {
 
   /* ---- 🏅 도감 컬렉션 완성 보상 (전체 수익에 곱해지는 영구 배율) ---- */
 
-  /** 그 등급 음식을 '모두 ★★★(최고 별)'로 만들었나 (개수) */
+  /** 숙련 세트 완성에 필요한 별(tier). collection.masterTier 가 있으면 그 값, 없으면 최고 별 */
+  function masterSetTier() {
+    var col = Data.KITCHEN.collection;
+    return (col && col.masterTier) || Data.KITCHEN.mastery.steps.length;
+  }
+
+  /** 그 등급 음식을 '모두 masterSetTier 별 이상'으로 만들었나 (개수) */
   function gradeMasterProgress(grade) {
-    var maxTier = Data.KITCHEN.mastery.steps.length, made = 0, total = 0;
+    var need = masterSetTier(), made = 0, total = 0;
     Data.KITCHEN.foods.forEach(function (f) {
       if (f.grade !== grade) return;
       total++;
-      if (masteryTier(foodMade(f.id)) >= maxTier) made++;
+      if (masteryTier(foodMade(f.id)) >= need) made++;
     });
     return { made: made, total: total };
   }
@@ -2082,6 +2088,7 @@ var Game = (function () {
     foodMade: foodMade,
     gradeProgress: gradeProgress,
     gradeMasterProgress: gradeMasterProgress,
+    masterSetTier: masterSetTier,
     gradeUnlocked: gradeUnlocked,
     collectionMult: collectionMult,
     collectionStatus: collectionStatus,

@@ -1294,14 +1294,15 @@ var UI = (function () {
       chips += '<span class="dex-chip all' + (all.done ? ' done' : '') + '">' + allIcon + ' 전종</span>';
       return '<div class="dex-col-row"><span class="dex-col-label">' + label + '</span>' + chips + '</div>';
     }
+    var stars = '★'.repeat(Game.masterSetTier());   // 숙련 세트 완성 기준 별 (지금은 ★★)
     var allDone = c.discoverAll.done && c.masterAll.done;
     el.dexCollection.innerHTML =
       '<div class="dex-col-head"><b>🏅 도감 컬렉션</b>' +
         '<span class="dex-col-mult">전체 수익 ×' + c.mult.toFixed(2) + '</span></div>' +
       row('발견', c.discover, c.discoverAll, '🏅') +
-      row('숙련★', c.master, c.masterAll, '👑') +
+      row('숙련' + stars, c.master, c.masterAll, '👑') +
       (allDone ? '<p class="dex-col-hint done">🎉 도감 완전 정복! 최대 보상을 받고 있어요.</p>'
-               : '<p class="dex-col-hint">등급을 <b>다 발견</b>하거나 <b>모두 ★★★</b>로 만들면 전체 수익이 영구히 올라요.</p>');
+               : '<p class="dex-col-hint">등급을 <b>다 발견</b>하거나 <b>모두 ' + stars + '</b>로 만들면 전체 수익이 영구히 올라요.</p>');
   }
 
   function renderKitchen() {

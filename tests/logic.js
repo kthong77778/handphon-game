@@ -1308,12 +1308,24 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   Game.invalidate();
   var wantDisc = COL.discover[0] * COL.discover[1] * COL.discover[2] * COL.discoverAll;
   ok(near(Game.collectionMult(), wantDisc), '전종 발견 → 등급별 + 전종 발견 보너스');
-  // 전 음식 ★★★ → 발견 + 숙련 모든 세트
-  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = topT; });
+  // 숙련 세트 완성 기준은 masterTier 별(현재 ★★=50회). 그 문턱 '직전'엔 숙련 세트가 안 붙는다
+  var setTier = Game.masterSetTier();
+  var setStep = Data.KITCHEN.mastery.steps[setTier - 1];           // ★★ 문턱 = 50
+  ok(setTier === (COL.masterTier || 3), '숙련 세트 기준 별 = collection.masterTier');
+  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = setStep - 1; });   // 전종 ★(49) — 아직 미완
+  Game.invalidate();
+  ok(near(Game.collectionMult(), wantDisc), '숙련 문턱 직전(★)엔 발견 보너스만');
+  ok(Game.gradeMasterProgress(1).made === 0, '★★ 미만은 숙련 세트에 안 쳐진다');
+  // 전 음식 ★★(50) → 발견 + 숙련 모든 세트
+  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = setStep; });
   Game.invalidate();
   var wantAll = wantDisc * COL.master[0] * COL.master[1] * COL.master[2] * COL.masterAll;
-  ok(near(Game.collectionMult(), wantAll), '전종 ★★★ → 발견 + 숙련 모든 세트 보너스');
-  ok(Game.gradeMasterProgress(1).made === 7 && Game.gradeMasterProgress(1).total === 7, '초급 ★★★ 진행 = 7/7');
+  ok(near(Game.collectionMult(), wantAll), '전종 ★★ → 발견 + 숙련 모든 세트 보너스');
+  ok(Game.gradeMasterProgress(1).made === 7 && Game.gradeMasterProgress(1).total === 7, '초급 ★★ 진행 = 7/7');
+  // ★★★(최고 별)도 당연히 숙련 세트에 포함된다(문턱 이상)
+  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = topT; });
+  Game.invalidate();
+  ok(near(Game.collectionMult(), wantAll), '★★★ 도 숙련 세트 완성(문턱 이상)');
   // 실제 수익에 반영: 컬렉션이 차면 초당 수익이 오른다
   State.set({ totalEarned: 1e12, gens: { g1: 10 } }); var sc2 = State.get();
   sc2.kfoods = {}; Game.invalidate(); var noCol = Game.perSec(true);

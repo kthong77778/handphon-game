@@ -1656,7 +1656,7 @@ button.item:focus-visible,
 .dex-col-head b{font-size:14px;font-weight:800}
 .dex-col-mult{font-size:13px;font-weight:800;color:var(--gold);background:rgba(255,204,68,.14);border:1px solid rgba(255,204,68,.4);border-radius:999px;padding:2px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .dex-col-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.dex-col-label{font-size:12px;font-weight:800;color:var(--dim);flex:0 0 38px}
+.dex-col-label{font-size:12px;font-weight:800;color:var(--dim);flex:0 0 52px;white-space:nowrap}
 .dex-chip{font-size:12px;font-weight:800;color:var(--dim);background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .dex-chip.done{color:var(--gold);background:rgba(255,204,68,.16);border-color:rgba(255,204,68,.45)}
 .dex-chip.all{border-style:dashed}
