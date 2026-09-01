@@ -253,10 +253,10 @@ var UI = (function () {
     for (var j = 0; j < n; j++) {
       var ang = j * step + step / 2;               // 위(0deg)에서 시계방향
       var rad = (ang - 90) * Math.PI / 180;        // 화면 좌표: 위쪽이 -90°
-      var rx = 50 + 35 * Math.cos(rad);
-      var ry = 50 + 35 * Math.sin(rad);
+      var rx = 50 + 34 * Math.cos(rad);
+      var ry = 50 + 34 * Math.sin(rad);
       html += '<span class="roul-seg" style="left:' + rx.toFixed(1) + '%;top:' + ry.toFixed(1) + '%">' +
-              seg[j].icon + '</span>';
+              '<b>' + seg[j].icon + '</b><em>' + seg[j].label + '</em></span>';
     }
     el.roulWheel.innerHTML = html;
     roulBuilt = true;
