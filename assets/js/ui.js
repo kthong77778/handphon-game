@@ -27,7 +27,7 @@ var UI = (function () {
      'couponChip',
      'dailyModal', 'dailyText', 'attCal', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
-     'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
+     'rankRegion', 'rankCard', 'rankHeads', 'rankParts', 'rankBoard',
      'tapSkinRow', 'tapSkinNow', 'tapLadder', 'tapSoundRow', 'tapSoundNow',
      'crowdSkinRow', 'crowdSkinNow', 'crowdLadder', 'themeRow', 'themeNow',
      'prestigeOwner', 'ownerStage', 'ownerSexNow', 'ownerPick',
@@ -908,11 +908,23 @@ var UI = (function () {
   function renderRanking() {
     var nat = Game.nationRank();
     var reg = Game.regionRank();
-    var mark = reg.region.id + '|' + reg.rank + '|' + nat.rank;
+    var parts = Game.rankScoreParts();
+    var pI = Math.round(parts.income * 100), pF = Math.round(parts.fame * 100), pD = Math.round(parts.dex * 100);
+    var mark = reg.region.id + '|' + reg.rank + '|' + nat.rank + '|' + pI + '.' + pF + '.' + pD;
     if (sig.rank === mark) return;
     sig.rank = mark;
 
     el.rankRegion.textContent = reg.region.name;
+
+    // 종합 점수 분해 — 순위가 '오직 수익'이 아님을 보여준다
+    function rpBar(icon, label, pct) {
+      return '<div class="rp-row"><span class="rp-l">' + icon + ' ' + label + '</span>' +
+        '<span class="rp-track"><i style="width:' + pct + '%"></i></span>' +
+        '<span class="rp-v">' + pct + '%</span></div>';
+    }
+    el.rankParts.innerHTML =
+      '<div class="rp-head">🏅 종합 점수 <b>' + Math.round(parts.total * 100) + '</b>/100 · 세 가지를 합산</div>' +
+      rpBar('💰', '수익', pI) + rpBar('✨', '환생', pF) + rpBar('📖', '도감', pD);
 
     // 위쪽 요약 — 전국 / 지역 순위. 지역은 '작은 연못'이라 1위·상위권에 먼저 닿는다.
     var regSub = reg.rank === 1 ? '🥇 우리 지역 1위'

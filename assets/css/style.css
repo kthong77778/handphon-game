@@ -713,6 +713,17 @@ button.item-cost:active{transform:scale(.92)}
 .rank-head.hot{background:linear-gradient(180deg,rgba(255,204,68,.12),transparent)}
 .rank-head.hot .rh-sub{color:var(--gold);font-weight:800}
 
+/* 종합 점수 분해 (수익·환생·도감) */
+.rank-parts{padding:9px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.rp-head{font-size:11.5px;color:var(--dim);margin-bottom:2px}
+.rp-head b{color:var(--gold);font-weight:900;font-size:13px}
+.rp-row{display:flex;align-items:center;gap:8px}
+.rp-l{font-size:11.5px;font-weight:800;color:var(--dim);flex:0 0 58px}
+.rp-track{flex:1;height:8px;border-radius:6px;background:var(--bg2);overflow:hidden}
+.rp-track i{display:block;height:100%;border-radius:6px;
+  background:linear-gradient(90deg,#f2a341,var(--gold));transition:width .4s ease}
+.rp-v{flex:0 0 34px;text-align:right;font-size:11.5px;font-weight:800;color:var(--fg);font-variant-numeric:tabular-nums}
+
 .rank-board{padding:6px 8px 8px}
 .rb-row{
   display:flex;align-items:center;gap:9px;

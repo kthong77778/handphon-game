@@ -938,36 +938,50 @@ console.log('\n[14] 탭 소리 선택');
      '소리 목록에 id·이름·설명이 모두 있음');
 }
 
-console.log('\n[15] 전국 맛집 랭킹');
+console.log('\n[15] 전국 맛집 랭킹 (종합 점수: 수익·환생·도감)');
 {
+  const allStar = () => { const s = State.get(); Data.KITCHEN.foods.forEach(f => { s.kfoods[f.id] = 200; }); };
   State.set({ startedAt: 1699999999999, bestPerSec: 0 }); Game.invalidate();
   const reg = Game.region();
   ok(Data.REGIONS.some(r => r.id === reg.id), '지역이 배정됨: ' + reg.name);
   ok(State.get().region === reg.id, '배정된 지역이 세이브에 남음');
-  const reg2 = Game.region();
-  ok(reg2.id === reg.id, '다시 불러도 같은 지역 (고정)');
+  ok(Game.region().id === reg.id, '다시 불러도 같은 지역 (고정)');
 
   const nat0 = Game.nationRank();
-  ok(nat0.rank === nat0.total, '벌이가 없으면 전국 꼴찌', nat0.rank + '/' + nat0.total);
+  ok(nat0.rank === nat0.total, '아무 성장도 없으면 전국 꼴찌', nat0.rank + '/' + nat0.total);
 
-  State.get().bestPerSec = 1e12; Game.invalidate();
-  const nat1 = Game.nationRank();
-  ok(nat1.rank < nat0.rank, '벌이가 오르면 순위가 앞당겨짐', nat0.rank + ' → ' + nat1.rank);
-  ok(nat1.pct < 100 && nat1.pct > 0, '상위 % 가 정상 범위', nat1.pct + '%');
-
+  // 수익만 최대로 — 순위는 오르지만 그것만으론 최상위가 못 된다(종합 점수라서)
   State.get().bestPerSec = 1e15; Game.invalidate();
-  ok(Game.nationRank().rank <= 5, '벌이가 아주 크면 전국 최상위권', Game.nationRank().rank);
+  const natI = Game.nationRank();
+  ok(natI.rank < nat0.rank, '수익이 오르면 순위가 앞당겨짐', nat0.rank + ' → ' + natI.rank);
+  ok(natI.rank > 5, '수익만으론 전국 최상위가 안 된다(수익·환생·도감 종합)', natI.rank + '위');
+  ok(natI.pct < 100 && natI.pct > 0, '상위 % 가 정상 범위', natI.pct + '%');
 
-  // 지역은 '작은 연못' — 전국보다 먼저 1위에 닿는다 ("전국 수백 위인데 지역 1위")
-  State.get().bestPerSec = 1e11; Game.invalidate();
+  // 환생(명성)을 더하면 순위가 더 오른다
+  State.get().fame = 1e10; Game.invalidate();
+  const natIF = Game.nationRank();
+  ok(natIF.rank < natI.rank, '명성이 쌓이면 순위가 더 오른다', natI.rank + ' → ' + natIF.rank);
+
+  // 도감까지 채우면(전 음식 ★★★) 세 축 모두 만점 → 전국 최상위권
+  allStar(); Game.invalidate();
+  ok(Game.nationRank().rank <= 5, '수익+환생+도감 모두 최고면 전국 최상위권', Game.nationRank().rank);
+  const parts = Game.rankScoreParts();
+  ok(parts.income > 0.9 && parts.fame > 0.9 && parts.dex > 0.99 && parts.total > 0.95,
+     '세 축 모두 만점 근처', JSON.stringify(parts));
+
+  // 오직 초당수익이 아님을 확인: 수익·명성 0 이라도 도감만 채우면 순위가 오른다
+  State.set({ startedAt: 1699999999999, bestPerSec: 0 }); Game.invalidate();
+  allStar(); Game.invalidate();
+  ok(Game.nationRank().rank < nat0.rank, '도감만 채워도(수익·명성 0) 순위가 오른다 — 오직 초당수익이 아님');
+
+  // 지역은 '작은 연못' — 같은 종합 점수에서 전국보다 먼저 1위권에 닿는다
+  State.set({ startedAt: 1699999999999, bestPerSec: 1e13, fame: 1e8 }); allStar(); Game.invalidate();
   ok(Game.regionRank().rank < Game.nationRank().rank, '지역 순위가 전국보다 앞선다',
      '지역 ' + Game.regionRank().rank + ' < 전국 ' + Game.nationRank().rank);
-  ok(Game.regionRank().rank === 1 && Game.nationRank().rank > 1,
-     '전국은 아직인데 지역은 1위가 될 수 있다', '전국 ' + Game.nationRank().rank + '위');
   ok(Game.regionRank().rank <= Game.regionRank().total, '지역 순위는 지역 가게 수 이내');
 
-  // 리더보드 — 이름이 (지역·순위)로 고정
-  State.get().bestPerSec = 5e7; Game.invalidate();
+  // 리더보드 — 이름이 (지역·순위)로 고정. 중위권으로 리셋(명성·도감 없이 수익만)해 위아래 줄이 보이게.
+  State.set({ startedAt: 1699999999999, bestPerSec: 5e7 }); Game.invalidate();
   const board = Game.rankBoard();
   ok(board.length >= 4, '리더보드에 여러 줄', board.length);
   const me = board.filter(r => r.me);

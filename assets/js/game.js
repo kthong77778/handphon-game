@@ -1480,11 +1480,43 @@ var Game = (function () {
     function bestScore() { return S().bestPerSec || 0; }
   }
 
-  /** 점수를 전국 순위로. 벌이가 오를수록 순위가 앞당겨진다 (1위에 가까워짐). */
+  /* ---- 순위 종합 점수 (오직 초당 수익이 아니라 수익·환생·도감을 합산) ----
+     세 축을 각각 0~1로 정규화해 가중 평균한다. 환생·도감은 줄지 않으므로 환생해도 순위가 안 떨어진다. */
+
+  /** 💰 수익 점수 0~1 — 최고 초당수익의 로그 스케일 */
+  function incomeScore() {
+    return Math.min(1, Math.log(popScore() + 1) / Math.LN10 / Data.RANK.maxScore);
+  }
+  /** ✨ 환생 점수 0~1 — 누적 명성의 로그 스케일 */
+  function fameScore() {
+    return Math.min(1, Math.log((S().fame || 0) + 1) / Math.LN10 / Data.RANK.fameMaxLog);
+  }
+  /** 📖 도감 점수 0~1 — 발견율 절반 + 숙련(별)율 절반 */
+  function dexScore() {
+    var foods = Data.KITCHEN.foods, maxTier = Data.KITCHEN.mastery.steps.length;
+    var total = foods.length, made = 0, stars = 0;
+    foods.forEach(function (f) {
+      var c = foodMade(f.id);
+      if (c >= 1) made++;
+      stars += masteryTier(c);
+    });
+    var discover = total ? made / total : 0;
+    var mastery = (total * maxTier) ? stars / (total * maxTier) : 0;
+    return discover * 0.5 + mastery * 0.5;
+  }
+  /** 순위 종합 점수 0~1 (수익·환생·도감 가중 평균) 과 세부 축을 함께 돌려준다 */
+  function rankScoreParts() {
+    var w = Data.RANK.weights;
+    var income = incomeScore(), fame = fameScore(), dex = dexScore();
+    var total = income * w.income + fame * w.fame + dex * w.dex;
+    return { total: total, income: income, fame: fame, dex: dex };
+  }
+  function rankScore() { return rankScoreParts().total; }
+
+  /** 종합 점수를 전국 순위로. 수익·환생·도감이 오를수록 순위가 앞당겨진다 (1위에 가까워짐). */
   function nationRank() {
     var N = Data.RANK.nationTotal;
-    var lv = Math.log(popScore() + 1) / Math.LN10;          // 0 ~ 15+
-    var t = Math.min(1, lv / Data.RANK.maxScore);           // 0 ~ 1
+    var t = rankScore();                                    // 0 ~ 1 종합
     var rank = Math.round(N * Math.pow(1 - t, 3));           // 뒤에서부터 앞으로
     rank = Math.max(1, Math.min(N, rank));
     var pct = Math.max(0.1, Math.round(rank / N * 1000) / 10); // 상위 %
@@ -1499,9 +1531,8 @@ var Game = (function () {
     Data.REGIONS.forEach(function (x) { total += x.weight; if (x.id === r.id) mine = x.weight; });
     var share = mine / total;
     var regTotal = Math.max(Data.RANK.regionMin, Math.round(Data.RANK.nationTotal * share));
-    // 지역은 상한을 낮춰(maxScore×regionTopFrac) 더 일찍 1위에 닿게 한다
-    var lv = Math.log(popScore() + 1) / Math.LN10;
-    var t = Math.min(1, lv / (Data.RANK.maxScore * Data.RANK.regionTopFrac));
+    // 지역은 상한을 낮춰(종합 점수 ÷ regionTopFrac) 더 일찍 1위에 닿게 한다
+    var t = Math.min(1, rankScore() / Data.RANK.regionTopFrac);
     var rank = Math.round(regTotal * Math.pow(1 - t, 3));
     rank = Math.max(1, Math.min(regTotal, rank));
     return { rank: rank, total: regTotal, region: r };
@@ -2143,6 +2174,9 @@ var Game = (function () {
     region: region,
     nationRank: nationRank,
     regionRank: regionRank,
+    rankScore: rankScore,
+    rankScoreParts: rankScoreParts,
+    dexScore: dexScore,
     rankBoard: rankBoard,
     myShopName: myShopName,
     ownerSex: ownerSex,
