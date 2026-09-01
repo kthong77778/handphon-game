@@ -21,6 +21,7 @@ var UI = (function () {
      'buffBar', 'partyBanner', 'partyHint', 'partyDex', 'combo', 'comboX', 'comboN', 'comboFill',
      'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
      'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen', 'specialCard',
+     'craftReco', 'craftRecoIcon', 'craftRecoTag', 'craftRecoName', 'craftRecoDesc', 'craftRecoBtn',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'couponChip',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
@@ -1250,11 +1251,30 @@ var UI = (function () {
   function renderKitchen() {
     renderIngStore();
     renderSpecial();
+    updateCraftReco();
     var sp = Game.specialToday();
     var tiers = Data.KITCHEN.foods.map(function (f) { return Game.masteryTier(Game.foodMade(f.id)); }).join('');
     var gsig = currentGrade + '|' + Game.bossLevel() + '|' + tiers + '|' + (sp ? sp.food.id : '');
     if (sig.kitchen !== gsig) { sig.kitchen = gsig; buildKitchenGrid(); }
     updateKitchenGrid();
+  }
+
+  /* ---------- 🍳 주방 상단 추천 ("지금 만들 수 있어요") ----------
+     재료가 다 모인 것 중 가장 이득인 음식 하나를 맨 위에서 원터치로 만든다.
+     아무것도 못 만들면 숨긴다. 우선순위(첫 발견>숙련>특선>목돈)에 따라 안내가 바뀐다. */
+  function updateCraftReco() {
+    if (!el.craftReco) return;
+    var b = Game.bestCraft();
+    if (!b) { el.craftReco.hidden = true; return; }
+    el.craftReco.hidden = false;
+    setIcon(el.craftRecoIcon, b.food.icon);
+    el.craftRecoName.textContent = b.food.name;
+    el.craftRecoTag.textContent =
+      b.first   ? '🎉 새 음식 발견!' :
+      b.tierUp  ? '🌟 숙련 별이 오를 차례!' :
+      b.special ? '⭐ 오늘의 특선' :
+                  '✔ 지금 만들 수 있어요';
+    el.craftRecoDesc.textContent = '목돈 +' + Fmt.won(b.gain);
   }
 
   function onCraft(id) {
@@ -2495,6 +2515,11 @@ var UI = (function () {
     });
 
     el.truckPop.addEventListener('click', grabTruckUI);
+    el.craftReco.addEventListener('click', function () {
+      var b = Game.bestCraft();
+      if (!b) { toast('재료가 부족해요'); return; }
+      onCraft(b.id);   // 합성·토스트·다시그리기는 기존 경로 그대로
+    });
     el.specialCard.addEventListener('click', onSpecialClaim);
     el.gradeTabs.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-grade]');

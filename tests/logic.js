@@ -1266,6 +1266,20 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   ok(Game.claimSpecialOrder() === null && Game.specialToday().taken, '단골 보상은 하루 한 번만');
   Game.setClock(null);
 
+  // 🍳 상단 추천 — 만들 수 있는 것 중 '가장 이득인' 하나를 고른다
+  State.set({ totalEarned: 1e15 }); var sbc = State.get();
+  sbc.ings = {}; sbc.kfoods = {}; Game.invalidate();
+  ok(Game.bestCraft() === null, '만들 수 있는 게 없으면 추천 없음(null)');
+  var bk1 = Data.KITCHEN.foods.find(function (f) { return f.id === 'k1'; });
+  var bk2 = Data.KITCHEN.foods.find(function (f) { return f.id === 'k2'; });
+  Object.keys(bk1.need).forEach(function (k) { sbc.ings[k] = (sbc.ings[k] || 0) + bk1.need[k]; });
+  Object.keys(bk2.need).forEach(function (k) { sbc.ings[k] = (sbc.ings[k] || 0) + bk2.need[k]; });
+  sbc.kfoods = { k1: 1 };   // k1 은 이미 발견, k2 는 미발견
+  Game.invalidate();
+  var bc = Game.bestCraft();
+  ok(bc && bc.id === 'k2' && bc.first === true, '미발견 음식을 먼저 추천한다(첫 발견 우선)');
+  ok(bc.gain > 0 && near(bc.gain, Game.craftGain(bk2)), '추천 목돈 = craftGain 공식과 일치');
+
   // 오프라인에도 재료 트럭이 지나간 만큼 재료를 준다 (돈·쿠폰과 별개)
   State.set({}); var so = State.get(); so.ings = {}; Game.invalidate(); Game.resetTruck();
   var rw = Game.offlineReward(2 * 3600);

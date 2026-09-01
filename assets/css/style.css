@@ -911,6 +911,11 @@ button.item-cost:active{transform:scale(.92)}
   font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 .reco-bar.saving .reco-cost{color:var(--dim)}
+/* 주방 추천: '합성' 라벨을 눌러지는 알약처럼 보이게 */
+.craft-reco .reco-cost{
+  padding:6px 12px;border-radius:999px;
+  background:rgba(74,222,128,.18);border:1px solid rgba(74,222,128,.5);
+}
 
 .boost-btn{
   display:flex;align-items:center;gap:11px;width:100%;

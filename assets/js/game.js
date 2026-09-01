@@ -823,6 +823,40 @@ var Game = (function () {
     return true;
   }
 
+  /** 이 음식을 지금 만들면 받을 목돈 (craftFood 의 gain 과 같은 공식 — 상태는 안 건드린다) */
+  function craftGain(f) {
+    if (typeof f === 'string') f = FOOD_BY_ID[f];
+    if (!f) return 0;
+    var sp = specialToday();
+    var mult = (sp && sp.food.id === f.id) ? Data.KITCHEN.special.mult : 1;
+    return cap(Math.max(f.sec * perSec(true), Data.MICHELIN.minReward * f.grade) * mult);
+  }
+
+  /**
+   * 지금 재료로 만들 수 있는 것 중 '가장 이득인' 음식 하나를 고른다. 없으면 null.
+   * 우선순위: 첫 발견(영구 도감 배율) > 숙련 별 상승 > 오늘의 특선 > 목돈 큰 순.
+   * @returns {{id:string, food:Object, first:boolean, tierUp:boolean, special:boolean, gain:number}|null}
+   */
+  function bestCraft() {
+    var sp = specialToday();
+    var best = null;
+    for (var i = 0; i < Data.KITCHEN.foods.length; i++) {
+      var f = Data.KITCHEN.foods[i];
+      if (!canCraft(f.id)) continue;
+      var before = foodMade(f.id);
+      var cand = {
+        id: f.id, food: f,
+        first: before < 1,
+        tierUp: masteryTier(before + 1) > masteryTier(before),
+        special: !!(sp && sp.food.id === f.id),
+        gain: craftGain(f)
+      };
+      cand.pri = cand.first ? 3 : cand.tierUp ? 2 : cand.special ? 1 : 0;
+      if (!best || cand.pri > best.pri || (cand.pri === best.pri && cand.gain > best.gain)) best = cand;
+    }
+    return best;
+  }
+
   /**
    * 합성: 레시피대로 재료를 소모해 음식을 만든다.
    * 처음 만들면 도감에 등록되며 영구 배율이 붙고, 누적 제작이 숙련 문턱을 넘으면 배율이 더 커진다(둘 다 캐시 무효화).
@@ -1960,6 +1994,8 @@ var Game = (function () {
     recipeUnlocked: recipeUnlocked,
     canCraft: canCraft,
     craftFood: craftFood,
+    craftGain: craftGain,
+    bestCraft: bestCraft,
     specialToday: specialToday,
     claimSpecialOrder: claimSpecialOrder,
     adSlots: adSlots,
