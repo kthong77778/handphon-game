@@ -1449,11 +1449,29 @@ var UI = (function () {
 
   var truckLeaving = false;
 
+  /** 트럭을 왼쪽으로 떠나보낸 뒤 숨긴다 (잡았을 때·안 누르고 시간 초과됐을 때 공통) */
+  function truckDriveOff(done) {
+    if (truckLeaving) return;
+    truckLeaving = true;
+    el.truckPop.classList.add('leaving');
+    setTimeout(function () {
+      el.truckPop.classList.remove('leaving');
+      el.truckPop.hidden = true;
+      truckLeaving = false;
+      if (done) done();
+    }, 440);
+  }
+
   function updateTruck() {
     var here = Game.truckState().here;
-    if (truckLeaving) return;                       // 떠나는 연출 중엔 건드리지 않는다
-    if (here && el.truckPop.hidden) el.truckPop.classList.remove('leaving');  // 새로 도착 → 등장 연출 리셋
-    if (el.truckPop.hidden !== !here) el.truckPop.hidden = !here;
+    if (!truckLeaving) {
+      if (here && el.truckPop.hidden) {                 // 새로 도착 → 등장(빵빵 배달) 연출
+        el.truckPop.classList.remove('leaving');
+        el.truckPop.hidden = false;
+      } else if (!here && !el.truckPop.hidden) {        // 안 누르고 시간이 다 됨 → 왼쪽으로 떠난다
+        truckDriveOff();
+      }
+    }
     // 주방 탭 점: 트럭이 왔거나 · 합성 가능한 게 있거나 · 단골 주문 보상이 대기 중이면
     var any = here;
     if (!any) for (var i = 0; i < Data.KITCHEN.foods.length; i++) {
@@ -1491,8 +1509,6 @@ var UI = (function () {
     var got = res.ings || [];
 
     burstIngredients(got, rect);            // 재료가 튀어나오고
-    truckLeaving = true;                    // 트럭은 떠난다
-    el.truckPop.classList.add('leaving');
     Sound.play('buy');
     buzz(res.coupon ? 14 : 8);
 
@@ -1502,12 +1518,9 @@ var UI = (function () {
     if (res.coupon) msg += (msg ? ' · ' : '') + '🎟️ 할인 쿠폰!';
     if (msg) toast(msg);
 
-    setTimeout(function () {
-      el.truckPop.classList.remove('leaving');
-      el.truckPop.hidden = true;
-      truckLeaving = false;
+    truckDriveOff(function () {              // 트럭은 왼쪽으로 떠난다
       if (res.coupon || currentTab === 'kitchen') refresh(true);  // 쿠폰 바 갱신
-    }, 440);
+    });
   }
 
   /* ---------- 환생 화면 ---------- */

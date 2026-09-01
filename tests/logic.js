@@ -629,16 +629,17 @@ console.log('\n[7.1] 행운의 룰렛');
 {
   const R = Data.ROULETTE;
   const s = State.get();
+  const moneyIdx = R.seg.findIndex(x => x.type === 'money');   // 별사탕이 안 붙는 칸(차감 검증용)
   s.roulFreeDate = ''; s.roulSpins = 0; s.candy = 0; Game.invalidate();
   ok(Game.roulFree() && Game.roulCost() === 0, '하루 첫 스핀은 무료');
-  const free = Game.spinRoulette();
+  const free = Game.spinRoulette(moneyIdx);   // 무료 + 돈 칸 강제(별사탕 안 늘게)
   ok(free && free.free === true && s.roulSpins === 1, '첫 스핀 free=true · 스핀 수 기록');
   ok(!Game.roulFree() && Game.roulCost() === R.spinCost, '무료 소진 후엔 별사탕 비용');
   ok(Game.canRoulette() === false && Game.spinRoulette() === null, '무료도 없고 별사탕도 없으면 못 돌린다');
 
-  // 유료 스핀은 별사탕을 정확히 차감한다
+  // 유료 스핀은 별사탕을 정확히 차감한다 (돈 칸 강제 → 보상으로 별사탕이 안 들어오게)
   s.candy = R.spinCost + 3; Game.invalidate();
-  const paid = Game.spinRoulette();
+  const paid = Game.spinRoulette(moneyIdx);
   ok(paid && paid.free === false && s.candy === 3, '유료 스핀은 별사탕 차감');
 
   // 가중치 롤이 8칸을 모두 낸다 (개수는 데이터에서 읽는다)

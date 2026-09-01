@@ -1950,16 +1950,17 @@ var Game = (function () {
 
   /**
    * 룰렛 1회. 무료 스핀이 남았으면 공짜, 아니면 별사탕을 쓴다. 별사탕이 모자라면 null.
+   * @param {number} [forceIdx] 테스트용 — 당첨 칸을 고정한다. 실제 플레이(UI)에선 안 넘긴다.
    * @returns {{index:number, seg:Object, reward:Object, free:boolean}|null}
    */
-  function spinRoulette() {
+  function spinRoulette(forceIdx) {
     var s = S();
     var free = roulFree();
     var cost = free ? 0 : Data.ROULETTE.spinCost;
     if (!free && (s.candy || 0) < cost) return null;
     if (free) s.roulFreeDate = today(); else s.candy -= cost;
     s.roulSpins = (s.roulSpins || 0) + 1;
-    var idx = rollRoulette();
+    var idx = (typeof forceIdx === 'number' && Data.ROULETTE.seg[forceIdx]) ? forceIdx : rollRoulette();
     var reward = applyRouletteReward(Data.ROULETTE.seg[idx]);
     return { index: idx, seg: Data.ROULETTE.seg[idx], reward: reward, free: free };
   }
