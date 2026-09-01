@@ -68,6 +68,7 @@ var Game = (function () {
     stat *= Math.pow(1.05, fameLv('f_research'));  // 명성상점: 끝없는 연구 (상한 없는 소비처)
     stat *= 1 + Data.PARTY.dexBonus * (s.partyFoods ? s.partyFoods.length : 0);  // 파티 도감 1칸당 +1%
     stat *= 1 + foodBonus();                                 // 🍳 주방 음식 도감 (등급별 영구 배율)
+    stat *= collectionMult();                                // 🏅 도감 컬렉션 완성 보상 (발견·숙련 세트)
     if (s.michelinGrand) stat *= Data.MICHELIN.grandMult;   // 스타 셰프 별 5개 영구 배율
 
     var genM = {};
@@ -808,6 +809,60 @@ var Game = (function () {
     var sum = 0;
     Data.KITCHEN.foods.forEach(function (f) { sum += foodEffBonus(f); });
     return sum;
+  }
+
+  /* ---- 🏅 도감 컬렉션 완성 보상 (전체 수익에 곱해지는 영구 배율) ---- */
+
+  /** 그 등급 음식을 '모두 ★★★(최고 별)'로 만들었나 (개수) */
+  function gradeMasterProgress(grade) {
+    var maxTier = Data.KITCHEN.mastery.steps.length, made = 0, total = 0;
+    Data.KITCHEN.foods.forEach(function (f) {
+      if (f.grade !== grade) return;
+      total++;
+      if (masteryTier(foodMade(f.id)) >= maxTier) made++;
+    });
+    return { made: made, total: total };
+  }
+
+  /** 도감 컬렉션 완성 보상 배율 — calc 의 stat 에 곱해진다. 발견/숙련 세트 + 전체 완성 보너스의 곱 */
+  function collectionMult() {
+    var col = Data.KITCHEN.collection;
+    if (!col) return 1;
+    var m = 1, allDisc = true, allMast = true;
+    [1, 2, 3].forEach(function (g) {
+      var d = gradeProgress(g);
+      if (d.total > 0 && d.made >= d.total) m *= (col.discover && col.discover[g - 1]) || 1;
+      else allDisc = false;
+      var mt = gradeMasterProgress(g);
+      if (mt.total > 0 && mt.made >= mt.total) m *= (col.master && col.master[g - 1]) || 1;
+      else allMast = false;
+    });
+    if (allDisc) m *= col.discoverAll || 1;
+    if (allMast) m *= col.masterAll || 1;
+    return m;
+  }
+
+  /** 화면용 컬렉션 진행/보상 상태 */
+  function collectionStatus() {
+    var col = Data.KITCHEN.collection || {};
+    var disc = [1, 2, 3].map(function (g) {
+      var p = gradeProgress(g);
+      return { grade: g, made: p.made, total: p.total, done: p.total > 0 && p.made >= p.total,
+               mult: (col.discover && col.discover[g - 1]) || 1 };
+    });
+    var mast = [1, 2, 3].map(function (g) {
+      var p = gradeMasterProgress(g);
+      return { grade: g, made: p.made, total: p.total, done: p.total > 0 && p.made >= p.total,
+               mult: (col.master && col.master[g - 1]) || 1 };
+    });
+    var allDisc = disc.every(function (d) { return d.done; });
+    var allMast = mast.every(function (d) { return d.done; });
+    return {
+      discover: disc, master: mast,
+      discoverAll: { done: allDisc, mult: col.discoverAll || 1 },
+      masterAll: { done: allMast, mult: col.masterAll || 1 },
+      mult: collectionMult()
+    };
   }
 
   function ingCount(id) { return S().ings[id] || 0; }
@@ -2026,7 +2081,10 @@ var Game = (function () {
     ingCount: ingCount,
     foodMade: foodMade,
     gradeProgress: gradeProgress,
+    gradeMasterProgress: gradeMasterProgress,
     gradeUnlocked: gradeUnlocked,
+    collectionMult: collectionMult,
+    collectionStatus: collectionStatus,
     recipeUnlocked: recipeUnlocked,
     canCraft: canCraft,
     craftFood: craftFood,

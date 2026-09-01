@@ -1650,6 +1650,19 @@ button.item:focus-visible,
 .grade-tabs button{font-family:inherit;font-size:12px;font-weight:700;color:var(--dim);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:5px 11px;cursor:pointer}
 .grade-tabs button.active{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
 
+/* 🏅 도감 컬렉션 완성 보상 카드 — 발견·숙련 세트 진행과 지금까지 번 영구 배율 */
+.dex-collection{display:flex;flex-direction:column;gap:8px;padding:11px 12px}
+.dex-col-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dex-col-head b{font-size:14px;font-weight:800}
+.dex-col-mult{font-size:13px;font-weight:800;color:var(--gold);background:rgba(255,204,68,.14);border:1px solid rgba(255,204,68,.4);border-radius:999px;padding:2px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dex-col-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.dex-col-label{font-size:12px;font-weight:800;color:var(--dim);flex:0 0 38px}
+.dex-chip{font-size:12px;font-weight:800;color:var(--dim);background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dex-chip.done{color:var(--gold);background:rgba(255,204,68,.16);border-color:rgba(255,204,68,.45)}
+.dex-chip.all{border-style:dashed}
+.dex-chip.all.done{color:#ffd66b;background:rgba(255,204,68,.22);border-style:solid}
+.dex-col-hint{font-size:11px;color:var(--dim);margin:2px 0 0}
+.dex-col-hint.done{color:var(--gold)}
 .kitchen-grid{display:flex;flex-direction:column;gap:8px}
 .kfood{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;display:flex;flex-direction:column;gap:9px}
 .kfood.locked{opacity:.6}

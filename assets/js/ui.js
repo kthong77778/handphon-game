@@ -22,6 +22,7 @@ var UI = (function () {
      'bossChip', 'bossXpFill', 'recoBar', 'recoIcon', 'recoName', 'recoDesc', 'recoCost',
      'ingStore', 'gradeTabs', 'kitchenGrid', 'truckPop', 'dotKitchen', 'specialCard',
      'craftReco', 'craftRecoIcon', 'craftRecoTag', 'craftRecoName', 'craftRecoDesc', 'craftRecoBtn',
+     'dexCollection',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'couponChip',
      'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
@@ -1269,10 +1270,45 @@ var UI = (function () {
       '<div class="sp-right">' + right + '</div>';
   }
 
+  function dexChip(short, o) {
+    return '<span class="dex-chip' + (o.done ? ' done' : '') + '">' +
+           short + ' ' + (o.done ? '✓' : o.made + '/' + o.total) + '</span>';
+  }
+
+  /** 🏅 도감 컬렉션 진행/보상 카드 — 발견·숙련 세트와 지금까지 번 영구 배율을 보여준다 */
+  function updateDexCollection() {
+    var c = Game.collectionStatus();
+    // 주방 초입(아무것도 발견 못 함)엔 굳이 안 띄운다
+    if (!c.discover.some(function (d) { return d.made > 0; })) {
+      el.dexCollection.hidden = true; sig.dexCol = 'none'; return;
+    }
+    var dsig = c.mult + '|' +
+      c.discover.map(function (d) { return d.made + '/' + d.total; }).join(',') + '|' +
+      c.master.map(function (m) { return m.made + '/' + m.total; }).join(',');
+    if (sig.dexCol === dsig) return;
+    sig.dexCol = dsig;
+    el.dexCollection.hidden = false;
+    var names = ['초', '중', '고'];
+    function row(label, arr, all, allIcon) {
+      var chips = arr.map(function (o, i) { return dexChip(names[i], o); }).join('');
+      chips += '<span class="dex-chip all' + (all.done ? ' done' : '') + '">' + allIcon + ' 전종</span>';
+      return '<div class="dex-col-row"><span class="dex-col-label">' + label + '</span>' + chips + '</div>';
+    }
+    var allDone = c.discoverAll.done && c.masterAll.done;
+    el.dexCollection.innerHTML =
+      '<div class="dex-col-head"><b>🏅 도감 컬렉션</b>' +
+        '<span class="dex-col-mult">전체 수익 ×' + c.mult.toFixed(2) + '</span></div>' +
+      row('발견', c.discover, c.discoverAll, '🏅') +
+      row('숙련★', c.master, c.masterAll, '👑') +
+      (allDone ? '<p class="dex-col-hint done">🎉 도감 완전 정복! 최대 보상을 받고 있어요.</p>'
+               : '<p class="dex-col-hint">등급을 <b>다 발견</b>하거나 <b>모두 ★★★</b>로 만들면 전체 수익이 영구히 올라요.</p>');
+  }
+
   function renderKitchen() {
     renderIngStore();
     renderSpecial();
     updateCraftReco();
+    updateDexCollection();
     var sp = Game.specialToday();
     // 제작 여부(0/1) + 숙련 등급을 함께 서명에 넣는다 — 첫 제작(0→1)이 곧 등급 해금·도감 배지로
     // 이어지므로, 숙련 문턱을 아직 안 넘었어도 그리드를 다시 그려야 한다.

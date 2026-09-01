@@ -1294,6 +1294,33 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   var gp1 = Game.gradeProgress(1);
   ok(gp1.made === 2 && gp1.total === 7, '초급 도감 진행 = 2/7');
 
+  // 🏅 도감 컬렉션 완성 보상 — 발견/숙련 세트를 완성하면 전체 수익에 영구 배율이 곱해진다
+  var COL = Data.KITCHEN.collection;
+  var topT = Data.KITCHEN.mastery.steps[Data.KITCHEN.mastery.steps.length - 1];   // ★★★ 문턱(누적 제작)
+  State.set({ totalEarned: 1e15 }); var sc = State.get(); sc.kfoods = {}; Game.invalidate();
+  ok(Game.collectionMult() === 1, '아무것도 없으면 컬렉션 배율 1');
+  // 초급 전부 발견 → discover[초급] 만 붙는다
+  Data.KITCHEN.foods.forEach(function (f) { if (f.grade === 1) sc.kfoods[f.id] = 1; });
+  Game.invalidate();
+  ok(near(Game.collectionMult(), COL.discover[0]), '초급 발견 완성 → discover[초급] 배율');
+  // 20종 전부 발견 → 등급별 발견 배율 전부 × 전종 발견 보너스
+  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = 1; });
+  Game.invalidate();
+  var wantDisc = COL.discover[0] * COL.discover[1] * COL.discover[2] * COL.discoverAll;
+  ok(near(Game.collectionMult(), wantDisc), '전종 발견 → 등급별 + 전종 발견 보너스');
+  // 전 음식 ★★★ → 발견 + 숙련 모든 세트
+  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = topT; });
+  Game.invalidate();
+  var wantAll = wantDisc * COL.master[0] * COL.master[1] * COL.master[2] * COL.masterAll;
+  ok(near(Game.collectionMult(), wantAll), '전종 ★★★ → 발견 + 숙련 모든 세트 보너스');
+  ok(Game.gradeMasterProgress(1).made === 7 && Game.gradeMasterProgress(1).total === 7, '초급 ★★★ 진행 = 7/7');
+  // 실제 수익에 반영: 컬렉션이 차면 초당 수익이 오른다
+  State.set({ totalEarned: 1e12, gens: { g1: 10 } }); var sc2 = State.get();
+  sc2.kfoods = {}; Game.invalidate(); var noCol = Game.perSec(true);
+  Data.KITCHEN.foods.forEach(function (f) { sc2.kfoods[f.id] = topT; });
+  Game.invalidate();
+  ok(Game.perSec(true) > noCol, '컬렉션이 차면 초당 수익이 오른다');
+
   // ⭐ 오늘의 특선 / 단골 주문 — 날짜로 정해지고, 만들면 진행·보상
   Game.setClock(function () { return new Date(2026, 0, 10, 12, 0, 0); });
   State.set({ totalEarned: 1e15 }); var sp = State.get();
