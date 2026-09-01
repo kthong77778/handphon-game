@@ -1194,9 +1194,18 @@ var UI = (function () {
       var cell = document.createElement('div');
       cell.className = 'kfood' + (unlocked ? '' : ' locked') + (made ? ' done' : '') + (isSpecial ? ' special' : '');
       if (!unlocked) {
+        var lockTxt;
+        if (!Game.gradeUnlocked(f.grade)) {
+          // 아래 등급 도감을 다 채워야 열리는 경우 — 진행도까지 보여준다
+          var gp = Game.gradeProgress(f.grade - 1);
+          lockTxt = '🔒 ' + gradeName(f.grade - 1) + ' 도감 ' + gp.made + '/' + gp.total +
+                    ' 을 채우면 해금 · 재료 ' + needTotal(f) + '개';
+        } else {
+          lockTxt = '사장 Lv.' + f.at + ' 에 레시피 해금 · 재료 ' + needTotal(f) + '개';
+        }
         cell.innerHTML = '<div class="kf-head"><span class="kf-icon">❓</span>' +
           '<span class="kf-name">??? 미발견</span>' + gradeBadge(f) + '</div>' +
-          '<div class="kf-lock">사장 Lv.' + f.at + ' 에 레시피 해금 · 재료 ' + needTotal(f) + '개</div>';
+          '<div class="kf-lock">' + lockTxt + '</div>';
       } else {
         var needHtml = Object.keys(f.need).map(function (k) {
           return '<span class="need" data-need="' + k + '"><span class="need-ic">' + iconHtml(ING_BY_ID[k].icon) +
@@ -1265,7 +1274,12 @@ var UI = (function () {
     renderSpecial();
     updateCraftReco();
     var sp = Game.specialToday();
-    var tiers = Data.KITCHEN.foods.map(function (f) { return Game.masteryTier(Game.foodMade(f.id)); }).join('');
+    // 제작 여부(0/1) + 숙련 등급을 함께 서명에 넣는다 — 첫 제작(0→1)이 곧 등급 해금·도감 배지로
+    // 이어지므로, 숙련 문턱을 아직 안 넘었어도 그리드를 다시 그려야 한다.
+    var tiers = Data.KITCHEN.foods.map(function (f) {
+      var c = Game.foodMade(f.id);
+      return (c >= 1 ? '1' : '0') + Game.masteryTier(c);
+    }).join('');
     var gsig = currentGrade + '|' + Game.bossLevel() + '|' + tiers + '|' + (sp ? sp.food.id : '');
     if (sig.kitchen !== gsig) { sig.kitchen = gsig; buildKitchenGrid(); }
     updateKitchenGrid();

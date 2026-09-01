@@ -1194,11 +1194,13 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   var k1 = K.foods.find(function (f) { return f.id === 'k1'; });   // at:1
   var k9 = K.foods.find(function (f) { return f.id === 'k9'; });   // 고급 레시피(높은 at)
 
-  // 레시피 해금 = 사장 레벨
+  // 레시피 해금 = 사장 레벨 + 등급 게이트(아래 등급 도감 완성). 여기선 레벨 게이트만 본다.
   State.set({ totalEarned: 500 }); Game.invalidate();
   ok(Game.bossLevel() === 0 && !Game.recipeUnlocked('k1'), '레벨 낮으면 레시피 잠김(???)');
-  State.set({ totalEarned: 1e15 }); Game.invalidate();   // 최고급까지 다 열릴 만큼 높게
-  ok(Game.recipeUnlocked('k1') && Game.recipeUnlocked('k9'), '레벨 높으면 레시피 해금');
+  State.set({ totalEarned: 1e15 }); var sk = State.get(); sk.kfoods = {}; Game.invalidate();
+  ok(Game.recipeUnlocked('k1'), '레벨 오르면 초급 레시피 해금');
+  // 고급 k9 는 레벨이 넉넉해도 아래 등급 도감을 안 채우면 잠긴다(등급 게이트는 아래 [등급 해금]에서 검증)
+  ok(!Game.recipeUnlocked('k9'), '고급은 레벨만으론 안 열린다(등급 게이트)');
 
   // 재료 없으면 합성 불가
   var s = State.get(); s.ings = {}; s.kfoods = {}; Game.invalidate();
@@ -1244,12 +1246,12 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   for (var mc = 0; mc < mstep; mc++) { var rm = Game.craftFood('k1'); if (rm && rm.tierUp) sawTierUp = true; }
   ok(sawTierUp && Game.masteryTier(Game.foodMade('k1')) === 1, '문턱을 넘는 합성은 tierUp=true');
 
-  // 🏅 등급 배율 — 초급 ×1 · 중급 ×2 · 고급 ×3 (도감 배율·목돈 둘 다에 곱해진다)
-  ok(Game.gradeMult(1) === 1 && Game.gradeMult(2) === 2 && Game.gradeMult(3) === 3, '등급 배율 = 1/2/3');
+  // 🏅 등급 배율 — 초급 ×1 · 중급 ×2.5 · 고급 ×4 (도감 배율·목돈 둘 다에 곱해진다)
+  ok(Game.gradeMult(1) === 1 && Game.gradeMult(2) === 2.5 && Game.gradeMult(3) === 4, '등급 배율 = 1/2.5/4');
   var gk3 = Data.KITCHEN.foods.find(function (f) { return f.grade === 3; });   // 고급 하나
   State.set({ totalEarned: 1e15 }); var sg = State.get(); sg.kfoods = {}; Game.invalidate();
   sg.kfoods[gk3.id] = 1; Game.invalidate();
-  ok(near(Game.foodEffBonus(gk3), gk3.bonus * 3), '고급 도감 배율 = 기본 × 3');
+  ok(near(Game.foodEffBonus(gk3), gk3.bonus * 4), '고급 도감 배율 = 기본 × 4');
   // 같은 조건에서 목돈도 등급 배율만큼 차이 난다 (기본값이 같은 초급·고급으로 비교)
   var lowB = Data.KITCHEN.foods.find(function (f) { return f.grade === 1 && f.bonus === 0.01; });
   var hiB  = Data.KITCHEN.foods.find(function (f) { return f.grade === 3 && f.bonus === 0.01; });
@@ -1259,6 +1261,38 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
     var gLow = Game.craftGain(lowB), gHi = Game.craftGain(hiB);
     ok(gHi > gLow, '기본값이 같아도 고급 목돈이 초급보다 크다(등급 배율)');
   }
+
+  // 🔒 등급 해금 — 아래 등급 도감을 다 채워야 다음 등급이 열린다 (초급은 항상 열림, 단계 건너뛰기 금지)
+  State.set({ totalEarned: 1e15 }); var sgu = State.get(); sgu.kfoods = {}; Game.invalidate();
+  ok(Game.gradeUnlocked(1) === true, '초급은 항상 해금');
+  ok(Game.gradeUnlocked(2) === false, '초급 도감이 비면 중급 잠김');
+  // 초급을 전부 도감에 등록하면 중급이 열린다
+  Data.KITCHEN.foods.forEach(function (f) { if (f.grade === 1) sgu.kfoods[f.id] = 1; });
+  Game.invalidate();
+  ok(Game.gradeUnlocked(2) === true, '초급을 다 만들면 중급 해금');
+  ok(Game.gradeUnlocked(3) === false, '중급이 남아 있으면 고급은 아직 잠김');
+  // 중급을 하나만 빼고 채우면 여전히 잠김 → 마지막 하나까지 채우면 열림
+  var mids = Data.KITCHEN.foods.filter(function (f) { return f.grade === 2; });
+  mids.forEach(function (f, i) { if (i < mids.length - 1) sgu.kfoods[f.id] = 1; });
+  Game.invalidate();
+  ok(Game.gradeUnlocked(3) === false, '중급이 하나라도 비면 고급 잠김');
+  sgu.kfoods[mids[mids.length - 1].id] = 1; Game.invalidate();
+  ok(Game.gradeUnlocked(3) === true, '중급을 다 만들면 고급 해금');
+  // recipeUnlocked 도 등급 게이트를 따른다 (bossLevel 24 라 레벨은 충분 — 오직 등급 미완으로만 잠긴다)
+  sgu.kfoods = {}; Game.invalidate();
+  ok(Game.recipeUnlocked(mids[0]) === false, '레벨이 충분해도 초급 미완이면 중급 레시피 잠김');
+  Data.KITCHEN.foods.forEach(function (f) { if (f.grade === 1) sgu.kfoods[f.id] = 1; });
+  Game.invalidate();
+  ok(Game.recipeUnlocked(mids[0]) === true, '초급을 다 채우면 중급 레시피 해금');
+  // 이미 만든 음식은 아래 등급을 안 채워도 계속 열려 있다 (구버전 세이브 배려 — 게이트는 새 발견만 막는다)
+  sgu.kfoods = { k9: 1 }; Game.invalidate();   // k9 = 고급인데 초급·중급 도감은 텅 빔
+  ok(Game.gradeUnlocked(3) === false && Game.recipeUnlocked('k9') === true,
+     '이미 만든 상위 음식은 등급 게이트와 무관하게 계속 해금');
+
+  // gradeProgress: 그 등급 도감 진행도(made/total)
+  sgu.kfoods = { k1: 1, k2: 1 }; Game.invalidate();
+  var gp1 = Game.gradeProgress(1);
+  ok(gp1.made === 2 && gp1.total === 7, '초급 도감 진행 = 2/7');
 
   // ⭐ 오늘의 특선 / 단골 주문 — 날짜로 정해지고, 만들면 진행·보상
   Game.setClock(function () { return new Date(2026, 0, 10, 12, 0, 0); });

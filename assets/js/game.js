@@ -790,7 +790,7 @@ var Game = (function () {
     var t = masteryTier(count);
     return t === 0 ? 1 : Data.KITCHEN.mastery.mult[t - 1];
   }
-  /** 등급 배율 — 초급 ×1 · 중급 ×2 · 고급 ×3 (고급이 재료를 더 쓰는 대가로 효과가 크다) */
+  /** 등급 배율 — 초급 ×1 · 중급 ×2.5 · 고급 ×4 (고급이 재료를 더 쓰는 대가로 효과가 크다) */
   function gradeMult(grade) {
     var gm = Data.KITCHEN.gradeMult;
     return gm[(grade || 1) - 1] || 1;
@@ -813,10 +813,38 @@ var Game = (function () {
   function ingCount(id) { return S().ings[id] || 0; }
   function foodMade(id) { return S().kfoods[id] || 0; }
 
-  /** 레시피 해금: 사장 레벨이 음식의 at 이상이면 조합이 보인다 (몰라도 재료는 쌓인다) */
+  /** 그 등급에 속한 음식 도감 진행: {made, total} (made = 1개 이상 만든 음식 수) */
+  function gradeProgress(grade) {
+    var made = 0, total = 0;
+    Data.KITCHEN.foods.forEach(function (f) {
+      if (f.grade !== grade) return;
+      total++;
+      if (foodMade(f.id) >= 1) made++;
+    });
+    return { made: made, total: total };
+  }
+
+  /**
+   * 등급 해금: 바로 아래 등급 음식을 '모두 한 번씩 만들어(도감 등록)'야 그 등급이 열린다.
+   * 초급(1)은 항상 열려 있다. 단계를 건너뛰지 못하게 해서 등급이 '거쳐 가는 과정'으로 느껴지게 한다.
+   */
+  function gradeUnlocked(grade) {
+    grade = grade || 1;
+    if (grade <= 1) return true;
+    var p = gradeProgress(grade - 1);
+    return p.total > 0 && p.made >= p.total;
+  }
+
+  /**
+   * 레시피 해금: 사장 레벨이 at 이상 + 아래 등급 도감을 다 채웠으면 조합이 보인다 (몰라도 재료는 쌓인다).
+   * 단, 이미 한 번이라도 만든 음식은 계속 만들 수 있다 — 등급 게이트는 '새 발견'만 막는다.
+   * (구버전 세이브에서 이미 발견한 상위 음식이 도로 잠겨 보이는 일을 막는다)
+   */
   function recipeUnlocked(f) {
     if (typeof f === 'string') f = FOOD_BY_ID[f];
-    return !!f && bossLevel() >= f.at;
+    if (!f) return false;
+    if (foodMade(f.id) >= 1) return true;
+    return bossLevel() >= f.at && gradeUnlocked(f.grade);
   }
 
   /** 지금 창고 재료로 이 음식을 만들 수 있나 */
@@ -1997,6 +2025,8 @@ var Game = (function () {
     masteryMult: masteryMult,
     ingCount: ingCount,
     foodMade: foodMade,
+    gradeProgress: gradeProgress,
+    gradeUnlocked: gradeUnlocked,
     recipeUnlocked: recipeUnlocked,
     canCraft: canCraft,
     craftFood: craftFood,
