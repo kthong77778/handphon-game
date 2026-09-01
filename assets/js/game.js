@@ -311,6 +311,11 @@ var Game = (function () {
   //     간격만 보면 리듬 타듯 치는 사람이 걸린다. 좌표만 보면 마우스를 안 움직이는
   //     사람이 걸린다. 둘 다여야 봇이다.
   var MACRO = {
+    // 매크로 방지 스위치. 이 게임은 서버·PvP·실제 리더보드가 없는 오프라인 싱글플레이라
+    // 오토클릭으로 손해 보는 사람이 없고(자기 세이브만 빨라짐), 앱으로 감싸면 터치에서 오탐
+    // 위험만 커진다. 그래서 기본으로 끈다. 판정 코드는 그대로 보존 — 나중에 실제 온라인
+    // 경쟁이 생기면 setMacroGuard(true) 로 되살린다. (테스트는 켜고 검증한다)
+    enabled: false,
     maxPerSec: 14,     // 사람이 낼 수 있는 현실적인 연타 상한
     sample: 32,        // 판단에 쓸 표본 수
     maxCv: 0.09,       // 간격의 변동계수(표준편차/평균)가 이보다 작으면 기계적
@@ -368,6 +373,7 @@ var Game = (function () {
    *   'rest'  macro 로 걸려서 쉬는 중
    */
   function judgeTap(trusted, t, x, y) {
+    if (!MACRO.enabled) return '';   // 매크로 방지 꺼짐 — 어떤 탭도 막지 않는다(판정 코드는 보존)
     if (trusted === false) return 'auto';
     if (restLeft > 0) return 'rest';
 
@@ -392,6 +398,12 @@ var Game = (function () {
   function macroRestLeft() { return restLeft; }
 
   function resetGuard() { taps.length = 0; restLeft = 0; }
+
+  /** 매크로 방지가 켜져 있나 (UI 통계 노출 여부 판단용) */
+  function macroGuardOn() { return !!MACRO.enabled; }
+
+  /** 매크로 방지 on/off. 기본은 off(오프라인 싱글). 온라인 경쟁이 생기면 켠다. 테스트에서도 켠다. */
+  function setMacroGuard(on) { MACRO.enabled = !!on; if (!MACRO.enabled) resetGuard(); }
 
   /* ---------- 탭 ---------- */
   /** 한 번 탭할 때 버는 돈 (콤보 · 황금 손님 탭 버프 포함) */
@@ -2066,6 +2078,8 @@ var Game = (function () {
     invalidate: bump,
     MACRO: MACRO,
     macroRestLeft: macroRestLeft,
+    macroGuardOn: macroGuardOn,
+    setMacroGuard: setMacroGuard,
     resetGuard: resetGuard,
     buffMult: buffMult,
     activeBuffs: activeBuffs,

@@ -4,6 +4,10 @@
 const { load } = require('./_harness');
 const { Game, State } = load();
 
+// 매크로 방지는 출시(오프라인 싱글)에선 기본 꺼져 있다. 이 테스트는 '보존해 둔 판정 코드'가
+// 여전히 사람을 안 막고 봇을 잡는지 확인하는 것이므로, 여기서만 켜서 검증한다.
+Game.setMacroGuard(true);
+
 // 정규분포 근사
 function gauss(mean, sd){ let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
   return mean + sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }

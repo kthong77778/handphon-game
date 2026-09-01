@@ -205,6 +205,8 @@ console.log('\n[6.3] 오프라인 정산 방어 (NaN·음수 경과)');
 
 console.log('\n[6.5] 매크로 방지');
 {
+  // 출시(오프라인 싱글)에선 기본 꺼져 있다 — 이 블록은 보존된 판정 코드를 검증하려 잠시 켠다.
+  Game.setMacroGuard(true);
   Game.resetGuard(); Game.resetCombo();
   ok(Game.tap(false).blocked === 'auto', '합성 이벤트(isTrusted=false) 차단');
 
@@ -249,6 +251,14 @@ console.log('\n[6.5] 매크로 방지');
   let fast = 0;
   for (let i = 0; i < 40; i++) { t += 20; if (Game.tap(true, t, 100, 100).blocked === 'fast') fast++; }
   ok(fast > 0, '초당 ' + Game.MACRO.maxPerSec + '회 초과분은 무효', fast + '회 무효');
+
+  // 스위치를 끄면(출시 기본값) 어떤 탭도 안 막힌다
+  Game.setMacroGuard(false);
+  ok(!Game.macroGuardOn(), '매크로 방지 기본값은 꺼짐(오프라인 싱글)');
+  Game.resetGuard(); t = 6e9;
+  let offBlocked = 0;
+  for (let i = 0; i < 60; i++) { t += 100; if (Game.tap(true, t, 100, 100).blocked) offBlocked++; }   // 완벽한 봇 패턴
+  ok(offBlocked === 0, '꺼두면 오토클릭 패턴도 전부 통과', offBlocked + '회 막힘');
 
   Game.resetGuard();
 }

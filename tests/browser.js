@@ -162,6 +162,8 @@ suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
     ok(await page.locator('#pops .pop').count() > 0, '조리하면 음식이 튄다');
 
     console.log('\n[매크로 차단]');
+    // 출시(오프라인 싱글)에선 기본 꺼져 있다 — 보존한 판정 코드를 검증하려 이 구간만 켠다.
+    await page.evaluate(() => Game.setMacroGuard(true));
     // 합성 이벤트로 100번 눌러도 돈이 늘지 않아야 한다
     const before = await page.evaluate(() => { State.get().money = 1e6; return State.get().taps; });
     await page.evaluate(() => {
@@ -180,7 +182,8 @@ suite('화면 · 조작 전반', async ({ page, ctx, ok, errs }) => {
     const rest = await page.evaluate(() => Game.macroRestLeft());
     ok(rest > 0, '일정 간격 + 같은 좌표 클릭이 차단됨', 'rest=' + rest.toFixed(1) + 's');
     ok((await page.getAttribute('#tapTarget','class')).includes('blocked'), '조리 버튼이 차단 상태로 표시');
-    await page.evaluate(() => Game.resetGuard());
+    // 검증 끝 — 출시 기본값(꺼짐)으로 되돌린다
+    await page.evaluate(() => { Game.setMacroGuard(false); Game.resetGuard(); });
 
     console.log('\n[탭 이동] 다섯 화면 모두 렌더되는지');
     for (const [tab, sel, label] of [

@@ -1555,6 +1555,8 @@ var UI = (function () {
         Math.round(Game.offlineEfficiency() * Data.OFFLINE.tailEff * 100) + '%)'],
       ['총 플레이 시간', Fmt.time(s.playTime)]
     ];
+    // 매크로 방지를 꺼둔 동안엔 항상 0이라 통계에서 뺀다 (다시 켜면 자동으로 나타난다)
+    if (!Game.macroGuardOn()) rows = rows.filter(function (r) { return r[0] !== '자동 연타 차단'; });
     el.statsBox.innerHTML = rows.map(function (r) {
       return '<div class="stat-row"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>';
     }).join('');
