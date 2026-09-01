@@ -1847,29 +1847,60 @@ var Game = (function () {
 
   function dailyReady() { return S().dailyDate !== today(); }
 
+  /** 마일스톤 출석 보너스를 실제로 지급하고, 화면용 라벨을 돌려준다 */
+  function applyDailyBonus(b) {
+    if (!b) return null;
+    var s = S();
+    if (b.type === 'coupon') {
+      var add = b.n || 1;
+      s.coupons = Math.min(Data.COUPON.max, (s.coupons || 0) + add);
+      return { type: 'coupon', n: add, label: '🎟️ 할인 쿠폰 ' + add + '장' };
+    }
+    if (b.type === 'boost') {
+      s.boostLeft = Data.BOOST.dur;        // 즉시 손님 몰이 ×배율
+      return { type: 'boost', label: '📣 손님 몰이 ' + Data.BOOST.dur + '초 즉시 발동' };
+    }
+    if (b.type === 'ings') {
+      var n = b.n || 10;
+      dropIngredients(n);                  // 랜덤 재료 n개
+      return { type: 'ings', n: n, label: '🧺 재료 ' + n + '개' };
+    }
+    return null;
+  }
+
   /**
    * 출석 보상 지급. 하루 한 번만 받을 수 있다.
-   * @returns {{streak:number, gain:number}|null}
+   * 출석부(attDay)는 받을 때마다 +1, 30칸을 넘으면 새 바퀴(1)로 돈다. 연속 스트릭은 스탯으로 함께 센다.
+   * @returns {{day:number, cycleDays:number, streak:number, minutes:number, gain:number,
+   *            candy:number, milestone:boolean, grand:boolean, bonus:Object|null}|null}
    */
   function claimDaily() {
     var s = S();
     var t = today();
     if (s.dailyDate === t) return null;
 
-    // 어제 받았으면 연속, 아니면 처음부터
+    // 연속 일수(스탯) — 어제 받았으면 +1, 아니면 1부터
     s.dailyStreak = (s.dailyDate && shiftDay(s.dailyDate, 1) === t) ? s.dailyStreak + 1 : 1;
     s.dailyDate = t;
     s.dailyClaims++;
 
     var d = Data.DAILY;
-    var days = Math.min(s.dailyStreak, d.maxStreak);
-    var seconds = d.baseSeconds + d.perStreak * (days - 1);
-    var gain = Math.max(perSec(true) * seconds, d.minMoney);
-    earn(s, gain);
-    var candy = Data.DAILY.candy || 0;
-    if (candy) addCandy(candy);            // 출석하면 별사탕도 (상점 재화)
+    // 출석부 칸: 이번에 받을 칸(1~cycleDays), 다 채웠으면 새 바퀴
+    var day = (s.attDay || 0) + 1;
+    if (day > d.cycleDays) day = 1;
+    s.attDay = day;
 
-    return { streak: s.dailyStreak, days: days, seconds: seconds, gain: gain, candy: candy };
+    var ms = d.milestones && d.milestones[day];
+    var minutes = ms ? ms.min : d.baseMin + d.perDayMin * (day - 1);
+    var candy = (ms && ms.candy != null) ? ms.candy : d.dailyCandy;
+    var gain = Math.max(perSec(true) * minutes * 60, d.minMoney);
+    earn(s, gain);
+    if (candy) addCandy(candy);
+    var bonus = ms ? applyDailyBonus(ms.bonus) : null;
+
+    return { day: day, cycleDays: d.cycleDays, streak: s.dailyStreak,
+             minutes: minutes, gain: gain, candy: candy,
+             milestone: !!ms, grand: !!(ms && ms.grand), bonus: bonus };
   }
 
   /* ---------- 일일 퀘스트 ---------- */

@@ -571,28 +571,49 @@ console.log('\n[6.9] 명예의 전당');
   Game.invalidate(); Game.resetGuard(); Game.resetCombo();
 }
 
-console.log('\n[7] 출석 보상');
+console.log('\n[7] 출석 보상 (30일 출석부)');
 {
   const s = State.get();
-  s.dailyDate = ''; s.dailyStreak = 0;
+  const pad = n => (n < 10 ? '0' : '') + n;
+  const backDays = n => { const y = new Date(); y.setDate(y.getDate() - n);
+    s.dailyDate = y.getFullYear() + '-' + pad(y.getMonth() + 1) + '-' + pad(y.getDate()); };
+
+  s.dailyDate = ''; s.dailyStreak = 0; s.attDay = 0;
   ok(Game.dailyReady(), '처음엔 받을 수 있음');
   const r1 = Game.claimDaily();
-  ok(r1 && r1.streak === 1, '1일차');
+  ok(r1 && r1.streak === 1 && r1.day === 1, '1일차 · 출석부 Day 1');
   ok(!Game.dailyReady() && Game.claimDaily() === null, '하루에 한 번만');
 
-  // 어제 받은 것으로 조작 → 연속
-  const y = new Date(); y.setDate(y.getDate() - 1);
-  const pad = n => (n < 10 ? '0' : '') + n;
-  s.dailyDate = y.getFullYear() + '-' + pad(y.getMonth() + 1) + '-' + pad(y.getDate());
+  // 어제 받았으면 연속 + 다음 칸
+  backDays(1);
   const r2 = Game.claimDaily();
-  ok(r2.streak === 2, '어제 받았으면 연속 2일');
+  ok(r2.streak === 2 && r2.day === 2, '어제 받았으면 연속 2일 · Day 2');
 
-  // 이틀 전 → 끊김
-  const y2 = new Date(); y2.setDate(y2.getDate() - 3);
-  s.dailyDate = y2.getFullYear() + '-' + pad(y2.getMonth() + 1) + '-' + pad(y2.getDate());
+  // 사흘 전 → 연속은 끊겨도 출석부 칸은 이어진다(누적)
+  backDays(3);
   const r3 = Game.claimDaily();
-  ok(r3.streak === 1, '건너뛰면 1일로 리셋');
+  ok(r3.streak === 1, '건너뛰면 연속은 1로 리셋');
+  ok(r3.day === 3, '건너뛰어도 출석부 칸은 계속 이어진다(누적)');
   ok(r3.gain >= Data.DAILY.minMoney, '최소 보상 보장');
+
+  // 마일스톤(7일차) — 쿠폰 보너스가 실제로 붙는다
+  s.attDay = 6; s.coupons = 0; backDays(1);
+  const r7 = Game.claimDaily();
+  ok(r7.day === 7 && r7.milestone === true, '7일차는 마일스톤');
+  ok(r7.bonus && r7.bonus.type === 'coupon' && s.coupons === 1, '7일 보상: 할인 쿠폰 지급');
+
+  // 14일차 — 손님 몰이 즉시 발동
+  s.attDay = 13; s.boostLeft = 0; backDays(1);
+  const r14 = Game.claimDaily();
+  ok(r14.bonus && r14.bonus.type === 'boost' && s.boostLeft === Data.BOOST.dur, '14일 보상: 손님 몰이 발동');
+
+  // 30일차 개근 → grand, 그리고 다음엔 새 바퀴(Day 1)
+  s.attDay = 29; backDays(1);
+  const r30 = Game.claimDaily();
+  ok(r30.day === 30 && r30.grand === true, '30일차는 개근(grand) 보상');
+  backDays(1);
+  const r31 = Game.claimDaily();
+  ok(r31.day === 1, '30칸을 채우면 새 바퀴(Day 1)로 돈다');
 }
 
 console.log('\n[8] 환생 / 세이브 왕복');
@@ -685,11 +706,12 @@ console.log('\n[10.5] 우편함 선물 수령');
 console.log('\n[10.6] 별사탕 · 상점');
 {
   State.set({ money: 0, candy: 0, coupons: 0 }); Game.invalidate();
+  State.get().dailyDate = ''; State.get().attDay = 0;   // 출석부 Day 1 부터 (마일스톤 아님)
   ok(State.get().candy === 0, '별사탕 기본 0');
 
   // 획득처: 출석·도전과제·환생
   const dc = Game.claimDaily();
-  ok(dc.candy === Data.DAILY.candy && State.get().candy === Data.DAILY.candy, '출석하면 별사탕');
+  ok(dc.candy === Data.DAILY.dailyCandy && State.get().candy === Data.DAILY.dailyCandy, '출석하면 별사탕');
   const c1 = State.get().candy;
   State.get().taps = 1e9;                    // 탭 도전과제 여러 개 달성 유도
   const got = Game.checkAchievements();

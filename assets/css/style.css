@@ -1009,6 +1009,24 @@ button.item-cost:active{transform:scale(.92)}
 }
 .streak-dots i.on{background:var(--gold);box-shadow:0 0 8px rgba(255,204,68,.6)}
 
+/* 30일 출석부 달력 */
+.att-cal{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:10px 0}
+.att-cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--bg2);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.att-cell .att-d{font-size:12px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums}
+.att-cell .att-ms{position:absolute;top:-6px;right:-4px;font-size:12px}
+.att-cell.ms{border-color:rgba(255,204,68,.5)}
+.att-cell.done{background:rgba(255,204,68,.10);border-color:rgba(255,204,68,.3)}
+.att-cell.done .att-d{color:var(--gold)}
+.att-cell.today{border-color:var(--gold);background:rgba(255,204,68,.24);
+  box-shadow:0 0 10px rgba(255,204,68,.55);animation:attpulse 1.4s ease-in-out infinite}
+.att-cell.today .att-d{color:#fff}
+.att-cell.grand{border-color:var(--gold)}
+.att-cell.grand.today{box-shadow:0 0 14px rgba(255,204,68,.8)}
+@keyframes attpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.att-grand-tag{color:var(--gold)}
+.att-streak{color:var(--dim)}
+
 /* ===== 가게 앞 거리 (손님들이 오가는 곳) ===== */
 .street{
   position:relative;height:120px;

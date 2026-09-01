@@ -25,7 +25,7 @@ var UI = (function () {
      'dexCollection',
      'boostBtn', 'boostTitle', 'boostSub', 'goldenLayer', 'street', 'pops',
      'couponChip',
-     'dailyModal', 'dailyText', 'streakDots', 'dailyOk',
+     'dailyModal', 'dailyText', 'attCal', 'dailyOk',
      'tapEmoji', 'tapLabel', 'recordBox', 'runBoard', 'rankNote',
      'rankRegion', 'rankCard', 'rankHeads', 'rankBoard',
      'tapSkinRow', 'tapSkinNow', 'tapLadder', 'tapSoundRow', 'tapSoundNow',
@@ -2191,15 +2191,26 @@ var UI = (function () {
   function showDaily(res, onOk) {
     var d = Data.DAILY;
     el.dailyText.innerHTML =
-      '<b>' + res.streak + '일째</b> 출석했습니다.<br>' +
-      '초당 수익 ' + Fmt.time(res.seconds) + '치 — <b>' + Fmt.won(res.gain) + '</b>' +
-      (res.candy ? '<br>🍬 별사탕 <b>' + res.candy + '</b> 도 받았어요' : '');
+      '<b>Day ' + res.day + '</b> / ' + res.cycleDays + ' 출석!<br>' +
+      '초당 수익 ' + res.minutes + '분치 — <b>' + Fmt.won(res.gain) + '</b>' +
+      (res.candy ? '<br>🍬 별사탕 <b>' + res.candy + '</b>' : '') +
+      (res.bonus ? '<br>' + res.bonus.label : '') +
+      (res.grand ? '<br><b class="att-grand-tag">🎉 30일 개근 보상!</b>' : '') +
+      '<br><small class="att-streak">연속 출석 ' + res.streak + '일</small>';
 
-    var dots = '';
-    for (var i = 1; i <= d.maxStreak; i++) {
-      dots += '<i class="' + (i <= res.days ? 'on' : '') + '"></i>';
+    // 30칸 출석부: 받은 칸(✓)·오늘 칸(강조)·마일스톤(🎁/👑)
+    var cal = '';
+    for (var i = 1; i <= res.cycleDays; i++) {
+      var ms = d.milestones && d.milestones[i];
+      var cls = 'att-cell';
+      if (i < res.day) cls += ' done';
+      if (i === res.day) cls += ' today';
+      if (ms) cls += ms.grand ? ' ms grand' : ' ms';
+      var badge = ms ? '<span class="att-ms">' + (ms.grand ? '👑' : '🎁') + '</span>' : '';
+      var face = (i < res.day) ? '✓' : i;
+      cal += '<div class="' + cls + '"><span class="att-d">' + face + '</span>' + badge + '</div>';
     }
-    el.streakDots.innerHTML = dots;
+    el.attCal.innerHTML = cal;
 
     el.dailyModal.hidden = false;
     el.dailyOk.onclick = function () {

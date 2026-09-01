@@ -109,8 +109,9 @@ var State = (function () {
       runs: [],          // 역대 회차 기록 (최근 50개)
 
       dailyDate: '',     // 마지막 출석 보상 날짜 (YYYY-MM-DD)
-      dailyStreak: 0,
+      dailyStreak: 0,    // 연속 출석 일수 (스탯)
       dailyClaims: 0,
+      attDay: 0,         // 30일 출석부 칸 (0=아직, 1~30. 30 넘으면 새 바퀴로 돈다)
 
       // 일일 퀘스트 — 날짜가 바뀌면 game.js 의 questRoll() 이 새로 깐다
       questDate: '',     // 지금 깔린 퀘스트가 어느 날 것인가
@@ -144,7 +145,7 @@ var State = (function () {
                    'thievesCaught', 'thiefSaves', 'thefts', 'stolen',
                    'runTime', 'bestRunEarned', 'bestPerSec', 'bestTap',
                    'bestFameGain', 'fastestPrestige',
-                   'dailyStreak', 'dailyClaims', 'sheetUp', 'mute', 'sawTour', 'autoBought',
+                   'dailyStreak', 'dailyClaims', 'attDay', 'sheetUp', 'mute', 'sawTour', 'autoBought',
                    'questAllTaken', 'questsDone', 'notifyOffline', 'lastBackup', 'sawPrestigeIntro',
                    'bestMichelin', 'michelinGrand', 'michBestTaps', 'michSeasonStars', 'michSeasonTaps', 'michTier',
                    'coupons', 'couponPct', 'truckCount', 'specialProg', 'specialTaken',
