@@ -1707,9 +1707,11 @@ var Game = (function () {
     return (g.minGap + Math.random() * (g.maxGap - g.minGap)) * scale;
   }
 
-  /** 등장할 황금 손님 종류를 가중치로 하나 뽑는다 */
+  /** 등장할 황금 손님 종류를 뽑는다. 낮은 확률로 희귀 '무지개 손님', 나머지는 가중치 뽑기 */
   function rollGolden() {
-    var types = Data.GOLDEN.types;
+    var g = Data.GOLDEN;
+    if (g.rare && Math.random() < (g.rareChance || 0)) return g.rare;
+    var types = g.types;
     var total = 0;
     types.forEach(function (t) { total += t.weight; });
     var r = Math.random() * total;
@@ -1732,7 +1734,13 @@ var Game = (function () {
     var text;
     questBump('golden', 1);
 
-    if (type.id === 'cash') {
+    if (type.id === 'rainbow') {
+      // 희귀 손님: 큰 현금(초당 10분치) + 짧고 강한 전체 버프를 함께 준다
+      money = Math.max(perSec(true) * 600, tapBaseValue() * 60, 300);
+      earn(s, money);
+      applyIncomeBuff(type.mult, type.dur);
+      text = '🌈 ' + Fmt.won(money) + ' + ' + type.dur + '초 ×' + type.mult + '!';
+    } else if (type.id === 'cash') {
       // 초반에 초당 수익이 0이어도 허탕이 되지 않도록 탭 수익으로 바닥을 깐다
       // 바닥값은 버프·콤보를 뺀 값으로 — 버프 켠 채 잡았다고 부풀면 안 된다(규칙 4)
       money = Math.max(perSec(true) * 240, tapBaseValue() * 25, 100);

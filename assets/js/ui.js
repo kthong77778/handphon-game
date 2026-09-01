@@ -1982,13 +1982,14 @@ var UI = (function () {
   function spawnGolden() {
     despawnGolden(false);
     var type = Game.rollGolden();
+    var isRare = type.id === 'rainbow';
     var layer = el.goldenLayer;
     var w = layer.clientWidth || 360;
     var h = layer.clientHeight || 640;
     var size = 64;
 
     var node = document.createElement('div');
-    node.className = 'golden';
+    node.className = 'golden' + (isRare ? ' rare' : '');
     setIcon(node, type.icon);
     // 상단 HUD 와 하단 탭바를 피해서 배치
     node.style.left = Math.round(12 + Math.random() * Math.max(1, w - size - 24)) + 'px';
@@ -2005,17 +2006,24 @@ var UI = (function () {
       if (!res) { caught = false; return; }
       goldenMsg(rect.left - layerRect.left + size / 2, rect.top - layerRect.top, res.text);
       despawnGolden(true);
-      buzz(20);
-      armGolden();
+      buzz(isRare ? 40 : 20);
+      armGoldenChained();
       if (onGolden) onGolden(res);
     });
 
     layer.appendChild(node);
     goldNode = node;
-    goldLife = Data.GOLDEN.life;
-    toast('🌟 황금 손님이 왔어요!');
+    goldLife = type.life || Data.GOLDEN.life;    // 무지개는 더 오래 머문다
+    toast(isRare ? '🌈 무지개 손님이다! 놓치지 마세요!' : '🌟 황금 손님이 왔어요!');
     Sound.play('golden');
-    buzz(14);
+    buzz(isRare ? 24 : 14);
+  }
+
+  /** 잡은 뒤 다음 손님 예약 — 낮은 확률로 곧바로 한 명 더(연쇄) */
+  function armGoldenChained() {
+    var g = Data.GOLDEN;
+    if (Math.random() < (g.chainChance || 0)) goldTimer = g.chainGap || 0.7;
+    else armGolden();
   }
 
   function goldenMsg(x, y, text) {

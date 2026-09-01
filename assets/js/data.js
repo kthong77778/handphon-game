@@ -170,6 +170,9 @@ var Data = (function () {
     maxGap: 130,       // 등장 간격 (초) 최대
     life: 9,           // 화면에 머무는 시간 (초)
     gapPerLv: 0.92,    // 명성상점 f_gold 1레벨당 간격 배율
+    rareChance: 0.05,  // 등장할 때 5%는 특별한 '무지개 손님' (아래 rare)
+    chainChance: 0.15, // 잡으면 15% 확률로 손님이 곧바로 한 명 더 (연쇄 — 잡는 맛)
+    chainGap: 0.7,     // 연쇄 손님이 오기까지 (초)
     types: [
       {
         id: 'cash', icon: 'event/event_cash.png', name: '현금 다발', weight: 5,
@@ -183,7 +186,13 @@ var Data = (function () {
         id: 'hand', icon: 'event/event_golden_hand.png', name: '신들린 손', weight: 2,
         desc: '30초 동안 탭 수익 ×25', mult: 25, dur: 30
       }
-    ]
+    ],
+    // 희귀 — 가중치 풀이 아니라 rareChance 로 따로 등장한다. 큰 현금 + 짧고 강한 전체 버프.
+    // 더 오래(life) 머물러 놓치지 않게 하고, 화면에서 무지개 빛으로 확 티가 난다.
+    rare: {
+      id: 'rainbow', icon: '🌈', name: '무지개 손님', weight: 0,
+      desc: '큰 현금 + 20초 동안 모든 수익 ×5', mult: 5, dur: 20, life: 13
+    }
   };
 
   /* ---------- 도둑 & 경찰 ---------- */

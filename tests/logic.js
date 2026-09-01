@@ -132,10 +132,19 @@ console.log('\n[6] 황금 손님');
   Game.advanceTimers(999);
   ok(Game.buffMult() === 1, '시간 지나면 버프 해제');
 
-  // 가중치 뽑기가 세 종류를 다 내는지
+  // 흔한 종류는 모두 나오고, 낮은 확률로 무지개(희귀)도 섞인다
   const seen = {};
-  for (let i = 0; i < 3000; i++) seen[Game.rollGolden().id] = (seen[Game.rollGolden().id] || 0) + 1;
-  ok(Object.keys(seen).length === 3, '세 종류가 모두 등장', JSON.stringify(seen));
+  for (let i = 0; i < 6000; i++) { const id = Game.rollGolden().id; seen[id] = (seen[id] || 0) + 1; }
+  Data.GOLDEN.types.forEach(t => ok(seen[t.id] > 0, t.name + ' 등장'));
+  ok(seen['rainbow'] > 0, '무지개(희귀) 손님도 섞여 등장', JSON.stringify(seen));
+
+  // 🌈 무지개 손님 보상 — 큰 현금(바닥값 있음) + 전체 수익 버프가 함께 붙는다 (상태를 갈아엎지 않는다)
+  const sr = State.get(); sr.goldLeft = 0; sr.goldMult = 1; Game.invalidate();
+  const rb = Data.GOLDEN.rare;
+  const rr = Game.claimGolden(rb, true);
+  ok(rr && rr.money > 0, '무지개: 큰 현금 지급');
+  ok(sr.goldMult === rb.mult && sr.goldLeft === rb.dur, '무지개: 전체 수익 버프도 함께');
+  ok(Game.claimGolden(rb, false) === null, '무지개도 가짜 이벤트로는 못 잡는다');
 }
 
 console.log('\n[6.1] 수익 버프 슬롯 합치기 (광고 ×2·1800초 vs 황금 ×7·30초)');
