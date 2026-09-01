@@ -2933,7 +2933,9 @@ var UI = (function () {
     bindSheet();
     [el.tapSoundRow, el.tapSkinRow, el.crowdSkinRow, el.themeRow].forEach(enableDragScroll);
     bindTour();
-    setSheet(sheetUp(), false);
+    // 설비 목록이 접혀 있으면(기본값) 화면 밖으로 숨어 "설비를 아예 못 본다"는 문제가 있었다.
+    // 설비는 핵심 콘텐츠라 부팅 때는 항상 펼쳐 보여준다(접기는 세션 중 손잡이로 언제든 가능).
+    setSheet(true, false);
     Sound.arm();
     armGolden();
     armThief();
