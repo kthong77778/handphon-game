@@ -58,45 +58,44 @@ body{
 #hud{
   position:relative;
   flex:0 0 auto;
-  padding:calc(12px + var(--safe-t)) 16px 12px;
+  padding:calc(9px + var(--safe-t)) 14px 9px;
   background:var(--hud);
   border-bottom:1px solid var(--line);
   backdrop-filter:blur(8px);
 }
-/* 헤더 오른쪽 아이콘 줄 (공지·우편·상점) */
-.hud-actions{
-  position:absolute;top:calc(10px + var(--safe-t));right:12px;
-  display:flex;gap:7px;z-index:5;
-}
+/* 상단 한 줄: 매출(왼쪽) · 아이콘(오른쪽). 겹치지 않게 나란히 둔다. */
+.hud-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* 헤더 아이콘 줄 (상점·우편·공지·룰렛) — 서로 뚜렷이 떨어뜨린다 */
+.hud-actions{display:flex;gap:8px;flex:0 0 auto}
 .hud-ic{
-  position:relative;width:36px;height:36px;border-radius:11px;
+  position:relative;width:33px;height:33px;border-radius:10px;
   background:rgba(255,255,255,.06);border:1px solid var(--line);
-  font-size:18px;line-height:1;cursor:pointer;
+  font-size:17px;line-height:1;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:transform .06s,background .12s;
 }
 .hud-ic:active{transform:scale(.92)}
 .hud-dot{
   position:absolute;top:-3px;right:-3px;
-  width:10px;height:10px;border-radius:50%;
+  width:9px;height:9px;border-radius:50%;
   background:var(--bad);border:2px solid var(--hud);
 }
-.hud-main{text-align:center}
+.hud-main{text-align:left;min-width:0}
 .money{
-  font-size:30px;font-weight:800;letter-spacing:-.5px;
+  font-size:23px;font-weight:800;letter-spacing:-.5px;
   color:var(--gold);
   text-shadow:0 2px 12px rgba(255,204,68,.25);
   font-variant-numeric:tabular-nums;
 }
 /* 매출을 부드러운 알약 + ₩ 동전으로 (친근하게) */
 .money-pill{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:3px 15px 3px 7px;border-radius:999px;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:2px 13px 2px 6px;border-radius:999px;
   background:rgba(255,204,68,.10);border:1px solid rgba(255,204,68,.28);
 }
-.money-pill .coin{flex:0 0 auto;width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
-.rate{font-size:13px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
-.hud-sub{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.money-pill .coin{flex:0 0 auto;width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+.rate{font-size:12px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
+.hud-sub{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:7px}
 .chip{
   font-size:12px;padding:3px 10px;border-radius:999px;
   background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.4);
@@ -106,7 +105,7 @@ body{
 .chip-ic{width:16px;height:16px;object-fit:contain;vertical-align:middle}
 
 /* 사장 레벨 + XP (누적 매출로 성장, 표시용) */
-.boss{margin-top:9px;display:flex;flex-direction:column;gap:4px;align-items:center}
+.boss{margin-top:7px;display:flex;flex-direction:column;gap:3px;align-items:center}
 .boss-lv{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.3px}
 .boss-xp{
   width:154px;height:5px;border-radius:3px;
