@@ -1491,6 +1491,20 @@ button.item-cost:active{transform:scale(.92)}
   100%{transform:scale(.5) rotate(22deg);opacity:0}
 }
 
+/* 🚓 경찰차 사이렌 — 빨강↔파랑 번쩍 */
+.police .body{display:block;animation:siren .5s steps(1,end) infinite}
+@keyframes siren{
+  0%{filter:drop-shadow(0 3px 6px rgba(0,0,0,.6)) drop-shadow(0 0 12px rgba(255,60,60,.95))}
+  50%{filter:drop-shadow(0 3px 6px rgba(0,0,0,.6)) drop-shadow(0 0 12px rgba(70,130,255,.95))}
+}
+
+/* 이벤트 순간 화면 가장자리 플래시 — 탭을 막지 않도록 pointer-events:none */
+.event-flash{position:absolute;inset:0;pointer-events:none;z-index:1;animation:evflash .6s ease-out forwards}
+.event-flash.warn{background:radial-gradient(circle,transparent 52%,rgba(255,120,50,.30))}
+.event-flash.lost{background:radial-gradient(circle,transparent 42%,rgba(255,50,50,.46))}
+.event-flash.win{background:radial-gradient(circle,transparent 55%,rgba(90,220,130,.32))}
+@keyframes evflash{0%{opacity:0}22%{opacity:1}100%{opacity:0}}
+
 /* 경찰차 경광등 */
 .police .body{
   display:block;

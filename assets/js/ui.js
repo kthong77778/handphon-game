@@ -2067,6 +2067,15 @@ var UI = (function () {
     node.style.transform = 'translateX(' + x + 'px)';
   }
 
+  /** 이벤트 순간 화면 가장자리를 잠깐 물들인다 (탭 방해 안 하게 pointer-events:none) */
+  function flashEvent(kind) {
+    if (!el.goldenLayer) return;
+    var f = document.createElement('div');
+    f.className = 'event-flash ' + kind;
+    el.goldenLayer.appendChild(f);
+    setTimeout(function () { if (f.parentNode) f.remove(); }, 650);
+  }
+
   function spawnThief() {
     if (thiefBusy || !Game.thiefWorthwhile()) return;
     thiefBusy = true;
@@ -2130,12 +2139,14 @@ var UI = (function () {
       goldenMsg(r.left - lr.left + 26, r.top - lr.top, '🚨 +' + Fmt.won(res.bonus));
       Sound.play('caught');
       buzz(28);
+      flashEvent('win');                      // 되찾음 — 초록 번쩍
       finish('caught', res);
     });
 
     toast('🚨 도둑이다! 탭해서 잡으세요');
     Sound.play('thief');
     buzz([14, 60, 14]);
+    flashEvent('warn');                        // 등장 경고 — 눈에 확 띄게
     glideTo(thief, to, T.life);
 
     // 경찰 출동
@@ -2158,6 +2169,7 @@ var UI = (function () {
         goldenMsg(r.left - lr.left + 26, r.top - lr.top, '🚓 검거!');
         toast('🚓 경찰이 도둑을 잡았습니다');
         Sound.play('caught');
+        flashEvent('win');                    // 경찰 검거 — 피해 없음
         finish('police', res);
       }, T.life * T.policeCatchAt * 1000));
     }
@@ -2169,6 +2181,7 @@ var UI = (function () {
       toast('💸 도둑에게 ' + Fmt.won(res.lost) + '을 털렸습니다');
       Sound.play('lost');
       buzz(40);
+      flashEvent('lost');                     // 도주 — 붉은 피해 번쩍
       finish('escaped', res);
     }, T.life * 1000 + 60));
   }
