@@ -697,10 +697,16 @@ var Data = (function () {
 
   var TAP_STEP_AT = [0, 8, 100, 800, 6e3, 5e4, 1e6, 5e7];
 
-  // svgs 를 주면 큰 화면과 단계표에서는 그림을, 말풍선처럼 작은 곳에서는 이모지를 쓴다
+  // svgs 를 주면 큰 화면과 단계표에서는 그림을, 말풍선처럼 작은 곳에서는 이모지를 쓴다.
+  // 단계 수(n)가 8보다 적은 스킨은 문턱을 앞에서부터 붙이면 뒤쪽 문턱을 못 받아 음식이 초반에
+  // 얼어붙는다(고깃집 3단계면 탭값 100원에서 멈춰 게임 내내 안 바뀜). 그래서 n 개를 전 구간에
+  // 고르게 펼친다 — 첫 음식은 0원, 마지막 음식은 항상 최고 문턱(5000만)에 오게 한다.
+  // (음식 그림을 8개로 다 채우면 n=8 이라 아래 식이 원래 문턱과 정확히 같아진다)
   function ladder(list, svgs) {
+    var n = list.length, L = TAP_STEP_AT.length;
     return list.map(function (x, i) {
-      return { at: TAP_STEP_AT[i], icon: x[0], name: x[1], svg: svgs ? svgs[i] : null };
+      var idx = n <= 1 ? 0 : Math.round(i * (L - 1) / (n - 1));
+      return { at: TAP_STEP_AT[idx], icon: x[0], name: x[1], svg: svgs ? svgs[i] : null };
     });
   }
 
