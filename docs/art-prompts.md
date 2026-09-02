@@ -180,53 +180,67 @@ centered, full object in frame, transparent background, no drop shadow on canvas
 수익은 스킨과 무관하게 이미 동일하고, 문턱은 코드에서 전 구간에 펼쳐 놨다(음식이 초반에 안 멈춘다).
 남은 건 **갯수 통일** — 아래 17장을 그리면 **모든 스킨이 8단계**가 된다.
 
+**핵심 원칙 — 성장선.** 1번은 가장 **소박·저렴**하게, 8번은 확실한 **최고급(climax)** 으로. 왼→오로
+갈수록 재료가 좋아지고 푸짐·화려해져, 단계가 오르는 게 **눈에 보이게** 한다(분식: 어묵꼬치→프리미엄
+한상, 붕어빵: 붕어빵→황금붕어빵과 같은 결). 아래는 각 스킨의 **최종 1→8 순서**다.
+
 - 폴더: `assets/img/skin/` · 파일명 **그대로** · 512×512 투명 · 위 공통 규칙/팔레트/템플릿 동일
-- 각 세트는 **왼→오로 갈수록 고급스러워지는** 한 줄 성장. 기존 그림과 **같은 톤·조명**으로.
+- **굵게 = 새로 그릴 것**(17장), 나머지는 이미 있는 그림. 성장선에 맞춰 **기존 그림 순서도 일부 재배치**된다.
 - 프롬프트는 템플릿의 `{그릴 대상}` 자리에 아래 **영문 대상**을 넣는다.
-- 그림이 준비되면 코드 배선(각 스킨 배열에 파일명·이름 추가)은 내가 한다 — **말만 해주면 됨.**
+- 그림이 준비되면 코드 배선(배열 순서·파일명·이름)은 내가 이 순서 그대로 맞춘다.
 
-각 표에서 **굵게 = 새로 그릴 것**, 나머지는 이미 있는 그림(순서 참고용).
+### 🍙 주먹밥 `rice` — 맨밥에서 황금까지
+`주먹밥 → 구운 주먹밥 → 깨 주먹밥 → 야채 주먹밥 → `**`참치마요 주먹밥`**` → 카레 주먹밥 → 연어 주먹밥 → 황금 주먹밥`
 
-### 주먹밥 `rice` (7 → 8) — 1장
-| # | 음식 | 파일명 | 프롬프트 대상(영문) |
+| 자리 | 음식 | 파일명 | 프롬프트 대상(영문) |
 |---|---|---|---|
-| 5 | **참치마요 주먹밥** | `skin_rice_tunamayo` | a tuna-mayo rice ball (samgak-gimbap) with a nori wrap |
+| 5 | **참치마요 주먹밥** | `skin_rice_tunamayo` | a filled tuna-mayo rice ball, richer than a plain one |
 
-### 디저트 `dess` (6 → 8) — 2장
-| # | 음식 | 파일명 | 프롬프트 대상(영문) |
-|---|---|---|---|
-| 3 | **마카롱** | `skin_dess_macaron` | a pastel French macaron |
-| 6 | **티라미수** | `skin_dess_tiramisu` | a slice of tiramisu with cocoa dusting |
+### 🧁 디저트 `dess` — 한 입 간식에서 홀케이크까지
+`컵케이크 → 푸딩 → `**`마카롱`**` → 월병 → 빙수 → 아이스크림 → `**`티라미수`**` → 케이크(홀케이크)`
 
-### 면 `noodle` (5 → 8) — 3장
-| # | 음식 | 파일명 | 프롬프트 대상(영문) |
+| 자리 | 음식 | 파일명 | 프롬프트 대상(영문) |
 |---|---|---|---|
-| 2 | **비빔국수** | `skin_noodle_bibim` | a bowl of spicy Korean bibim-guksu noodles |
+| 3 | **마카롱** | `skin_dess_macaron` | a pastel French macaron, dainty |
+| 7 | **티라미수** | `skin_dess_tiramisu` | a fancy slice of tiramisu with cocoa dusting |
+
+### 🍜 면 `noodle` — 소박한 국수에서 랍스터 라면까지
+`잔치국수 → `**`비빔국수`**` → `**`우동`**` → `**`냉면`**` → 짜장면 → 파스타 → 해물찜 → 랍스터 라면`
+
+| 자리 | 음식 | 파일명 | 프롬프트 대상(영문) |
+|---|---|---|---|
+| 2 | **비빔국수** | `skin_noodle_bibim` | a simple bowl of spicy Korean bibim-guksu |
 | 3 | **우동** | `skin_noodle_udon` | a bowl of udon noodles with fish cake |
-| 6 | **냉면** | `skin_noodle_naengmyeon` | a bowl of Korean cold naengmyeon with egg |
+| 4 | **냉면** | `skin_noodle_naengmyeon` | a bowl of cold naengmyeon with egg |
 
-### 치킨 `chick` (5 → 8) — 3장
-| # | 음식 | 파일명 | 프롬프트 대상(영문) |
+### 🍗 치킨 `chick` — 기본 후라이드에서 푸짐한 모둠까지
+`후라이드 → `**`양념치킨`**` → 감자튀김 → 치즈버거 → `**`핫윙`**` → 피자 → 타코 → `**`야식 모둠 플래터`**
+
+| 자리 | 음식 | 파일명 | 프롬프트 대상(영문) |
 |---|---|---|---|
 | 2 | **양념치킨** | `skin_chick_yangnyeom` | Korean sweet-spicy yangnyeom fried chicken pieces |
-| 4 | **핫윙** | `skin_chick_hotwing` | a pile of spicy buffalo hot wings |
-| 6 | **나초** | `skin_chick_nachos` | a plate of cheesy nachos |
+| 5 | **핫윙** | `skin_chick_hotwing` | a small pile of spicy buffalo hot wings |
+| 8 | **야식 모둠 플래터** | `skin_chick_platter` | a loaded late-night platter of chicken, fries and pizza, premium, tiny gold sparkle |
 
-### 베이커리 `bake` (5 → 8) — 3장
-| # | 음식 | 파일명 | 프롬프트 대상(영문) |
+### 🥐 베이커리 `bake` — 담백한 빵에서 화려한 타르트까지
+`베이글 → `**`크루아상`**` → 바게트 → `**`소금빵`**` → 와플 → 도넛 → 애플파이 → `**`베리 타르트`**
+
+| 자리 | 음식 | 파일명 | 프롬프트 대상(영문) |
 |---|---|---|---|
 | 2 | **크루아상** | `skin_bake_croissant` | a golden buttery croissant |
 | 4 | **소금빵** | `skin_bake_saltbread` | a Korean salt bread roll (sogeum-ppang) |
-| 7 | **타르트** | `skin_bake_tart` | a fruit tart with glazed berries |
+| 8 | **베리 타르트** | `skin_bake_berrytart` | a fancy glazed mixed-berry tart, premium, tiny gold sparkle |
 
-### 고깃집 `meat` (3 → 8) — 5장
-| # | 음식 | 파일명 | 프롬프트 대상(영문) |
+### 🍖 고깃집 `meat` — 삼겹살에서 티본 스테이크까지
+`삼겹살 → `**`목살`**` → 베이컨 → `**`갈비`**` → `**`항정살`**` → `**`LA갈비`**` → 스테이크 → `**`티본 스테이크`**
+
+| 자리 | 음식 | 파일명 | 프롬프트 대상(영문) |
 |---|---|---|---|
-| 2 | **목살** | `skin_meat_moksal` | a grilled pork neck (moksal) cut on a plate |
+| 2 | **목살** | `skin_meat_moksal` | a grilled pork neck (moksal) cut |
 | 4 | **갈비** | `skin_meat_galbi` | grilled Korean pork galbi ribs |
 | 5 | **항정살** | `skin_meat_hangjeong` | grilled pork jowl (hangjeongsal) slices |
 | 6 | **LA갈비** | `skin_meat_lagalbi` | grilled LA-galbi beef short ribs |
 | 8 | **티본 스테이크** | `skin_meat_tbone` | a premium grilled T-bone steak, tiny gold sparkle |
 
-> `#`는 8단계 중 새 음식이 들어갈 자리(왼→오 성장 순서). 그림 17장이 채워지면 각 스킨이
-> 분식·붕어빵과 똑같이 **8단계·같은 문턱**이 되어, 스킨은 완전히 "그림만 다른" 선택이 된다.
+> 그림 17장이 채워지면 각 스킨이 분식·붕어빵과 똑같이 **8단계·같은 문턱**이 되고, 위 성장선대로
+> **1=가장 소박 → 8=최고급**으로 배선한다. 그러면 스킨은 완전히 "그림만 다른" 선택이 된다.
