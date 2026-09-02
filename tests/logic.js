@@ -494,7 +494,7 @@ console.log('\n[6.9] 명예의 전당');
 
   ok(Game.topRuns().length === 0, '처음엔 회차 기록이 없다');
   ok(Game.projectedRank() === 0, '환생할 수 없으면 예상 순위도 없다');
-  ok(Game.records().length === 8, '개인 기록 8종');
+  ok(Game.records().length >= 8 && Game.records().every(r => r.name && r.value != null), '개인 기록이 채워져 있다');
 
   // 회차를 세 번 돌린다 — 매출과 소요 시간을 다르게
   const plays = [[5e6, 3600], [8e8, 7200], [4e7, 1800]];
@@ -1669,6 +1669,39 @@ console.log('\n[28] 재접속 알림 — nextNudge()');
   var daily = list.filter(function (n) { return n.id === 'daily'; })[0];
   ok(daily.inSec === 19 * 3600, 'daily 는 다음날 오전 9시까지(오후 2시 기준 19시간)');
   Game.setClock(function () { var d = new Date(); d.setHours(10, 0, 0, 0); return d; });   // 원복
+})();
+
+/* ===== 🏪 지점(호점) 확장 ===== */
+console.log('\n[29] 지점(호점) — 환생 성과로 이전, 열 때마다 수익 ×2');
+(function () {
+  var B = Data.BRANCH;
+  // 환생 0회 — 아직 못 연다
+  State.set({ branch: 1, prestiges: 0, gens: { g1: 10 }, totalEarned: 1e9 }); Game.invalidate();
+  ok(Game.branchMult() === 1, '1호점은 배율 ×1');
+  ok(Game.canOpenBranch() === false, '환생 0회면 2호점 못 연다');
+  // 2호점 문턱만큼 환생 채운 상태 (State.set 은 교체이므로 gens 도 함께)
+  State.set({ branch: 1, prestiges: B.need[0], gens: { g1: 10 }, totalEarned: 1e9 }); Game.invalidate();
+  var base = Game.perSec(true);
+  ok(Game.canOpenBranch() === true, '2호점 문턱 환생 채우면 열 수 있다');
+  var opened = Game.openBranch();
+  ok(opened === 2 && State.get().branch === 2, 'openBranch → 2호점으로 이전');
+  ok(near(Game.branchMult(), B.mult), '2호점 배율 = BRANCH.mult');
+  ok(near(Game.perSec(true), base * B.mult), '2호점으로 이전하면 전체 수익 ×2');
+  ok(Game.canOpenBranch() === false, '방금 열었으니 다음 호점은 아직(문턱 부족)');
+  // 상태 조회
+  var st = Game.branchStatus();
+  ok(st.branch === 2 && st.need === B.need[1] && st.have === B.need[0], 'branchStatus: 현재 2호점 · 다음 문턱/보유');
+  ok(st.ratio > 0 && st.ratio <= 1, 'branchStatus.ratio 는 0~1');
+  // 최대 호점까지 열면 더는 안 열린다
+  State.set({ branch: B.max, prestiges: 1e9 }); Game.invalidate();
+  ok(Game.canOpenBranch() === false, '최대 호점에선 더 못 연다');
+  ok(Game.branchStatus().atMax === true, 'branchStatus.atMax 참');
+  ok(near(Game.branchMult(), Math.pow(B.mult, B.max - 1)), '최대 호점 배율 = mult^(max-1)');
+  // 세이브 호환: branch 는 1 미만·상한 초과가 정규화된다 (State.set 이 normalize 를 거친다)
+  State.set({ branch: 0 });   ok(State.get().branch === 1, '깨진 branch(0) → 1호점');
+  State.set({ branch: 999 }); ok(State.get().branch === B.max, '과도한 branch → 최대치로 클램프');
+  State.set({ fame: 50, runs: [{ fame: 30, seconds: 1, earned: 1, n: 1 }] });
+  ok(State.get().fameEver >= 50, 'fameEver 없던 세이브 → 명성/기록으로 복원');
 })();
 
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);

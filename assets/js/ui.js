@@ -15,7 +15,7 @@ var UI = (function () {
      'genList', 'upgradeList', 'upgradeHint', 'fameShopList', 'achvList', 'statsBox',
      'questList',
      'adCard', 'adModal', 'adEmoji', 'adCount', 'adBar', 'adNote', 'adQuit',
-     'pFameNow', 'pFameGain', 'pMultNext', 'prestigeBtn', 'prestigeReq',
+     'pFameNow', 'pFameGain', 'pMultNext', 'prestigeBtn', 'prestigeReq', 'branchCard',
      'dotUpgrade', 'dotPrestige', 'dotAchv', 'buyAmt', 'toast',
      'offlineModal', 'offlineText', 'offlineOk',
      'buffBar', 'partyBanner', 'partyHint', 'partyDex', 'combo', 'comboX', 'comboN', 'comboFill',
@@ -1591,6 +1591,72 @@ var UI = (function () {
     }
   }
 
+  /* ---------- 🏪 지점(호점) 확장 카드 ---------- */
+  function renderBranch() {
+    var b = Game.branchStatus();
+    var bsig = b.branch + '|' + b.have + '|' + b.canOpen + '|' + b.atMax;
+    if (sig.branch === bsig) return;
+    sig.branch = bsig;
+
+    var badge = '<div class="branch-badge">' + b.branch + '<small>호점</small></div>';
+    var head = '<div class="branch-head">' + badge +
+      '<div class="branch-name"><b>' + b.name + '</b>' +
+        '<span class="branch-mult">전체 수익 ×' + Fmt.comma(b.mult) + '</span></div></div>';
+
+    var body;
+    if (b.atMax) {
+      body = '<p class="branch-hint done">🏆 마지막 지점까지 확장했어요! 전체 수익 ×' + Fmt.comma(b.mult) + ' 유지 중.</p>';
+    } else {
+      var pct = Math.round(b.ratio * 100);
+      body =
+        '<div class="branch-bar"><i style="width:' + pct + '%"></i></div>' +
+        '<p class="branch-hint">다음 <b>' + b.nextName + '</b> 오픈까지 재개업 <b>' +
+          Fmt.comma(b.have) + ' / ' + Fmt.comma(b.need) + '</b>회 · 열면 전체 수익 <b>×' + Fmt.comma(b.nextMult) + '</b></p>' +
+        '<button class="btn big' + (b.canOpen ? ' gold' : '') + '" id="branchOpenBtn"' + (b.canOpen ? '' : ' disabled') + '>' +
+          (b.canOpen ? '🏪 ' + b.nextName + '으로 이전하기' : '재개업을 더 하면 열려요') +
+        '</button>';
+    }
+    el.branchCard.innerHTML = head + body;
+    var btn = document.getElementById('branchOpenBtn');
+    if (btn) btn.addEventListener('click', onOpenBranch);
+  }
+
+  function onOpenBranch() {
+    if (!Game.canOpenBranch()) return;
+    var newBr = Game.openBranch();
+    if (!newBr) return;
+    State.save();
+    try { Sound.play('prestige'); } catch (e) {}
+    branchTransition(Game.branchStatus());   // '새 지점으로 이전' 연출
+    sig.branch = '';                         // 카드 다시 그림
+    Game.invalidate();
+    refresh(true);
+  }
+
+  /** 새 지점으로 넘어가는 전환 연출 — 잠깐 화면을 덮고 새 호점을 알린 뒤 사라진다 */
+  function branchTransition(after) {
+    var B = Data.BRANCH || {};
+    var tint = (B.tints && B.tints[after.branch - 1]) || '#ffd38a';
+    var blurb = (B.blurbs && B.blurbs[after.branch - 1]) || '';
+    var ov = document.createElement('div');
+    ov.className = 'branch-move';
+    ov.style.setProperty('--tint', tint);
+    ov.innerHTML =
+      '<div class="bm-inner">' +
+        '<div class="bm-badge">' + after.branch + '<small>호점</small></div>' +
+        '<h3>🏪 ' + after.name + ' 오픈!</h3>' +
+        (blurb ? '<p class="bm-blurb">' + blurb + '</p>' : '') +
+        '<p class="bm-mult">전체 수익 <b>×' + Fmt.comma(after.mult) + '</b></p>' +
+      '</div>';
+    document.body.appendChild(ov);
+    ov.getBoundingClientRect();          // 트랜지션 강제 시작 (CLAUDE.md #3)
+    ov.classList.add('show');
+    setTimeout(function () {
+      ov.classList.remove('show');
+      setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 420);
+    }, 2200);
+  }
+
   function updateMuteBtn() {
     var off = Sound.muted();
     el.muteIc.src = 'assets/img/ui/ui_sound_' + (off ? 'off' : 'on') + '.png';
@@ -1730,7 +1796,7 @@ var UI = (function () {
       : '+' + Fmt.num(Game.tapValue()) + ' 원';
 
     el.dotUpgrade.hidden = !Game.hasAffordableUpgrade();
-    el.dotPrestige.hidden = !(Game.fameGain() > 0 || Game.hasAffordableFame());
+    el.dotPrestige.hidden = !(Game.fameGain() > 0 || Game.hasAffordableFame() || Game.canOpenBranch());
     el.dotAchv.hidden = !Game.questClaimable();
 
     updateBuffBar();
@@ -2435,7 +2501,7 @@ var UI = (function () {
     if (currentTab === 'shop') { updateGenList(); updateReco(); }
     else if (currentTab === 'upgrade') { renderUpgrades(); renderAchievements(); }
     else if (currentTab === 'kitchen') renderKitchen();
-    else if (currentTab === 'prestige') { renderPrestige(); renderFameShop(); }
+    else if (currentTab === 'prestige') { renderBranch(); renderPrestige(); renderFameShop(); }
     else if (currentTab === 'achv') { renderAds(); renderQuests(); renderMichelin(); renderPartyDex(); renderRanking(); renderHallOfFame(); }
     else if (currentTab === 'settings') { renderStats(); renderThemes(); renderSkins(); renderOwnerPick(); renderTapSound(); updateMuteBtn(); updateNotifyBtn(); refreshSaveGuard(); }
     if (force) { /* 강제 갱신 시 별도 처리 없음 */ }

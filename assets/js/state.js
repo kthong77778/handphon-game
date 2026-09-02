@@ -43,6 +43,8 @@ var State = (function () {
       fameLv: {},        // 명성상점id -> 레벨
       achievements: {},  // 도전과제id -> true
       fame: 0,
+      fameEver: 0,       // 평생 누적 명성 (소비와 무관·단조 증가) — 기록 화면 표시용
+      branch: 1,         // 현재 지점(호점). 1=1호점. 환생 횟수로 2·3·4…호점으로 이전, 열 때마다 전체 수익 ×2
       prestiges: 0,
       playTime: 0,       // 초
       offlineClaims: 0,
@@ -140,7 +142,7 @@ var State = (function () {
     var s = fresh();
     if (!raw || typeof raw !== 'object') return s;
 
-    var numKeys = ['money', 'runEarned', 'totalEarned', 'taps', 'fame',
+    var numKeys = ['money', 'runEarned', 'totalEarned', 'taps', 'fame', 'fameEver', 'branch',
                    'prestiges', 'playTime', 'offlineClaims', 'startedAt', 'lastSeen',
                    'boostLeft', 'boostCd', 'boosts', 'goldLeft', 'goldMult',
                    'goldTapLeft', 'goldTapMult', 'goldens', 'macroBlocks', 'bestCombo',
@@ -183,6 +185,19 @@ var State = (function () {
     // 배율은 1 미만으로 내려가면 안 된다 (0이 저장돼 있으면 수익이 통째로 사라진다)
     if (!(s.goldMult >= 1)) s.goldMult = 1;
     if (!(s.goldTapMult >= 1)) s.goldTapMult = 1;
+
+    // 지점(호점)은 1 이상 정수. 변조·구버전 세이브로 상한을 넘지 않게 클램프한다.
+    var maxBranch = (Data.BRANCH && Data.BRANCH.max) || 1;
+    if (!(s.branch >= 1)) s.branch = 1;
+    s.branch = Math.min(Math.floor(s.branch), maxBranch);
+    // fameEver(누적 명성) 구버전 세이브 보정: 필드가 없던 세이브는 명예의 전당 기록(runs[].fame)
+    // 합과 현재 명성 중 큰 값으로 되살린다. 소비한 명성까진 못 되살려도 근사치는 맞는다.
+    var runsSum = 0;
+    if (Array.isArray(raw.runs)) raw.runs.forEach(function (r) {
+      var g = Number(r && r.fame); if (isFinite(g) && g > 0) runsSum += g;
+    });
+    var everFloor = Math.max(s.fame, runsSum);
+    if (!(s.fameEver >= everFloor)) s.fameEver = everFloor;
 
     // 쿠폰은 정수로. 상한은 max+1 까지 허용한다 — 첫 환생 예외 보상(4장)이
     // 저장에서 3으로 깎이지 않게. (트럭 드롭은 game.js 에서 max 까지만 준다)

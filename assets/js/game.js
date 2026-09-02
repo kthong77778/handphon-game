@@ -69,6 +69,7 @@ var Game = (function () {
     stat *= 1 + Data.PARTY.dexBonus * (s.partyFoods ? s.partyFoods.length : 0);  // 파티 도감 1칸당 +1%
     stat *= 1 + foodBonus();                                 // 🍳 주방 음식 도감 (등급별 영구 배율)
     stat *= collectionMult();                                // 🏅 도감 컬렉션 완성 보상 (발견·숙련 세트)
+    stat *= branchMult();                                     // 🏪 지점(호점) — 열 때마다 전체 수익 ×2 (영구)
     if (s.michelinGrand) stat *= Data.MICHELIN.grandMult;   // 스타 셰프 별 5개 영구 배율
 
     var genM = {};
@@ -641,6 +642,7 @@ var Game = (function () {
     if (!s.fastestPrestige || s.runTime < s.fastestPrestige) s.fastestPrestige = s.runTime;
 
     s.fame += gain;
+    s.fameEver += gain;   // 평생 누적 명성(소비와 무관·기록용)
     s.prestiges++;
     addCandy(Data.CANDY.perPrestige || 0);   // 환생 이정표마다 별사탕 (환생해도 유지)
     s.runTime = 0;
@@ -904,6 +906,69 @@ var Game = (function () {
       masterAll: { done: allMast, mult: col.masterAll || 1 },
       mult: collectionMult()
     };
+  }
+
+  /* ---------- 🏪 지점(호점) ----------
+     명성을 누적(fameEver)하면 더 큰 지점으로 '이전'한다. 열 때마다 전체 수익 ×BRANCH.mult(=2).
+     기존 진행(설비·업그레이드·명성)은 그대로 이어지고, 배경만 새 지점으로 바뀐다(환생 아님·초기화 없음). */
+
+  /** 지금 지점 배율 — 1호점 ×1, 2호점 ×2, 3호점 ×4 … (mult^(branch-1)) */
+  function branchMult() {
+    var B = Data.BRANCH;
+    if (!B) return 1;
+    var br = S().branch || 1;
+    return Math.pow(B.mult, Math.max(0, br - 1));
+  }
+
+  /** 지점 최대치 (마지막 호점) */
+  function branchMax() { return (Data.BRANCH && Data.BRANCH.max) || 1; }
+
+  /** 다음 호점을 열기 위해 필요한 환생 횟수. 이미 최대면 Infinity */
+  function nextBranchNeed() {
+    var B = Data.BRANCH, br = S().branch || 1;
+    if (!B || br >= branchMax()) return Infinity;
+    return B.need[br - 1];   // need[0] = 2호점(1→2) 문턱, need[1] = 3호점 …
+  }
+
+  /** 지금 다음 호점을 열 수 있나 (환생 횟수가 문턱 이상 · 최대 아님) */
+  function canOpenBranch() {
+    return (S().prestiges || 0) >= nextBranchNeed();
+  }
+
+  /** 다음 호점으로 이전한다. 성공하면 새 호점 번호, 못 열면 0 */
+  function openBranch() {
+    if (!canOpenBranch()) return 0;
+    var s = S();
+    s.branch = (s.branch || 1) + 1;
+    bump();                    // 지점 배율이 stat 에 곱해지므로 캐시 무효화
+    return s.branch;
+  }
+
+  /** 화면용 지점 상태 */
+  function branchStatus() {
+    var B = Data.BRANCH, br = S().branch || 1;
+    var atMax = br >= branchMax();
+    var need = nextBranchNeed();
+    var have = S().prestiges || 0;   // 문턱 기준 = 환생 횟수
+    return {
+      branch: br,
+      mult: branchMult(),
+      nextMult: atMax ? branchMult() : branchMult() * (B ? B.mult : 1),
+      name: branchName(br),
+      nextName: atMax ? branchName(br) : branchName(br + 1),
+      atMax: atMax,
+      need: need,
+      have: have,
+      canOpen: canOpenBranch(),
+      ratio: atMax ? 1 : Math.min(1, have / need)
+    };
+  }
+
+  /** 호점 이름 — 데이터에 라벨이 있으면 그걸, 없으면 'N호점' */
+  function branchName(br) {
+    var B = Data.BRANCH;
+    if (B && B.names && B.names[br - 1]) return B.names[br - 1];
+    return br + '호점';
   }
 
   function ingCount(id) { return S().ings[id] || 0; }
@@ -1274,6 +1339,7 @@ var Game = (function () {
       { icon: 'record/rec_persec.png', name: '최고 순간 초당 수익', value: Fmt.won(s.bestPerSec) },
       { icon: 'record/rec_tap.png', name: '한 번에 가장 많이 번 탭', value: Fmt.won(s.bestTap) },
       { icon: 'record/rec_fame.png', name: '한 번에 얻은 최고 명성', value: Fmt.num(s.bestFameGain) },
+      { icon: 'record/rec_fame.png', name: '평생 누적 명성', value: Fmt.num(s.fameEver) },
       { icon: 'record/rec_speed.png', name: '최단 환생 시간', value: s.fastestPrestige ? Fmt.time(s.fastestPrestige) : '—' },
       { icon: 'record/rec_combo.png', name: '최고 콤보', value: Fmt.comma(s.bestCombo) + '콤보' },
       { icon: 'record/rec_golden.png', name: '잡은 황금 손님', value: Fmt.comma(s.goldens) + '명' },
@@ -2286,6 +2352,11 @@ var Game = (function () {
     gradeUnlocked: gradeUnlocked,
     collectionMult: collectionMult,
     collectionStatus: collectionStatus,
+    branchMult: branchMult,
+    branchStatus: branchStatus,
+    branchName: branchName,
+    canOpenBranch: canOpenBranch,
+    openBranch: openBranch,
     recipeUnlocked: recipeUnlocked,
     canCraft: canCraft,
     craftFood: craftFood,

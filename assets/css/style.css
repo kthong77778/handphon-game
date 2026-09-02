@@ -1175,6 +1175,49 @@ button.item-cost:active{transform:scale(.92)}
 .street.tier4 .shopfront{filter:drop-shadow(0 0 14px rgba(96,165,250,.55))}
 .street.tier5 .shopfront{filter:drop-shadow(0 0 18px rgba(255,204,68,.7))}
 
+/* 🏪 지점 확장 카드 (환생 탭) */
+.branch-card{gap:10px}
+.branch-head{display:flex;align-items:center;gap:12px}
+.branch-badge{
+  flex:0 0 auto;width:52px;height:52px;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;
+  background:linear-gradient(155deg,#ffd88a,#ff9f43);color:#5b3a12;font-size:22px;font-weight:900;
+  box-shadow:0 3px 10px rgba(255,159,67,.4);
+}
+.branch-badge small{font-size:9px;font-weight:800;margin-top:1px}
+.branch-name{display:flex;flex-direction:column;gap:3px;min-width:0}
+.branch-name b{font-size:17px}
+.branch-mult{font-size:12px;color:var(--gold,#ffcc44);font-weight:700}
+.branch-bar{height:9px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden}
+.branch-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#ffd88a,#ff9f43)}
+.branch-hint{font-size:12px;color:var(--muted,#9aa)}
+.branch-hint.done{color:var(--gold,#ffcc44)}
+.btn.gold{background:linear-gradient(155deg,#ffd88a,#ff9f43);color:#5b3a12;font-weight:800}
+
+/* 🏪 '새 지점으로 이전' 전환 연출 — 잠깐 화면을 덮는다 */
+.branch-move{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 40%, var(--tint,#ffd38a) 0%, rgba(20,16,30,.94) 62%);
+  opacity:0;transition:opacity .4s ease;pointer-events:none;
+}
+.branch-move.show{opacity:1}
+.branch-move .bm-inner{
+  text-align:center;color:#fff;transform:scale(.86) translateY(10px);
+  transition:transform .45s cubic-bezier(.2,.9,.3,1.2);
+}
+.branch-move.show .bm-inner{transform:scale(1) translateY(0)}
+.bm-badge{
+  width:88px;height:88px;margin:0 auto 14px;border-radius:22px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;
+  background:linear-gradient(155deg,#ffd88a,#ff9f43);color:#5b3a12;font-size:38px;font-weight:900;
+  box-shadow:0 8px 26px rgba(0,0,0,.4);
+}
+.bm-badge small{font-size:13px;font-weight:800;margin-top:2px}
+.branch-move h3{margin:0 0 6px;font-size:24px}
+.bm-blurb{margin:0 0 8px;font-size:14px;opacity:.9}
+.bm-mult{margin:0;font-size:16px}
+.bm-mult b{color:#ffe08a;font-size:20px}
+
 .walker{
   position:absolute;left:0;bottom:20px;
   will-change:transform;
