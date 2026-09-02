@@ -1037,30 +1037,33 @@ var Data = (function () {
     // 음식 = 레시피. grade 1 초급 / 2 중급 / 3 고급.
     // at: 이 사장 레벨이 되면 레시피가 해금된다. need: 재료 소모량.
     // bonus/sec 는 '기본값'(등급 배율 전) — 실제 도감 배율·목돈은 여기에 gradeMult[grade] 가 곱해진다.
+    // at(해금 사장레벨)은 위로 갈수록 넓게 벌려 두었다. 초반에 사장레벨이 급히 오르기 때문에
+    // 촘촘하면 발견이 1주 만에 끝나 버린다(콘텐츠 절벽). 상단을 벌려 발견을 2주 안팎으로 늘려
+    // 초반 이탈 구간(D7~14)에도 '새로 열리는 것'이 남게 한다. 수치(bonus·need)는 그대로다.
     foods: [
       // 초급 (7종) — 효과 ×1
       { id: 'k1',  icon: 'equip_odeng.png', name: '어묵탕', grade: 1, at: 1, bonus: 0.01, sec: 60, need: { om: 2, vg: 2 } },
       { id: 'k2',  icon: 'food/food_tteokbokki.png', name: '떡볶이',    grade: 1, at: 2,  bonus: 0.01,  sec: 90,   need: { gj: 2, fl: 2, om: 1 } },
-      { id: 'k3',  icon: 'food/food_gimbap.png', name: '김밥',      grade: 1, at: 3,  bonus: 0.01,  sec: 120,  need: { rc: 2, eg: 1, vg: 2 } },
-      { id: 'k10', icon: 'food/food_eggroll.png', name: '계란말이',  grade: 1, at: 4,  bonus: 0.01,  sec: 150,  need: { eg: 3, vg: 1 } },
-      { id: 'k16', icon: 'food/food_fries.png', name: '감자튀김',  grade: 1, at: 5,  bonus: 0.01,  sec: 190,  need: { pt: 3, cn: 1 } },
-      { id: 'k17', icon: 'food/food_shrimp_fry.png', name: '새우튀김',  grade: 1, at: 6,  bonus: 0.015, sec: 240,  need: { sh: 3, fl: 2 } },
-      { id: 'k21', icon: 'food/food_toast.png', name: '토스트',    grade: 1, at: 7,  bonus: 0.015, sec: 300,  need: { fl: 2, eg: 2, ch: 1 } },
+      { id: 'k3',  icon: 'food/food_gimbap.png', name: '김밥',      grade: 1, at: 4,  bonus: 0.01,  sec: 120,  need: { rc: 2, eg: 1, vg: 2 } },
+      { id: 'k10', icon: 'food/food_eggroll.png', name: '계란말이',  grade: 1, at: 6,  bonus: 0.01,  sec: 150,  need: { eg: 3, vg: 1 } },
+      { id: 'k16', icon: 'food/food_fries.png', name: '감자튀김',  grade: 1, at: 8,  bonus: 0.01,  sec: 190,  need: { pt: 3, cn: 1 } },
+      { id: 'k17', icon: 'food/food_shrimp_fry.png', name: '새우튀김',  grade: 1, at: 10, bonus: 0.015, sec: 240,  need: { sh: 3, fl: 2 } },
+      { id: 'k21', icon: 'food/food_toast.png', name: '토스트',    grade: 1, at: 11, bonus: 0.015, sec: 300,  need: { fl: 2, eg: 2, ch: 1 } },
       // 중급 (7종) — 효과 ×2 (기본값은 초급대와 비슷하게, 곱해서 약 2배가 된다)
-      { id: 'k4',  icon: 'food/food_ramen.png', name: '라면',      grade: 2, at: 8,  bonus: 0.01,   sec: 180,  need: { fl: 4, vg: 3, eg: 2 } },
-      { id: 'k5',  icon: 'food/food_hotdog.png', name: '핫도그',    grade: 2, at: 9,  bonus: 0.01,   sec: 230,  need: { fl: 4, mt: 4 } },
-      { id: 'k11', icon: 'food/food_kimchi_friedrice.png', name: '김치볶음밥', grade: 2, at: 10, bonus: 0.01,   sec: 290,  need: { rc: 4, gj: 3, eg: 2 } },
-      { id: 'k6',  icon: 'food/food_mandu.png', name: '만두',      grade: 2, at: 11, bonus: 0.01,   sec: 330,  need: { fl: 3, mt: 3, vg: 2, ms: 2 } },
-      { id: 'k12', icon: 'food/food_cheese_rabokki.png', name: '치즈라볶이', grade: 2, at: 12, bonus: 0.0125, sec: 390,  need: { fl: 4, gj: 3, ch: 2 } },
-      { id: 'k18', icon: 'food/food_mushroom_stew.png', name: '버섯전골',  grade: 2, at: 13, bonus: 0.0125, sec: 460,  need: { ms: 4, vg: 3, mt: 2 } },
-      { id: 'k19', icon: 'food/food_corn_cheese.png', name: '옥수수치즈범벅', grade: 2, at: 14, bonus: 0.0125, sec: 550,  need: { cn: 4, ch: 4 } },
+      { id: 'k4',  icon: 'food/food_ramen.png', name: '라면',      grade: 2, at: 13, bonus: 0.01,   sec: 180,  need: { fl: 4, vg: 3, eg: 2 } },
+      { id: 'k5',  icon: 'food/food_hotdog.png', name: '핫도그',    grade: 2, at: 14, bonus: 0.01,   sec: 230,  need: { fl: 4, mt: 4 } },
+      { id: 'k11', icon: 'food/food_kimchi_friedrice.png', name: '김치볶음밥', grade: 2, at: 16, bonus: 0.01,   sec: 290,  need: { rc: 4, gj: 3, eg: 2 } },
+      { id: 'k6',  icon: 'food/food_mandu.png', name: '만두',      grade: 2, at: 17, bonus: 0.01,   sec: 330,  need: { fl: 3, mt: 3, vg: 2, ms: 2 } },
+      { id: 'k12', icon: 'food/food_cheese_rabokki.png', name: '치즈라볶이', grade: 2, at: 18, bonus: 0.0125, sec: 390,  need: { fl: 4, gj: 3, ch: 2 } },
+      { id: 'k18', icon: 'food/food_mushroom_stew.png', name: '버섯전골',  grade: 2, at: 19, bonus: 0.0125, sec: 460,  need: { ms: 4, vg: 3, mt: 2 } },
+      { id: 'k19', icon: 'food/food_corn_cheese.png', name: '옥수수치즈범벅', grade: 2, at: 21, bonus: 0.0125, sec: 550,  need: { cn: 4, ch: 4 } },
       // 고급 (6종) — 효과 ×3 (기본값은 초급대와 비슷하게, 곱해서 약 3배가 된다)
-      { id: 'k7',  icon: 'food/food_cheese_gimbap.png', name: '치즈김밥',  grade: 3, at: 15, bonus: 0.01,  sec: 430,  need: { rc: 5, ch: 4, eg: 3 } },
-      { id: 'k13', icon: 'food/food_seafood_pancake.png', name: '해물파전',  grade: 3, at: 16, bonus: 0.01,  sec: 530,  need: { fl: 4, om: 3, sh: 3, vg: 2 } },
-      { id: 'k8',  icon: '🍲', name: '부대찌개',  grade: 3, at: 17, bonus: 0.01,  sec: 630,  need: { mt: 5, ch: 3, gj: 3, ms: 2 } },
-      { id: 'k14', icon: 'food/food_galbitang.png', name: '갈비탕',    grade: 3, at: 18, bonus: 0.012, sec: 830,  need: { mt: 6, vg: 3, pt: 3 } },
-      { id: 'k9',  icon: 'food/food_platter.png', name: '모둠 한상', grade: 3, at: 19, bonus: 0.012, sec: 1200, need: { om: 4, rc: 4, mt: 4, ch: 2 } },
-      { id: 'k20', icon: 'food/food_grand_feast.png', name: '왕특선 정식', grade: 3, at: 20, bonus: 0.013, sec: 1730, need: { mt: 5, sh: 4, ch: 3, cn: 2, pt: 2 } }
+      { id: 'k7',  icon: 'food/food_cheese_gimbap.png', name: '치즈김밥',  grade: 3, at: 23, bonus: 0.01,  sec: 430,  need: { rc: 5, ch: 4, eg: 3 } },
+      { id: 'k13', icon: 'food/food_seafood_pancake.png', name: '해물파전',  grade: 3, at: 24, bonus: 0.01,  sec: 530,  need: { fl: 4, om: 3, sh: 3, vg: 2 } },
+      { id: 'k8',  icon: '🍲', name: '부대찌개',  grade: 3, at: 25, bonus: 0.01,  sec: 630,  need: { mt: 5, ch: 3, gj: 3, ms: 2 } },
+      { id: 'k14', icon: 'food/food_galbitang.png', name: '갈비탕',    grade: 3, at: 26, bonus: 0.012, sec: 830,  need: { mt: 6, vg: 3, pt: 3 } },
+      { id: 'k9',  icon: 'food/food_platter.png', name: '모둠 한상', grade: 3, at: 27, bonus: 0.012, sec: 1200, need: { om: 4, rc: 4, mt: 4, ch: 2 } },
+      { id: 'k20', icon: 'food/food_grand_feast.png', name: '왕특선 정식', grade: 3, at: 29, bonus: 0.013, sec: 1730, need: { mt: 5, sh: 4, ch: 3, cn: 2, pt: 2 } }
     ],
     grades: [
       { g: 1, name: '초급', mult: 1 },
@@ -1078,6 +1081,11 @@ var Data = (function () {
     collection: {
       discover: [1.05, 1.10, 1.15],   // 초/중/고 등급을 '모두 발견'
       discoverAll: 1.20,              // 20종 전부 발견 (황금 도감)
+      // ★ 세트 — 발견(하루)과 ★★ 세트(~수개월) 사이의 '중간 목표'. 각 음식 10회씩이라 2~4주면 닿는다.
+      // 초반 이탈 구간(D14~30)에 '조금만 더 하면 보상' 감을 주려는 장치라 배율은 작게 둔다(합쳐 ~×1.5).
+      starTier: 1,                    // ★ 세트 완성 기준 별 (1 = ★ = 누적 10회)
+      star: [1.08, 1.10, 1.12],       // 초/중/고 등급을 '모두 ★'
+      starAll: 1.15,                  // 전 음식 ★ (중간 목표 완성)
       masterTier: 2,                  // 숙련 세트 완성 기준 별 (2 = ★★ = 누적 50회). 미지정 시 최고 별
       master: [1.30, 1.50, 1.80],     // 초/중/고 등급을 '모두 ★★'
       masterAll: 2.0                  // 전 음식 ★★ (초대형)

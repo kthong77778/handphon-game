@@ -361,21 +361,25 @@
 
   function scheduleOfflineNotify() {
     clearOfflineNotify();
+    // 재접속 알림 스케줄(오프라인 가득 · 다음날 출석)을 한 번 계산한다.
+    var schedule = Game.nextNudge();
+    // 네이티브 래퍼(앱)가 붙어 있으면 넘겨서, 탭이 완전히 닫혀도 로컬 알림이 울리게 맡긴다.
+    // 브릿지가 없으면(순수 웹) 조용히 넘어가고, 아래 웹 단독 폴백만 동작한다.
+    if (window.BunsikNative && typeof window.BunsikNative.scheduleNudges === 'function') {
+      try { window.BunsikNative.scheduleNudges(schedule); } catch (e) {}
+    }
+    // 웹 단독 폴백 — 탭이 살아 있는 동안만, 가장 가까운 '오프라인 가득' 알림 하나를 예약한다.
     if (State.get().notifyOffline !== 1) return;
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    var ms = Game.offlineCapSeconds() * 1000;
-    if (!(ms > 0)) return;
-    notifyTimer = setTimeout(fireOfflineNotify, ms);
+    var off = null;
+    for (var i = 0; i < schedule.length; i++) { if (schedule[i].id === 'offline_full') { off = schedule[i]; break; } }
+    if (!off || !(off.inSec > 0)) return;
+    notifyTimer = setTimeout(function () { fireNudge(off); }, off.inSec * 1000);
   }
 
-  function fireOfflineNotify() {
-    var title = '🍢 분식집 키우기';
-    var opts = {
-      body: '오프라인 보상이 가득 찼어요! 들러서 받아가세요.',
-      tag: 'bunsik-offline', renotify: true
-    };
+  function fireNudge(n) {
     // 서비스워커는 제거됐으므로 일반 Notification 으로 띄운다 (실패해도 조용히 넘어간다)
-    try { new Notification(title, opts); } catch (e) {}
+    try { new Notification('🍢 분식집 키우기', { body: n.body, tag: 'bunsik-' + n.id, renotify: true }); } catch (e) {}
   }
 
   /* ---------- 시작 ---------- */

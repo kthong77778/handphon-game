@@ -1403,24 +1403,34 @@ console.log('\n[23] 주방 — 재료/합성/레시피/도감');
   Game.invalidate();
   var wantDisc = COL.discover[0] * COL.discover[1] * COL.discover[2] * COL.discoverAll;
   ok(near(Game.collectionMult(), wantDisc), '전종 발견 → 등급별 + 전종 발견 보너스');
-  // 숙련 세트 완성 기준은 masterTier 별(현재 ★★=50회). 그 문턱 '직전'엔 숙련 세트가 안 붙는다
+  var wantStar = COL.star[0] * COL.star[1] * COL.star[2] * COL.starAll;
+  var wantMast = COL.master[0] * COL.master[1] * COL.master[2] * COL.masterAll;
+  // ★ 세트(중간 목표) 기준 별 = starTier(현재 ★=10). ★ 문턱 '직전'엔 발견 보너스만
+  var starTier = Game.starSetTier();
+  var starStep = Data.KITCHEN.mastery.steps[starTier - 1];         // ★ 문턱 = 10
+  ok(starTier === (COL.starTier || 1), '★ 세트 기준 별 = collection.starTier');
+  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = starStep - 1; });   // 전종 발견만(9) — ★ 미완
+  Game.invalidate();
+  ok(near(Game.collectionMult(), wantDisc), '★ 문턱 직전엔 발견 보너스만');
+  ok(Game.gradeStarProgress(1).made === 0, '★ 미만은 ★ 세트에 안 쳐진다');
+  // 전 음식 ★(10~49) → 발견 + ★ 세트, 아직 ★★ 세트는 아님
   var setTier = Game.masterSetTier();
   var setStep = Data.KITCHEN.mastery.steps[setTier - 1];           // ★★ 문턱 = 50
   ok(setTier === (COL.masterTier || 3), '숙련 세트 기준 별 = collection.masterTier');
-  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = setStep - 1; });   // 전종 ★(49) — 아직 미완
+  Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = setStep - 1; });   // 전종 ★(49)
   Game.invalidate();
-  ok(near(Game.collectionMult(), wantDisc), '숙련 문턱 직전(★)엔 발견 보너스만');
-  ok(Game.gradeMasterProgress(1).made === 0, '★★ 미만은 숙련 세트에 안 쳐진다');
-  // 전 음식 ★★(50) → 발견 + 숙련 모든 세트
+  ok(near(Game.collectionMult(), wantDisc * wantStar), '전종 ★ → 발견 + ★ 세트(아직 ★★ 아님)');
+  ok(Game.gradeStarProgress(1).made === 7 && Game.gradeMasterProgress(1).made === 0, '★ 세트는 참, ★★ 세트는 아직');
+  // 전 음식 ★★(50) → 발견 + ★ + 숙련 모든 세트
   Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = setStep; });
   Game.invalidate();
-  var wantAll = wantDisc * COL.master[0] * COL.master[1] * COL.master[2] * COL.masterAll;
-  ok(near(Game.collectionMult(), wantAll), '전종 ★★ → 발견 + 숙련 모든 세트 보너스');
+  var wantAll = wantDisc * wantStar * wantMast;
+  ok(near(Game.collectionMult(), wantAll), '전종 ★★ → 발견 + ★ + 숙련 모든 세트 보너스');
   ok(Game.gradeMasterProgress(1).made === 7 && Game.gradeMasterProgress(1).total === 7, '초급 ★★ 진행 = 7/7');
-  // ★★★(최고 별)도 당연히 숙련 세트에 포함된다(문턱 이상)
+  // ★★★(최고 별)도 당연히 모든 세트에 포함된다(문턱 이상)
   Data.KITCHEN.foods.forEach(function (f) { sc.kfoods[f.id] = topT; });
   Game.invalidate();
-  ok(near(Game.collectionMult(), wantAll), '★★★ 도 숙련 세트 완성(문턱 이상)');
+  ok(near(Game.collectionMult(), wantAll), '★★★ 도 모든 세트 완성(문턱 이상)');
   // 실제 수익에 반영: 컬렉션이 차면 초당 수익이 오른다
   State.set({ totalEarned: 1e12, gens: { g1: 10 } }); var sc2 = State.get();
   sc2.kfoods = {}; Game.invalidate(); var noCol = Game.perSec(true);
@@ -1618,6 +1628,47 @@ console.log('\n[26] 싼 설비 "거의 안 올라요" 힌트 (genBarelyHelps)');
   // 수익이 0 이면(맨 처음) 힌트 없음
   State.set({ gens: {} }); Game.invalidate();
   ok(!Game.genBarelyHelps(first.id, 1), '수익 0 에선 힌트 없음(0으로 나눔 방어)');
+})();
+
+/* ===== 🏅 도감 ★ 세트(중간 목표) 상태 ===== */
+console.log('\n[27] 도감 컬렉션 — ★ 세트(중간 목표) 상태');
+(function () {
+  var COL = Data.KITCHEN.collection;
+  State.set({ totalEarned: 1e15 }); var s = State.get(); s.kfoods = {}; Game.invalidate();
+  var c0 = Game.collectionStatus();
+  ok(c0.star && c0.star.length === 3, 'collectionStatus 에 ★ 세트(star) 3등급이 있다');
+  ok(c0.starAll && c0.starAll.done === false, '초기엔 전종 ★ 세트 미완');
+  // 초급을 전부 ★(10회) 이상으로 → 초급 ★ 세트만 완성
+  var star = Data.KITCHEN.mastery.steps[Game.starSetTier() - 1];   // 10
+  Data.KITCHEN.foods.forEach(function (f) { if (f.grade === 1) s.kfoods[f.id] = star; });
+  Game.invalidate();
+  var c1 = Game.collectionStatus();
+  ok(c1.star[0].done === true && c1.star[1].done === false, '초급만 ★ 세트 완성');
+  ok(near(c1.star[0].mult, COL.star[0]), '초급 ★ 세트 배율 = collection.star[0]');
+  // 전 음식 ★ → 전종 ★ 세트 완성
+  Data.KITCHEN.foods.forEach(function (f) { s.kfoods[f.id] = star; });
+  Game.invalidate();
+  ok(Game.collectionStatus().starAll.done === true, '전 음식 ★ → 전종 ★ 세트 완성');
+})();
+
+/* ===== 🔔 재접속 알림 스케줄 ===== */
+console.log('\n[28] 재접속 알림 — nextNudge()');
+(function () {
+  // 시계를 오후 2시로 고정 — 다음날 오전 9시까지 남은 초를 예측 가능하게
+  Game.setClock(function () { var d = new Date(2026, 0, 1, 14, 0, 0); return d; });
+  var list = Game.nextNudge();
+  ok(Array.isArray(list) && list.length >= 2, '알림 목록을 배열로 준다(2건 이상)');
+  var ids = list.map(function (n) { return n.id; });
+  ok(ids.indexOf('offline_full') >= 0 && ids.indexOf('daily') >= 0, 'offline_full · daily 알림이 있다');
+  ok(list.every(function (n) { return n.inSec > 0 && n.title && n.body; }), '모든 알림이 미래 시각 + 제목/본문을 갖는다');
+  ok(list[0].inSec <= list[1].inSec, 'inSec 오름차순 정렬');
+  // offline_full 은 오프라인 상한과 같다
+  var off = list.filter(function (n) { return n.id === 'offline_full'; })[0];
+  ok(off.inSec === Math.round(Game.offlineCapSeconds()), 'offline_full 은 오프라인 상한 시각');
+  // daily 는 오후 2시 → 다음날 오전 9시 = 19시간
+  var daily = list.filter(function (n) { return n.id === 'daily'; })[0];
+  ok(daily.inSec === 19 * 3600, 'daily 는 다음날 오전 9시까지(오후 2시 기준 19시간)');
+  Game.setClock(function () { var d = new Date(); d.setHours(10, 0, 0, 0); return d; });   // 원복
 })();
 
 console.log(fails === 0 ? '\n전부 통과 ✅' : `\n실패 ${fails}건 ❌`);

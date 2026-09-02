@@ -831,9 +831,15 @@ var Game = (function () {
     return (col && col.masterTier) || Data.KITCHEN.mastery.steps.length;
   }
 
-  /** 그 등급 음식을 '모두 masterSetTier 별 이상'으로 만들었나 (개수) */
-  function gradeMasterProgress(grade) {
-    var need = masterSetTier(), made = 0, total = 0;
+  /** ★ 세트(중간 목표) 완성에 필요한 별. 없으면 1(★) */
+  function starSetTier() {
+    var col = Data.KITCHEN.collection;
+    return (col && col.starTier) || 1;
+  }
+
+  /** 그 등급 음식을 '모두 need 별 이상'으로 만들었나 (개수). tier 세트 진행도 공통 계산 */
+  function gradeTierProgress(grade, need) {
+    var made = 0, total = 0;
     Data.KITCHEN.foods.forEach(function (f) {
       if (f.grade !== grade) return;
       total++;
@@ -842,20 +848,30 @@ var Game = (function () {
     return { made: made, total: total };
   }
 
+  /** 그 등급 음식을 '모두 starSetTier 별 이상'으로 만들었나 (개수) */
+  function gradeStarProgress(grade) { return gradeTierProgress(grade, starSetTier()); }
+
+  /** 그 등급 음식을 '모두 masterSetTier 별 이상'으로 만들었나 (개수) */
+  function gradeMasterProgress(grade) { return gradeTierProgress(grade, masterSetTier()); }
+
   /** 도감 컬렉션 완성 보상 배율 — calc 의 stat 에 곱해진다. 발견/숙련 세트 + 전체 완성 보너스의 곱 */
   function collectionMult() {
     var col = Data.KITCHEN.collection;
     if (!col) return 1;
-    var m = 1, allDisc = true, allMast = true;
+    var m = 1, allDisc = true, allStar = true, allMast = true;
     [1, 2, 3].forEach(function (g) {
       var d = gradeProgress(g);
       if (d.total > 0 && d.made >= d.total) m *= (col.discover && col.discover[g - 1]) || 1;
       else allDisc = false;
+      var st = gradeStarProgress(g);
+      if (st.total > 0 && st.made >= st.total) m *= (col.star && col.star[g - 1]) || 1;
+      else allStar = false;
       var mt = gradeMasterProgress(g);
       if (mt.total > 0 && mt.made >= mt.total) m *= (col.master && col.master[g - 1]) || 1;
       else allMast = false;
     });
     if (allDisc) m *= col.discoverAll || 1;
+    if (allStar) m *= col.starAll || 1;
     if (allMast) m *= col.masterAll || 1;
     return m;
   }
@@ -868,16 +884,23 @@ var Game = (function () {
       return { grade: g, made: p.made, total: p.total, done: p.total > 0 && p.made >= p.total,
                mult: (col.discover && col.discover[g - 1]) || 1 };
     });
+    var star = [1, 2, 3].map(function (g) {
+      var p = gradeStarProgress(g);
+      return { grade: g, made: p.made, total: p.total, done: p.total > 0 && p.made >= p.total,
+               mult: (col.star && col.star[g - 1]) || 1 };
+    });
     var mast = [1, 2, 3].map(function (g) {
       var p = gradeMasterProgress(g);
       return { grade: g, made: p.made, total: p.total, done: p.total > 0 && p.made >= p.total,
                mult: (col.master && col.master[g - 1]) || 1 };
     });
     var allDisc = disc.every(function (d) { return d.done; });
+    var allStar = star.every(function (d) { return d.done; });
     var allMast = mast.every(function (d) { return d.done; });
     return {
-      discover: disc, master: mast,
+      discover: disc, star: star, master: mast,
       discoverAll: { done: allDisc, mult: col.discoverAll || 1 },
+      starAll: { done: allStar, mult: col.starAll || 1 },
       masterAll: { done: allMast, mult: col.masterAll || 1 },
       mult: collectionMult()
     };
@@ -1684,6 +1707,33 @@ var Game = (function () {
     return { ings: got };
   }
 
+  /* ---------- 🔔 재접속 알림 스케줄 ----------
+     웹은 앱이 닫히면 스스로 알림을 못 띄운다. 그래서 여기서는 '언제 어떤 알림을 띄우면 좋은지'만
+     계산해 돌려주고, 실제 예약·발송은 네이티브 래퍼(로컬 알림)나 PWA 서비스워커가 맡는다.
+     앱이 백그라운드로 갈 때 이 목록을 받아 각 inSec 뒤에 로컬 알림을 예약하면 된다.
+     nowDate() 기준 앞으로의 알림을 inSec(초) 오름차순으로 준다. */
+  function nextNudge() {
+    var list = [];
+    // 1) 오프라인 매출이 상한을 꽉 채우는 순간 — 더 비워 둬도 손해라 들어올 이유가 크다
+    var cap = offlineCapSeconds();
+    if (cap > 0) list.push({
+      id: 'offline_full', inSec: Math.round(cap),
+      title: '가게가 손님으로 꽉 찼어요! 💰',
+      body: '자리가 다 찼어요. 지금 들어와 그동안 쌓인 매출을 챙기세요.'
+    });
+    // 2) 다음 날 아침 — 새 출석 보상 + 룰렛 무료 스핀 + 오늘의 특선 (자정이 아니라 오전 9시로: 새벽에 안 깨운다)
+    var d = nowDate();
+    var morning = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 9, 0, 0);
+    var toMorning = Math.round((morning.getTime() - d.getTime()) / 1000);
+    if (toMorning > 0) list.push({
+      id: 'daily', inSec: toMorning,
+      title: '오늘의 출석 보상이 기다려요 🎁',
+      body: '출석 도장 찍고 별사탕 받기 · 행운의 룰렛 무료 스핀도 새로 왔어요.'
+    });
+    list.sort(function (a, b) { return a.inSec - b.inSec; });
+    return list;
+  }
+
   /* ---------- 진행 ---------- */
   var questCheckLeft = 0;
 
@@ -2197,6 +2247,7 @@ var Game = (function () {
     offlineReward: offlineReward,
     offlineTrucks: offlineTrucks,
     claimOffline: claimOffline,
+    nextNudge: nextNudge,
     tick: tick,
     checkAchievements: checkAchievements,
     hasAffordableUpgrade: hasAffordableUpgrade,
@@ -2228,7 +2279,9 @@ var Game = (function () {
     ingCount: ingCount,
     foodMade: foodMade,
     gradeProgress: gradeProgress,
+    gradeStarProgress: gradeStarProgress,
     gradeMasterProgress: gradeMasterProgress,
+    starSetTier: starSetTier,
     masterSetTier: masterSetTier,
     gradeUnlocked: gradeUnlocked,
     collectionMult: collectionMult,
